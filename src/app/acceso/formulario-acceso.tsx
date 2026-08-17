@@ -149,7 +149,7 @@ export function FormularioAcceso() {
           className="field"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="nombre@nitton.es"
+          placeholder="tu@correo.com"
           autoComplete="email"
           required
         />

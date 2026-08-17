@@ -1,0 +1,272 @@
+"use client"
+
+import { useEffect, useMemo, useRef, useState } from "react"
+import { Check, FolderOpen, Search, X } from "lucide-react"
+
+import type { Catalogo } from "@/lib/tipos"
+import { cn } from "@/lib/utils"
+
+type Seleccion = { project_id: string | null; task_id: string | null }
+
+type Opcion = {
+  clave: string
+  project_id: string
+  task_id: string | null
+  proyecto: string
+  cliente: string | null
+  tarea: string | null
+  color: string
+  /** Texto sobre el que se busca */
+  busqueda: string
+}
+
+export function SelectorProyecto({
+  catalogo,
+  valor,
+  onChange,
+  compacto = false,
+  autoFoco = false,
+}: {
+  catalogo: Catalogo
+  valor: Seleccion
+  onChange: (seleccion: Seleccion) => void
+  compacto?: boolean
+  autoFoco?: boolean
+}) {
+  const [abierto, setAbierto] = useState(false)
+  const [filtro, setFiltro] = useState("")
+  const [resaltado, setResaltado] = useState(0)
+  const contenedor = useRef<HTMLDivElement>(null)
+  const campoBusqueda = useRef<HTMLInputElement>(null)
+
+  const opciones = useMemo<Opcion[]>(() => {
+    const lista: Opcion[] = []
+    const proyectosOrdenados = [...catalogo.proyectos].sort((a, b) => {
+      const ca = a.clients?.name ?? ""
+      const cb = b.clients?.name ?? ""
+      return ca.localeCompare(cb, "es") || a.name.localeCompare(b.name, "es")
+    })
+
+    for (const p of proyectosOrdenados) {
+      const cliente = p.clients?.name ?? null
+      lista.push({
+        clave: p.id,
+        project_id: p.id,
+        task_id: null,
+        proyecto: p.name,
+        cliente,
+        tarea: null,
+        color: p.color,
+        busqueda: `${cliente ?? ""} ${p.name}`.toLowerCase(),
+      })
+      for (const t of catalogo.tareas.filter((t) => t.project_id === p.id)) {
+        lista.push({
+          clave: `${p.id}:${t.id}`,
+          project_id: p.id,
+          task_id: t.id,
+          proyecto: p.name,
+          cliente,
+          tarea: t.name,
+          color: p.color,
+          busqueda: `${cliente ?? ""} ${p.name} ${t.name}`.toLowerCase(),
+        })
+      }
+    }
+    return lista
+  }, [catalogo])
+
+  const filtradas = useMemo(() => {
+    const q = filtro.trim().toLowerCase()
+    if (!q) return opciones
+    const trozos = q.split(/\s+/)
+    return opciones.filter((o) => trozos.every((t) => o.busqueda.includes(t)))
+  }, [opciones, filtro])
+
+  const actual = useMemo(() => {
+    if (!valor.project_id) return null
+    return (
+      opciones.find(
+        (o) => o.project_id === valor.project_id && o.task_id === valor.task_id,
+      ) ?? opciones.find((o) => o.project_id === valor.project_id) ?? null
+    )
+  }, [opciones, valor])
+
+  useEffect(() => {
+    if (!abierto) return
+    campoBusqueda.current?.focus()
+    const fuera = (e: MouseEvent) => {
+      if (!contenedor.current?.contains(e.target as Node)) setAbierto(false)
+    }
+    document.addEventListener("mousedown", fuera)
+    return () => document.removeEventListener("mousedown", fuera)
+  }, [abierto])
+
+  function elegir(o: Opcion | null) {
+    onChange(
+      o
+        ? { project_id: o.project_id, task_id: o.task_id }
+        : { project_id: null, task_id: null },
+    )
+    setAbierto(false)
+    setFiltro("")
+  }
+
+  function teclas(e: React.KeyboardEvent) {
+    if (e.key === "ArrowDown") {
+      e.preventDefault()
+      setResaltado((r) => Math.min(r + 1, filtradas.length - 1))
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault()
+      setResaltado((r) => Math.max(r - 1, 0))
+    } else if (e.key === "Enter") {
+      e.preventDefault()
+      const o = filtradas[resaltado]
+      if (o) elegir(o)
+    } else if (e.key === "Escape") {
+      e.preventDefault()
+      setAbierto(false)
+    }
+  }
+
+  return (
+    <div ref={contenedor} className="relative">
+      <button
+        type="button"
+        onClick={() => {
+          // Al abrir, el resaltado vuelve arriba: mas barato aqui que en un efecto
+          setResaltado(0)
+          setAbierto((v) => !v)
+        }}
+        autoFocus={autoFoco}
+        className={cn(
+          "flex w-full items-center gap-2 rounded-lg border border-line-strong bg-surface px-3 text-left text-sm transition hover:bg-surface-2",
+          compacto ? "h-8" : "h-9",
+        )}
+        aria-haspopup="listbox"
+        aria-expanded={abierto}
+      >
+        {actual ? (
+          <>
+            <span
+              className="h-2.5 w-2.5 shrink-0 rounded-full"
+              style={{ background: actual.color }}
+            />
+            <span className="min-w-0 flex-1 truncate">
+              {actual.cliente && (
+                <span className="text-muted">{actual.cliente} · </span>
+              )}
+              <span className="font-medium">{actual.proyecto}</span>
+              {actual.tarea && (
+                <span className="text-muted"> · {actual.tarea}</span>
+              )}
+            </span>
+            <span
+              role="button"
+              tabIndex={-1}
+              aria-label="Quitar proyecto"
+              onClick={(e) => {
+                e.stopPropagation()
+                elegir(null)
+              }}
+              className="shrink-0 rounded p-0.5 text-muted transition hover:bg-surface-3 hover:text-ink"
+            >
+              <X className="h-3.5 w-3.5" />
+            </span>
+          </>
+        ) : (
+          <>
+            <FolderOpen className="h-4 w-4 shrink-0 text-muted" />
+            <span className="flex-1 truncate text-muted">Sin proyecto</span>
+          </>
+        )}
+      </button>
+
+      {abierto && (
+        <div
+          className="card absolute left-0 top-full z-50 mt-1 w-[22rem] max-w-[calc(100vw-2rem)] overflow-hidden p-0"
+          style={{ boxShadow: "var(--shadow-lg)" }}
+        >
+          <div className="flex items-center gap-2 border-b border-line px-3 py-2">
+            <Search className="h-4 w-4 shrink-0 text-muted" />
+            <input
+              ref={campoBusqueda}
+              value={filtro}
+              onChange={(e) => {
+                setFiltro(e.target.value)
+                setResaltado(0)
+              }}
+              onKeyDown={teclas}
+              placeholder="Buscar cliente, proyecto o tarea"
+              className="w-full bg-transparent text-sm outline-none placeholder:text-muted"
+            />
+          </div>
+
+          <ul role="listbox" className="scroll-thin max-h-72 overflow-y-auto py-1">
+            <li>
+              <button
+                type="button"
+                onClick={() => elegir(null)}
+                className={cn(
+                  "flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition hover:bg-surface-2",
+                  !valor.project_id && "text-accent",
+                )}
+              >
+                <FolderOpen className="h-3.5 w-3.5 text-muted" />
+                Sin proyecto
+                {!valor.project_id && <Check className="ml-auto h-3.5 w-3.5" />}
+              </button>
+            </li>
+
+            {filtradas.map((o, i) => {
+              const elegido =
+                o.project_id === valor.project_id && o.task_id === valor.task_id
+              return (
+                <li key={o.clave}>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={elegido}
+                    onMouseEnter={() => setResaltado(i)}
+                    onClick={() => elegir(o)}
+                    className={cn(
+                      "flex w-full items-center gap-2 py-1.5 pr-3 text-left text-sm transition",
+                      o.tarea ? "pl-8" : "pl-3",
+                      i === resaltado && "bg-surface-2",
+                      elegido && "text-accent",
+                    )}
+                  >
+                    {!o.tarea && (
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ background: o.color }}
+                      />
+                    )}
+                    <span className="min-w-0 flex-1 truncate">
+                      {o.tarea ? (
+                        o.tarea
+                      ) : (
+                        <>
+                          {o.cliente && (
+                            <span className="text-muted">{o.cliente} · </span>
+                          )}
+                          {o.proyecto}
+                        </>
+                      )}
+                    </span>
+                    {elegido && <Check className="h-3.5 w-3.5 shrink-0" />}
+                  </button>
+                </li>
+              )
+            })}
+
+            {filtradas.length === 0 && (
+              <li className="px-3 py-6 text-center text-sm text-muted">
+                Nada coincide con «{filtro}».
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}

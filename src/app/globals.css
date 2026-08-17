@@ -1,26 +1,262 @@
 @import "tailwindcss";
 
+/* ------------------------------------------------------------------ tokens */
+/* Base neutra tirando a calida, para que las horas en pantalla no canten
+   tanto como en una interfaz gris pura. Un unico acento indigo para acciones
+   y un verde reservado en exclusiva al cronometro en marcha. */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #f6f5f2;
+  --surface: #ffffff;
+  --surface-2: #efedea;
+  --surface-3: #e6e3de;
+  --border: #e2dfda;
+  --border-strong: #cdc9c2;
+  --text: #1b1a18;
+  --muted: #75716a;
+  --accent: #4338ca;
+  --accent-hover: #3730a3;
+  --accent-soft: #eef2ff;
+  --accent-fg: #ffffff;
+  --running: #047857;
+  --running-soft: #ecfdf5;
+  --danger: #b91c1c;
+  --danger-soft: #fef2f2;
+  --billable: #b45309;
+  --billable-soft: #fffbeb;
+  --shadow: 0 1px 2px rgb(27 26 24 / 0.06), 0 1px 3px rgb(27 26 24 / 0.04);
+  --shadow-lg: 0 4px 16px rgb(27 26 24 / 0.1), 0 1px 3px rgb(27 26 24 / 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17161a;
+    --surface: #1f1e23;
+    --surface-2: #26252b;
+    --surface-3: #2f2e35;
+    --border: #33313a;
+    --border-strong: #45434e;
+    --text: #eceaef;
+    --muted: #9b96a3;
+    --accent: #818cf8;
+    --accent-hover: #a5b4fc;
+    --accent-soft: #262444;
+    --accent-fg: #14131a;
+    --running: #34d399;
+    --running-soft: #10291f;
+    --danger: #f87171;
+    --danger-soft: #2c1717;
+    --billable: #fbbf24;
+    --billable-soft: #2b2110;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.45);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #17161a;
+  --surface: #1f1e23;
+  --surface-2: #26252b;
+  --surface-3: #2f2e35;
+  --border: #33313a;
+  --border-strong: #45434e;
+  --text: #eceaef;
+  --muted: #9b96a3;
+  --accent: #818cf8;
+  --accent-hover: #a5b4fc;
+  --accent-soft: #262444;
+  --accent-fg: #14131a;
+  --running: #34d399;
+  --running-soft: #10291f;
+  --danger: #f87171;
+  --danger-soft: #2c1717;
+  --billable: #fbbf24;
+  --billable-soft: #2b2110;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.45);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-ink: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-fg: var(--accent-fg);
+  --color-running: var(--running);
+  --color-running-soft: var(--running-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-billable: var(--billable);
+  --color-billable-soft: var(--billable-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ------------------------------------------------------------------- base */
+
+* {
+  border-color: var(--border);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Las duraciones son columnas de numeros: tienen que alinearse siempre */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+  color: inherit;
+}
+
+/* Ocultar los steppers de los number en Firefox y WebKit */
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ------------------------------------------------------------- componentes */
+
+@layer components {
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow);
+  }
+
+  .field {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.12s, box-shadow 0.12s;
+  }
+  .field:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+  .field:disabled {
+    background: var(--surface-2);
+    color: var(--muted);
+    cursor: not-allowed;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    padding: 0.5rem 0.85rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, opacity 0.12s;
+  }
+  .btn:hover:not(:disabled) {
+    background: var(--surface-2);
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-fg);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+  }
+
+  .btn-danger {
+    color: var(--danger);
+    border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+  }
+  .btn-danger:hover:not(:disabled) {
+    background: var(--danger-soft);
+  }
+
+  .btn-ghost {
+    border-color: transparent;
+    background: transparent;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    border-radius: 9999px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    padding: 0.1rem 0.55rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  .label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 0.3rem;
+    letter-spacing: 0.01em;
+  }
+}
+
+/* Barra de desplazamiento discreta en las tablas largas */
+.scroll-thin::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 9999px;
+  border: 3px solid var(--surface);
+}
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
 }

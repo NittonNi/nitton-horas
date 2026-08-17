@@ -1,11 +1,17 @@
 /**
- * Descargas del informe. El CSV sale con punto y coma y BOM porque el destino
- * casi siempre es un Excel en espanol, que si no parte mal las columnas.
+ * Descargas del informe.
+ *
+ * El Excel es el formato que de verdad se usa despues: va con columnas
+ * tipadas -la fecha es una fecha, las horas son un numero y el importe es
+ * moneda-, cabecera fijada y filtros, para poder ordenar y hacer tablas
+ * dinamicas sin tener que arreglar nada antes.
  */
 
 import Papa from "papaparse"
 
-import { formatDateShort, formatHoursDecimal } from "@/lib/time"
+import type { CellObject, Row, SheetData } from "write-excel-file/browser"
+
+import { formatDateShort, formatHoursDecimal, fromDateKey, hoursDecimal } from "@/lib/time"
 import type { EntradaVista } from "@/lib/tipos"
 
 function descargar(contenido: Blob, nombre: string) {
@@ -19,6 +25,8 @@ function descargar(contenido: Blob, nombre: string) {
   URL.revokeObjectURL(url)
 }
 
+/* --------------------------------------------------------------------- csv */
+
 export function exportarCsv(entradas: EntradaVista[], nombre: string) {
   const filas = entradas.map((entrada) => ({
     Fecha: formatDateShort(entrada.local_date),
@@ -30,7 +38,6 @@ export function exportarCsv(entradas: EntradaVista[], nombre: string) {
     Etiquetas: entrada.tags.join(", "),
     Horas: formatHoursDecimal(entrada.duration_seconds),
     Facturable: entrada.billable ? "Si" : "No",
-    // Con coma decimal: es lo que espera un Excel en espanol
     Importe:
       entrada.amount != null
         ? Number(entrada.amount).toLocaleString("es-ES", {
@@ -40,12 +47,158 @@ export function exportarCsv(entradas: EntradaVista[], nombre: string) {
         : "",
   }))
 
+  // Punto y coma y BOM: es lo que espera un Excel en espanol
   const csv = Papa.unparse(filas, { delimiter: ";" })
   descargar(
     new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" }),
     `${nombre}.csv`,
   )
 }
+
+/* ------------------------------------------------------------------- excel */
+
+const EUROS = '#,##0.00\\ "€"'
+
+function cabecera(texto: string): CellObject {
+  return {
+    value: texto,
+    type: String,
+    fontWeight: "bold",
+    backgroundColor: "#0F1419",
+    textColor: "#FFFFFF",
+    align: "left",
+  }
+}
+
+export async function exportarExcel(
+  entradas: EntradaVista[],
+  opciones: { nombre: string; desde: string; hasta: string; conImportes: boolean },
+) {
+  // El paquete no tiene entrada raiz: hay que pedir la version de navegador
+  const { default: writeXlsxFile } = await import("write-excel-file/browser")
+
+  const columnas = [
+    { column: "Fecha", width: 12 },
+    { column: "Persona", width: 22 },
+    { column: "Cliente", width: 22 },
+    { column: "Proyecto", width: 26 },
+    { column: "Tarea", width: 22 },
+    { column: "Descripcion", width: 46 },
+    { column: "Etiquetas", width: 22 },
+    { column: "Horas", width: 10 },
+    { column: "Facturable", width: 12 },
+    ...(opciones.conImportes ? [{ column: "Importe", width: 14 }] : []),
+  ]
+
+  const filas: SheetData = [
+    columnas.map((c) => cabecera(c.column)),
+    ...entradas.map((entrada) => {
+      const fila: Row = [
+        { value: fromDateKey(entrada.local_date), type: Date, format: "dd/mm/yyyy" },
+        { value: entrada.user_name, type: String },
+        { value: entrada.client_name ?? "", type: String },
+        { value: entrada.project_name ?? "", type: String },
+        { value: entrada.task_name ?? "", type: String },
+        { value: entrada.description, type: String, wrap: true },
+        { value: entrada.tags.join(", "), type: String },
+        {
+          value: hoursDecimal(entrada.duration_seconds),
+          type: Number,
+          format: "0.00",
+        },
+        { value: entrada.billable ? "Si" : "No", type: String, align: "center" },
+      ]
+      if (opciones.conImportes) {
+        fila.push(
+          entrada.amount != null
+            ? { value: Number(entrada.amount), type: Number, format: EUROS }
+            : null,
+        )
+      }
+      return fila
+    }),
+  ]
+
+  /* Hoja aparte con los totales por proyecto: es la primera pregunta que se
+     hace cualquiera al abrir el fichero. */
+  const porProyecto = new Map<string, { horas: number; importe: number }>()
+  for (const entrada of entradas) {
+    const clave = entrada.project_name ?? "Sin proyecto"
+    const acumulado = porProyecto.get(clave) ?? { horas: 0, importe: 0 }
+    acumulado.horas += hoursDecimal(entrada.duration_seconds)
+    acumulado.importe += Number(entrada.amount ?? 0)
+    porProyecto.set(clave, acumulado)
+  }
+
+  const totalHoras = [...porProyecto.values()].reduce((s, v) => s + v.horas, 0)
+  const totalImporte = [...porProyecto.values()].reduce((s, v) => s + v.importe, 0)
+
+  const resumen: SheetData = [
+    [{ value: "Informe de horas", type: String, fontWeight: "bold" }],
+    [
+      { value: "Periodo", type: String, textColor: "#69737F" },
+      {
+        value: `${formatDateShort(opciones.desde)} - ${formatDateShort(opciones.hasta)}`,
+        type: String,
+      },
+    ],
+    [],
+    [
+      cabecera("Proyecto"),
+      cabecera("Horas"),
+      ...(opciones.conImportes ? [cabecera("Importe")] : []),
+    ],
+    ...[...porProyecto.entries()]
+      .sort((a, b) => b[1].horas - a[1].horas)
+      .map(([nombre, v]): Row => [
+        { value: nombre, type: String },
+        { value: Math.round(v.horas * 100) / 100, type: Number, format: "0.00" },
+        ...(opciones.conImportes
+          ? [{ value: v.importe, type: Number, format: EUROS }]
+          : []),
+      ]),
+    [
+      { value: "Total", type: String, fontWeight: "bold" },
+      {
+        value: Math.round(totalHoras * 100) / 100,
+        type: Number,
+        format: "0.00",
+        fontWeight: "bold",
+      },
+      ...(opciones.conImportes
+        ? [
+            {
+              value: totalImporte,
+              type: Number,
+              format: EUROS,
+              fontWeight: "bold" as const,
+            },
+          ]
+        : []),
+    ],
+  ]
+
+  await writeXlsxFile([
+    {
+      data: resumen,
+      sheet: "Resumen",
+      columns: [
+        { width: 34 },
+        { width: 14 },
+        ...(opciones.conImportes ? [{ width: 16 }] : []),
+      ],
+    },
+    {
+      data: filas,
+      sheet: "Detalle",
+      columns: columnas.map((c) => ({ width: c.width })),
+      // La cabecera se queda fija al bajar por las filas
+      stickyRowsCount: 1,
+    },
+  ]).toFile(`${opciones.nombre}.xlsx`)
+}
+
+/* --------------------------------------------------------------------- pdf */
 
 export async function exportarPdf(opciones: {
   titulo: string
@@ -81,8 +234,8 @@ export async function exportarPdf(opciones: {
     head: [opciones.columnas],
     body: opciones.filas,
     styles: { fontSize: 8, cellPadding: 4 },
-    headStyles: { fillColor: [67, 56, 202], textColor: 255 },
-    alternateRowStyles: { fillColor: [246, 245, 242] },
+    headStyles: { fillColor: [15, 20, 25], textColor: 255 },
+    alternateRowStyles: { fillColor: [241, 243, 245] },
     margin: { left: 40, right: 40 },
   })
 

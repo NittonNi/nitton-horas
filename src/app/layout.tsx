@@ -1,16 +1,21 @@
 import type { Metadata, Viewport } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Archivo, IBM_Plex_Mono } from "next/font/google"
 
 import "./globals.css"
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+/** Grotesca industrial: rotulos de instrumento, no de folleto. */
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
+  display: "swap",
 })
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+/** Todas las cifras van aqui: duraciones, importes y fechas cuadran en columna. */
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
 })
 
 export const metadata: Metadata = {
@@ -23,8 +28,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f5f2" },
-    { media: "(prefers-color-scheme: dark)", color: "#17161a" },
+    { media: "(prefers-color-scheme: light)", color: "#f1f3f5" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e1317" },
   ],
 }
 
@@ -32,7 +37,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // El script de abajo pone data-theme antes de hidratar: el servidor no
+      // puede saber el tema guardado, y esa diferencia es esperada.
+      suppressHydrationWarning
+      className={`${archivo.variable} ${plexMono.variable} h-full antialiased`}
     >
       <head>
         {/* Aplica el tema guardado antes de pintar, para que no parpadee */}

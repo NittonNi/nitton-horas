@@ -11,9 +11,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts"
-import { Download, FileText, Printer } from "lucide-react"
+import { Download, FileSpreadsheet, FileText, Printer } from "lucide-react"
 
-import { exportarCsv, exportarPdf } from "@/lib/exportar"
+import { exportarCsv, exportarExcel, exportarPdf } from "@/lib/exportar"
 import { agrupar, porDia, rangos, totales } from "@/lib/informes"
 import {
   formatDateShort,
@@ -50,7 +50,7 @@ export function PanelInformes({
   const [facturable, setFacturable] = useState<Facturable>("todo")
   const [busqueda, setBusqueda] = useState("")
   const [verTodo, setVerTodo] = useState(false)
-  const [generando, setGenerando] = useState(false)
+  const [generando, setGenerando] = useState<"excel" | "pdf" | null>(null)
 
   function cambiarRango(nuevoDesde: string, nuevoHasta: string) {
     router.push(`/informes?desde=${nuevoDesde}&hasta=${nuevoHasta}`)
@@ -104,8 +104,22 @@ export function PanelInformes({
   const diasConHoras = serie.filter((d) => d.horas > 0).length
   const nombreFichero = `horas-${desde}-a-${hasta}`
 
+  async function excel() {
+    setGenerando("excel")
+    try {
+      await exportarExcel(filtradas, {
+        nombre: nombreFichero,
+        desde,
+        hasta,
+        conImportes: puedeVerImportes,
+      })
+    } finally {
+      setGenerando(null)
+    }
+  }
+
   async function pdf() {
-    setGenerando(true)
+    setGenerando("pdf")
     try {
       await exportarPdf({
         titulo: "Informe de horas",
@@ -143,7 +157,7 @@ export function PanelInformes({
         nombre: nombreFichero,
       })
     } finally {
-      setGenerando(false)
+      setGenerando(null)
     }
   }
 
@@ -276,6 +290,15 @@ export function PanelInformes({
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
+            onClick={() => void excel()}
+            disabled={filtradas.length === 0 || generando !== null}
+            className="btn btn-primary py-1.5"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            {generando === "excel" ? "Generando..." : "Excel"}
+          </button>
+          <button
+            type="button"
             onClick={() => exportarCsv(filtradas, nombreFichero)}
             disabled={filtradas.length === 0}
             className="btn py-1.5"
@@ -286,11 +309,11 @@ export function PanelInformes({
           <button
             type="button"
             onClick={() => void pdf()}
-            disabled={filtradas.length === 0 || generando}
+            disabled={filtradas.length === 0 || generando !== null}
             className="btn py-1.5"
           >
             <FileText className="h-4 w-4" />
-            {generando ? "Generando..." : "PDF"}
+            {generando === "pdf" ? "Generando..." : "PDF"}
           </button>
           <button
             type="button"

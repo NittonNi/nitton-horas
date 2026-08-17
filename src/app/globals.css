@@ -1,145 +1,223 @@
 @import "tailwindcss";
 
-/* ------------------------------------------------------------------ tokens */
-/* Base neutra tirando a calida, para que las horas en pantalla no canten
-   tanto como en una interfaz gris pura. Un unico acento indigo para acciones
-   y un verde reservado en exclusiva al cronometro en marcha. */
+/* ==========================================================================
+   Horas — sistema visual
+
+   La app es un instrumento de medida, y se comporta como tal: la interfaz es
+   monocroma y hay un unico color, el naranja, que significa siempre lo mismo
+   -aqui esta pasando el tiempo ahora mismo-. Si el naranja apareciera tambien
+   en botones o enlaces dejaria de querer decir nada.
+
+   Los numeros son el contenido de verdad, asi que van todos en monoespaciada
+   con cifras tabulares: las columnas de duraciones e importes cuadran solas.
+   ========================================================================== */
 
 :root {
-  --bg: #f6f5f2;
+  /* Papel frio, de plano tecnico, no crema */
+  --paper: #f1f3f5;
   --surface: #ffffff;
-  --surface-2: #efedea;
-  --surface-3: #e6e3de;
-  --border: #e2dfda;
-  --border-strong: #cdc9c2;
-  --text: #1b1a18;
-  --muted: #75716a;
-  --accent: #4338ca;
-  --accent-hover: #3730a3;
-  --accent-soft: #eef2ff;
+  --surface-2: #e9edf1;
+  --surface-3: #dde3e9;
+  --line: #dbe0e6;
+  --line-strong: #bfc7d1;
+
+  --ink: #0f1419;
+  --ink-soft: #39424d;
+  --muted: #69737f;
+
+  /* El unico color: la aguja del cronometro */
+  --live: #d94f04;
+  --live-soft: #fdefe7;
+  --live-line: #f3b78e;
+
+  --danger: #b3261e;
+  --danger-soft: #fbecea;
+
+  /* Alias para lo interactivo: grafito, nunca color */
+  --accent: var(--ink);
+  --accent-hover: #000000;
+  --accent-soft: #e4e9ee;
   --accent-fg: #ffffff;
-  --running: #047857;
-  --running-soft: #ecfdf5;
-  --danger: #b91c1c;
-  --danger-soft: #fef2f2;
-  --billable: #b45309;
-  --billable-soft: #fffbeb;
-  --shadow: 0 1px 2px rgb(27 26 24 / 0.06), 0 1px 3px rgb(27 26 24 / 0.04);
-  --shadow-lg: 0 4px 16px rgb(27 26 24 / 0.1), 0 1px 3px rgb(27 26 24 / 0.06);
+
+  /* El cronometro en marcha y lo facturable comparten senal */
+  --running: var(--live);
+  --running-soft: var(--live-soft);
+  --billable: var(--live);
+  --billable-soft: var(--live-soft);
+
+  --radio: 6px;
+  --radio-sm: 4px;
+  --shadow: none;
+  --shadow-lg: 0 12px 32px -8px rgb(15 20 25 / 0.18), 0 0 0 1px rgb(15 20 25 / 0.06);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #17161a;
-    --surface: #1f1e23;
-    --surface-2: #26252b;
-    --surface-3: #2f2e35;
-    --border: #33313a;
-    --border-strong: #45434e;
-    --text: #eceaef;
-    --muted: #9b96a3;
-    --accent: #818cf8;
-    --accent-hover: #a5b4fc;
-    --accent-soft: #262444;
-    --accent-fg: #14131a;
-    --running: #34d399;
-    --running-soft: #10291f;
-    --danger: #f87171;
-    --danger-soft: #2c1717;
-    --billable: #fbbf24;
-    --billable-soft: #2b2110;
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
-    --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.45);
+    --paper: #0e1317;
+    --surface: #151b21;
+    --surface-2: #1c242b;
+    --surface-3: #263038;
+    --line: #28323a;
+    --line-strong: #3b4750;
+
+    --ink: #e9eef3;
+    --ink-soft: #b6c1cb;
+    --muted: #8592a0;
+
+    --live: #ff7a33;
+    --live-soft: #2b1a10;
+    --live-line: #6b3a1c;
+
+    --danger: #f2796b;
+    --danger-soft: #2c1613;
+
+    --accent: var(--ink);
+    --accent-hover: #ffffff;
+    --accent-soft: #232c34;
+    --accent-fg: #0e1317;
+
+    --shadow-lg: 0 12px 32px -8px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.06);
   }
 }
 
 :root[data-theme="dark"] {
-  --bg: #17161a;
-  --surface: #1f1e23;
-  --surface-2: #26252b;
-  --surface-3: #2f2e35;
-  --border: #33313a;
-  --border-strong: #45434e;
-  --text: #eceaef;
-  --muted: #9b96a3;
-  --accent: #818cf8;
-  --accent-hover: #a5b4fc;
-  --accent-soft: #262444;
-  --accent-fg: #14131a;
-  --running: #34d399;
-  --running-soft: #10291f;
-  --danger: #f87171;
-  --danger-soft: #2c1717;
-  --billable: #fbbf24;
-  --billable-soft: #2b2110;
-  --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
-  --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.45);
+  --paper: #0e1317;
+  --surface: #151b21;
+  --surface-2: #1c242b;
+  --surface-3: #263038;
+  --line: #28323a;
+  --line-strong: #3b4750;
+
+  --ink: #e9eef3;
+  --ink-soft: #b6c1cb;
+  --muted: #8592a0;
+
+  --live: #ff7a33;
+  --live-soft: #2b1a10;
+  --live-line: #6b3a1c;
+
+  --danger: #f2796b;
+  --danger-soft: #2c1613;
+
+  --accent: var(--ink);
+  --accent-hover: #ffffff;
+  --accent-soft: #232c34;
+  --accent-fg: #0e1317;
+
+  --shadow-lg: 0 12px 32px -8px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.06);
 }
 
 @theme inline {
-  --color-bg: var(--bg);
+  --color-bg: var(--paper);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-surface-3: var(--surface-3);
-  --color-line: var(--border);
-  --color-line-strong: var(--border-strong);
-  --color-ink: var(--text);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-soft: var(--accent-soft);
   --color-accent-fg: var(--accent-fg);
+  --color-live: var(--live);
+  --color-live-soft: var(--live-soft);
+  --color-live-line: var(--live-line);
   --color-running: var(--running);
   --color-running-soft: var(--running-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-billable: var(--billable);
   --color-billable-soft: var(--billable-soft);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-archivo);
+  --font-mono: var(--font-plex-mono);
 }
 
-/* ------------------------------------------------------------------- base */
+/* ------------------------------------------------------------------- base
+   Todo esto va dentro de @layer base a proposito: si se queda sin capa, el
+   CSS sin capa gana a las capas y `button { color: inherit }` acaba pintando
+   el texto de los botones del mismo color que su fondo.
+   ------------------------------------------------------------------------ */
 
-* {
-  border-color: var(--border);
+@layer base {
+  * {
+    border-color: var(--line);
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-archivo), system-ui, sans-serif;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.015em;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+    color: inherit;
+  }
+
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /* El foco es del color de la senal: siempre visible, nunca discreto */
+  :focus-visible {
+    outline: 2px solid var(--live);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
 }
 
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* Las duraciones son columnas de numeros: tienen que alinearse siempre */
-.tabular {
+/* Las duraciones y los importes son columnas de numeros: tienen que alinearse */
+.tabular,
+.cifra {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
+  letter-spacing: -0.01em;
+}
+
+/** Rotulo de instrumento: pequeno, en versales y muy espaciado. */
+.rotulo {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 ::selection {
-  background: var(--accent);
-  color: var(--accent-fg);
+  background: var(--live);
+  color: #ffffff;
 }
 
-input,
-select,
-textarea,
-button {
-  font: inherit;
-  color: inherit;
-}
-
-/* Ocultar los steppers de los number en Firefox y WebKit */
-input[type="number"] {
-  -moz-appearance: textfield;
-  appearance: textfield;
-}
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ------------------------------------------------------------- componentes */
@@ -147,24 +225,24 @@ input[type="number"]::-webkit-inner-spin-button {
 @layer components {
   .card {
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 0.75rem;
-    box-shadow: var(--shadow);
+    border: 1px solid var(--line);
+    border-radius: var(--radio);
   }
 
   .field {
     width: 100%;
     background: var(--surface);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.5rem;
-    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radio-sm);
+    padding: 0.4375rem 0.625rem;
     font-size: 0.875rem;
     outline: none;
-    transition: border-color 0.12s, box-shadow 0.12s;
+    transition: border-color 0.12s;
   }
   .field:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+    border-color: var(--ink);
+    outline: 2px solid var(--live);
+    outline-offset: -1px;
   }
   .field:disabled {
     background: var(--surface-2);
@@ -176,11 +254,11 @@ input[type="number"]::-webkit-inner-spin-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.4rem;
-    border-radius: 0.5rem;
-    border: 1px solid var(--border-strong);
+    gap: 0.375rem;
+    border-radius: var(--radio-sm);
+    border: 1px solid var(--line-strong);
     background: var(--surface);
-    padding: 0.5rem 0.85rem;
+    padding: 0.4375rem 0.75rem;
     font-size: 0.875rem;
     font-weight: 500;
     white-space: nowrap;
@@ -189,15 +267,16 @@ input[type="number"]::-webkit-inner-spin-button {
   }
   .btn:hover:not(:disabled) {
     background: var(--surface-2);
+    border-color: var(--ink-soft);
   }
   .btn:disabled {
-    opacity: 0.5;
+    opacity: 0.45;
     cursor: not-allowed;
   }
 
   .btn-primary {
-    background: var(--accent);
-    border-color: var(--accent);
+    background: var(--ink);
+    border-color: var(--ink);
     color: var(--accent-fg);
   }
   .btn-primary:hover:not(:disabled) {
@@ -205,40 +284,110 @@ input[type="number"]::-webkit-inner-spin-button {
     border-color: var(--accent-hover);
   }
 
+  /* Arrancar el cronometro es la unica accion que lleva color */
+  .btn-live {
+    background: var(--live);
+    border-color: var(--live);
+    color: #ffffff;
+  }
+  .btn-live:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+
   .btn-danger {
     color: var(--danger);
-    border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+    border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+    background: transparent;
   }
   .btn-danger:hover:not(:disabled) {
     background: var(--danger-soft);
+    border-color: var(--danger);
   }
 
   .btn-ghost {
     border-color: transparent;
     background: transparent;
   }
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--surface-2);
+    border-color: transparent;
+  }
 
   .chip {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
-    border-radius: 9999px;
-    border: 1px solid var(--border);
+    border-radius: 2px;
+    border: 1px solid var(--line);
     background: var(--surface-2);
-    padding: 0.1rem 0.55rem;
-    font-size: 0.7rem;
+    padding: 0.0625rem 0.375rem;
+    font-family: var(--font-plex-mono), ui-monospace, monospace;
+    font-size: 0.6875rem;
     font-weight: 500;
-    line-height: 1.5;
+    line-height: 1.6;
   }
 
   .label {
     display: block;
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-family: var(--font-plex-mono), ui-monospace, monospace;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     color: var(--muted);
     margin-bottom: 0.3rem;
-    letter-spacing: 0.01em;
   }
+
+  /* Cabecera de tabla: mismo rotulo de instrumento */
+  .th {
+    font-family: var(--font-plex-mono), ui-monospace, monospace;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    padding: 0.5rem 0.75rem 0.5rem 0;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+}
+
+/* --------------------------------------------------------------- la regla */
+
+/**
+ * El motivo de la casa: una regla graduada. Marca el apartado abierto en el
+ * menu y acompana al cronometro cuando corre. Las marcas son las de una regla
+ * de verdad: una fina cada poco y una gruesa cada cinco.
+ */
+.regla {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--live) 0 1px,
+    transparent 1px 4px
+  );
+}
+
+.regla-h {
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--line-strong) 0 1px,
+    transparent 1px 8px
+  );
+}
+
+/* Late solo cuando el cronometro corre */
+@keyframes latido {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.latido {
+  animation: latido 2s ease-in-out infinite;
 }
 
 /* Barra de desplazamiento discreta en las tablas largas */
@@ -247,7 +396,7 @@ input[type="number"]::-webkit-inner-spin-button {
   width: 10px;
 }
 .scroll-thin::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
+  background: var(--line-strong);
   border-radius: 9999px;
   border: 3px solid var(--surface);
 }

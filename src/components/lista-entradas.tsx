@@ -40,9 +40,15 @@ export function ListaEntradas({
 
   if (dias.length === 0) {
     return (
-      <div className="card p-12 text-center">
-        <p className="text-sm text-muted">
-          Todavia no hay horas registradas en este periodo.
+      <div className="card px-6 py-12 text-center">
+        <span
+          aria-hidden
+          className="regla-h mx-auto mb-4 block h-px w-32 opacity-60"
+        />
+        <p className="text-sm font-medium">Aqui apareceran tus horas</p>
+        <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
+          Escribe arriba en que estas trabajando y dale al play, o cambia al modo
+          manual para apuntar un rato que ya has echado.
         </p>
       </div>
     )

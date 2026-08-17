@@ -10,12 +10,25 @@ Next.js 16 (App Router) + Supabase (Postgres con RLS) + Tailwind v4.
 
 - **Cronometro** (`/`): arrancar y parar, entrada manual y las ultimas semanas.
   Un unico cronometro en marcha por persona, sincronizado entre dispositivos.
+- **Calendario** (`/calendario`): la semana en rejilla. Se arrastra sobre un
+  hueco para apuntar horas, se mueve un bloque para cambiarlo de sitio y se
+  estira su borde para alargarlo.
 - **Semana** (`/semana`): hoja de horas editable, una fila por proyecto y
   descripcion. Las celdas aceptan `1:30`, `90m` o `1,5`.
 - **Informes** (`/informes`): filtros, grafico por dia, desgloses por proyecto,
-  persona y cliente, y exportacion a CSV y PDF.
+  persona y cliente, y descarga en Excel, CSV o PDF.
 - **Gestion** (`/gestion`): clientes, proyectos, tareas, etiquetas, equipo,
   tarifas e importacion desde Clockify.
+
+### Horas compartidas
+
+Una reunion la apunta **una** persona y elige a quien mas le cuenta. A los
+demas no se les mete nada: les llega una propuesta que aceptan o rechazan, como
+la invitacion de un calendario. Solo al aceptarla se convierte en una entrada
+suya, editable y borrable como cualquier otra.
+
+Se hace desde el calendario, en *Tambien cuenta para*. Las propuestas que te
+esperan salen arriba del todo en el cronometro.
 
 ## Puesta en marcha
 
@@ -111,6 +124,24 @@ por ultimo la general. A igualdad de ambito gana la mas reciente que ya este
 vigente. Las tarifas no se editan: se anade una nueva con su fecha de entrada.
 
 Sin tarifa general, las horas facturables sin tarifa propia salen a cero euros.
+
+## Aspecto
+
+La interfaz es monocroma y hay **un unico color**, el naranja, que siempre
+quiere decir lo mismo: aqui esta pasando el tiempo ahora. Si apareciera tambien
+en botones o enlaces dejaria de significar nada.
+
+Los numeros son el contenido de verdad, asi que van todos en monoespaciada con
+cifras tabulares (IBM Plex Mono) y los rotulos en versales espaciadas, como los
+de un instrumento de medida. El texto corrido va en Archivo.
+
+Los componentes con comportamiento -menus, dialogos- son primitivas de
+[Radix](https://www.radix-ui.com/primitives) **sin estilos**: aportan
+accesibilidad y teclado, y el aspecto se define entero en `globals.css`.
+
+Un aviso para quien toque el CSS: los `reset` de elementos van dentro de
+`@layer base`. Fuera de capa ganarian a `@layer components`, y `button { color:
+inherit }` acabaria pintando el texto de los botones del color de su fondo.
 
 ## Base de datos
 

@@ -60,6 +60,13 @@ export async function cargarEntradas(opciones: {
   return (data ?? []) as EntradaVista[]
 }
 
+/** Horas que otra persona ha apuntado contando conmigo, sin contestar todavia. */
+export async function cargarPropuestas(espacioId: string) {
+  const supabase = await createClient()
+  const { data } = await supabase.rpc("mis_invitaciones", { p_workspace: espacioId })
+  return data ?? []
+}
+
 /** El equipo de un espacio, con el rol que tiene cada uno alli. */
 export async function cargarMiembros(espacioId: string): Promise<Miembro[]> {
   const supabase = await createClient()

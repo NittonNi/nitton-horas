@@ -1,8 +1,11 @@
+import Link from "next/link"
+
 import { getSesion } from "@/lib/sesion"
 import { veTodo } from "@/lib/roles"
-import { cargarCatalogo, cargarEntradas } from "@/lib/datos"
+import { cargarCatalogo, cargarEntradas, cargarPropuestas } from "@/lib/datos"
 import { BarraCronometro } from "@/components/barra-cronometro"
 import { ListaEntradas } from "@/components/lista-entradas"
+import { PropuestasPendientes } from "@/components/propuestas-pendientes"
 import {
   addDays,
   formatDurationShort,
@@ -19,9 +22,10 @@ export default async function PaginaCronometro() {
   const lunes = toDateKey(startOfWeek(new Date()))
   const desde = toDateKey(addDays(new Date(), -20))
 
-  const [catalogo, entradas] = await Promise.all([
+  const [catalogo, entradas, propuestas] = await Promise.all([
     cargarCatalogo(espacio.id),
     cargarEntradas({ espacioId: espacio.id, desde, hasta: hoy, userId: perfil.id }),
+    cargarPropuestas(espacio.id),
   ])
 
   const cerradas = entradas.filter((e) => e.end_at)
@@ -38,27 +42,38 @@ export default async function PaginaCronometro() {
     <div className="space-y-5">
       <BarraCronometro catalogo={catalogo} />
 
-      <div className="grid grid-cols-3 gap-3">
+      <PropuestasPendientes propuestas={propuestas} />
+
+      <div className="card grid grid-cols-3 divide-x divide-line">
         <Resumen etiqueta="Hoy" valor={formatDurationShort(segsHoy)} />
         <Resumen etiqueta="Esta semana" valor={formatDurationShort(segsSemana)} />
         <Resumen
           etiqueta="Facturable"
           valor={formatDurationShort(segsFacturables)}
-          acento
+          pie={
+            segsSemana > 0
+              ? `${Math.round((segsFacturables / segsSemana) * 100)}% de la semana`
+              : undefined
+          }
         />
       </div>
 
       {catalogo.proyectos.length === 0 && (
-        <p className="rounded-lg border border-accent/25 bg-accent-soft px-4 py-3 text-sm">
-          Todavia no hay proyectos.{" "}
-          {veTodo(rol) ? (
-            <a href="/gestion" className="font-medium text-accent underline">
-              Crea el primero en Gestion
-            </a>
-          ) : (
-            "Pide a un administrador que cree los proyectos."
+        <div className="card flex flex-wrap items-center gap-3 p-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium">Aun no hay proyectos</p>
+            <p className="mt-0.5 text-sm text-muted">
+              {veTodo(rol)
+                ? "Las horas se apuntan contra un proyecto. Crea el primero y ya puedes cronometrar."
+                : "Las horas se apuntan contra un proyecto. Pide a un administrador que cree los del equipo."}
+            </p>
+          </div>
+          {veTodo(rol) && (
+            <Link href="/gestion" className="btn btn-primary">
+              Crear proyecto
+            </Link>
           )}
-        </p>
+        </div>
       )}
 
       <ListaEntradas entradas={entradas} catalogo={catalogo} />
@@ -69,20 +84,17 @@ export default async function PaginaCronometro() {
 function Resumen({
   etiqueta,
   valor,
-  acento = false,
+  pie,
 }: {
   etiqueta: string
   valor: string
-  acento?: boolean
+  pie?: string
 }) {
   return (
-    <div className="card px-4 py-3">
-      <p className="text-xs font-medium text-muted">{etiqueta}</p>
-      <p
-        className={`tabular mt-0.5 text-xl font-semibold ${acento ? "text-billable" : ""}`}
-      >
-        {valor}
-      </p>
+    <div className="px-4 py-3">
+      <p className="rotulo">{etiqueta}</p>
+      <p className="cifra mt-1 text-2xl font-semibold leading-none">{valor}</p>
+      <p className="mt-1.5 h-4 text-xs text-muted">{pie}</p>
     </div>
   )
 }

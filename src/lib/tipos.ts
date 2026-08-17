@@ -99,19 +99,24 @@ export const BORRADOR_VACIO: BorradorEntrada = {
   tagIds: [],
 }
 
+/**
+ * Colores de proyecto: una rueda completa pero toda a la misma saturacion y
+ * luminosidad, para que ninguno grite mas que los demas y todos se lean igual
+ * de bien sobre papel claro y sobre oscuro. Se evita el naranja de la senal.
+ */
 export const COLORES_PROYECTO = [
-  "#4338ca",
-  "#0e7490",
-  "#047857",
-  "#b45309",
-  "#be123c",
-  "#7c3aed",
-  "#0369a1",
-  "#65a30d",
-  "#c2410c",
-  "#9d174d",
-  "#475569",
-  "#a16207",
+  "#3d6fb4",
+  "#2f7fa6",
+  "#2e8481",
+  "#3f8558",
+  "#6d8a34",
+  "#9a7b22",
+  "#9c5a2c",
+  "#b24a3e",
+  "#a34468",
+  "#7b5aa6",
+  "#566b85",
+  "#7a6a5d",
 ] as const
 
 /** Husos con los que trabaja la gente que va a usar esto. */

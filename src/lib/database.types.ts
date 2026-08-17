@@ -51,6 +51,82 @@ export type Database = {
           },
         ]
       }
+      entry_invitations: {
+        Row: {
+          billable: boolean
+          created_at: string
+          created_entry_id: string | null
+          description: string
+          end_at: string
+          from_user: string
+          id: string
+          origin_entry_id: string | null
+          project_id: string | null
+          responded_at: string | null
+          start_at: string
+          status: string
+          task_id: string | null
+          to_user: string
+          workspace_id: string
+        }
+        Insert: {
+          billable?: boolean
+          created_at?: string
+          created_entry_id?: string | null
+          description?: string
+          end_at: string
+          from_user: string
+          id?: string
+          origin_entry_id?: string | null
+          project_id?: string | null
+          responded_at?: string | null
+          start_at: string
+          status?: string
+          task_id?: string | null
+          to_user: string
+          workspace_id: string
+        }
+        Update: {
+          billable?: boolean
+          created_at?: string
+          created_entry_id?: string | null
+          description?: string
+          end_at?: string
+          from_user?: string
+          id?: string
+          origin_entry_id?: string | null
+          project_id?: string | null
+          responded_at?: string | null
+          start_at?: string
+          status?: string
+          task_id?: string | null
+          to_user?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entry_invitations_from_user_fkey"
+            columns: ["from_user"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_invitations_to_user_fkey"
+            columns: ["to_user"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_invitations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitations: {
         Row: {
           accepted_at: string | null
@@ -661,7 +737,47 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      mis_invitaciones: {
+        Args: { p_workspace: string }
+        Returns: {
+          id: string
+          de: string
+          description: string
+          start_at: string
+          end_at: string
+          billable: boolean
+          project_name: string | null
+          project_color: string | null
+          created_at: string
+        }[]
+      }
       my_email: { Args: never; Returns: string }
+      responder_invitacion: {
+        Args: { p_invitacion: string; p_aceptar: boolean }
+        Returns: {
+          billable: boolean
+          created_at: string
+          created_entry_id: string | null
+          description: string
+          end_at: string
+          from_user: string
+          id: string
+          origin_entry_id: string | null
+          project_id: string | null
+          responded_at: string | null
+          start_at: string
+          status: string
+          task_id: string | null
+          to_user: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "entry_invitations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       my_role: {
         Args: { p_workspace: string }
         Returns: Database["public"]["Enums"]["user_role"]

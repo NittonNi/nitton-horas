@@ -504,7 +504,9 @@ function ColumnaDia({
             }}
             title={`${comoHora(desde)} - ${comoHora(hasta)}  ${bloque.entrada.description || ""}`}
             className={cn(
-              "absolute overflow-hidden rounded-[3px] border-l-[3px] bg-surface px-1.5 py-1 text-left shadow-sm ring-1 ring-inset ring-line transition-shadow",
+              "absolute overflow-hidden rounded-[3px] border-l-[3px] bg-surface px-1.5 py-1 text-left shadow-sm ring-1 ring-inset transition-shadow",
+              // Lo que se cobra va enmarcado en verde; el resto, en linea neutra
+              bloque.entrada.billable ? "ring-billable-line" : "ring-line",
               editable && "cursor-grab active:cursor-grabbing",
               arrastrandose && "opacity-80 shadow-lg",
             )}
@@ -733,7 +735,7 @@ function DialogoNuevaEntrada({
               className={cn(
                 "flex h-9 items-center gap-1.5 rounded-[var(--radio-sm)] border px-3 text-sm transition",
                 facturable
-                  ? "border-billable bg-billable-soft text-billable"
+                  ? "border-billable-line bg-billable-soft text-billable"
                   : "border-line-strong bg-surface text-muted hover:bg-surface-2",
               )}
             >

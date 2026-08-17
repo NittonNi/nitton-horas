@@ -13,6 +13,7 @@ import {
   FolderKanban,
   LogOut,
   Plus,
+  Settings2,
   Square,
   Timer,
   User,
@@ -52,12 +53,15 @@ const GRUPOS: {
   },
   {
     titulo: "Revisar",
-    enlaces: [{ href: "/informes", etiqueta: "Informes", icono: BarChart3 }],
+    enlaces: [
+      { href: "/proyectos", etiqueta: "Proyectos", icono: FolderKanban },
+      { href: "/informes", etiqueta: "Informes", icono: BarChart3 },
+    ],
   },
   {
     titulo: "Ajustar",
     soloGestores: true,
-    enlaces: [{ href: "/gestion", etiqueta: "Gestion", icono: FolderKanban }],
+    enlaces: [{ href: "/gestion", etiqueta: "Gestion", icono: Settings2 }],
   },
 ]
 
@@ -82,15 +86,15 @@ export function Armazon({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh">
       {/* ------------------------------------------------ barra lateral */}
-      <aside className="no-print sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-line bg-surface lg:flex">
-        <div className="border-b border-line p-2">
+      <aside className="no-print sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-lateral-line bg-lateral text-lateral-ink lg:flex">
+        <div className="border-b border-lateral-line p-2">
           <SelectorEspacio />
         </div>
 
         <nav className="flex-1 space-y-4 overflow-y-auto p-2 pt-3">
           {grupos.map((grupo) => (
             <div key={grupo.titulo}>
-              <p className="rotulo px-3 pb-1.5">{grupo.titulo}</p>
+              <p className="rotulo px-3 pb-1.5 text-lateral-muted">{grupo.titulo}</p>
               <ul className="space-y-0.5">
                 {grupo.enlaces.map(({ href, etiqueta, icono: Icono, exacto }) => {
                   const activo = estaActivo(pathname, href, exacto)
@@ -102,8 +106,8 @@ export function Armazon({ children }: { children: React.ReactNode }) {
                         className={cn(
                           "relative flex items-center gap-2.5 rounded-[var(--radio-sm)] py-2 pl-3 pr-2 text-sm font-medium transition",
                           activo
-                            ? "bg-accent-soft text-ink"
-                            : "text-muted hover:bg-surface-2 hover:text-ink",
+                            ? "bg-lateral-2 text-lateral-ink"
+                            : "text-lateral-muted hover:bg-lateral-2 hover:text-lateral-ink",
                         )}
                       >
                         {/* la regla: marca el apartado abierto */}
@@ -124,7 +128,7 @@ export function Armazon({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <div className="space-y-2 border-t border-line p-2">
+        <div className="space-y-2 border-t border-lateral-line p-2">
           <CronometroLateral />
           <MenuUsuario />
         </div>
@@ -132,7 +136,7 @@ export function Armazon({ children }: { children: React.ReactNode }) {
 
       {/* ------------------------------------------------------ contenido */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="no-print sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-line bg-surface/90 px-4 backdrop-blur lg:hidden">
+        <header className="no-print sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-lateral-line bg-lateral px-4 text-lateral-ink lg:hidden">
           <SelectorEspacio />
           <div className="ml-auto flex shrink-0 items-center gap-2">
             <CronometroPastilla />
@@ -157,17 +161,17 @@ function SelectorEspacio() {
 
   return (
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger className="flex w-full items-center gap-2.5 rounded-[var(--radio-sm)] p-1.5 text-left transition hover:bg-surface-2">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radio-sm)] bg-ink text-[13px] font-semibold text-[color:var(--accent-fg)]">
+      <DropdownMenu.Trigger className="flex w-full items-center gap-2.5 rounded-[var(--radio-sm)] p-1.5 text-left transition hover:bg-lateral-2 lg:hover:bg-lateral-2">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radio-sm)] bg-lateral-2 text-[13px] font-semibold text-lateral-ink">
           {espacio.name.slice(0, 2).toUpperCase()}
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-semibold tracking-tight">
             {espacio.name}
           </span>
-          <span className="rotulo block truncate leading-tight">Espacio</span>
+          <span className="rotulo block truncate leading-tight text-lateral-muted">Espacio</span>
         </span>
-        <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted" />
+        <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-lateral-muted" />
       </DropdownMenu.Trigger>
 
       <DropdownMenu.Portal>
@@ -294,7 +298,7 @@ function BarraInferior() {
   const pathname = usePathname()
 
   return (
-    <nav className="no-print fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-surface/95 backdrop-blur lg:hidden">
+    <nav className="no-print fixed inset-x-0 bottom-0 z-30 flex border-t border-lateral-line bg-lateral pb-[env(safe-area-inset-bottom)] lg:hidden">
       {enlaces.map(({ href, etiqueta, icono: Icono, exacto }) => {
         const activo = estaActivo(pathname, href, exacto)
         return (
@@ -304,7 +308,7 @@ function BarraInferior() {
             aria-current={activo ? "page" : undefined}
             className={cn(
               "relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition",
-              activo ? "text-ink" : "text-muted",
+              activo ? "text-lateral-ink" : "text-lateral-muted",
             )}
           >
             {activo && (
@@ -340,8 +344,8 @@ function MenuUsuario() {
 
   return (
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger className="flex min-w-0 flex-1 items-center gap-2 rounded-[var(--radio-sm)] p-1.5 text-left transition hover:bg-surface-2">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-line-strong bg-surface-2 text-[11px] font-semibold">
+      <DropdownMenu.Trigger className="flex min-w-0 flex-1 items-center gap-2 rounded-[var(--radio-sm)] p-1.5 text-left transition hover:bg-lateral-2">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-lateral-line bg-lateral-2 text-[11px] font-semibold">
           {iniciales || <User className="h-3.5 w-3.5" />}
         </span>
         <span className="hidden min-w-0 flex-1 truncate text-sm lg:block">

@@ -154,7 +154,7 @@ export function BarraCronometro({ catalogo }: { catalogo: Catalogo }) {
             className={cn(
               "flex h-9 w-9 items-center justify-center rounded-lg border transition",
               activo.billable
-                ? "border-billable/40 bg-billable-soft text-billable"
+                ? "border-billable-line bg-billable-soft text-billable"
                 : "border-line-strong bg-surface text-muted hover:bg-surface-2",
             )}
           >

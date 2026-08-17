@@ -179,8 +179,12 @@ function FilaEntrada({
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
           {entrada.project_name ? (
             <span className="flex items-center gap-1.5">
+              {/* El punto es del proyecto; el aro verde dice que se cobra */}
               <span
-                className="h-2 w-2 rounded-full"
+                className={cn(
+                  "h-2 w-2 rounded-full",
+                  entrada.billable && "marca-facturable",
+                )}
                 style={{ background: entrada.project_color ?? "#888" }}
               />
               <span className="text-muted">

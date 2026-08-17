@@ -244,7 +244,7 @@ export function DialogoEntrada({
               className={cn(
                 "flex h-9 items-center gap-1.5 rounded-lg border px-3 text-sm transition",
                 facturable
-                  ? "border-billable/40 bg-billable-soft text-billable"
+                  ? "border-billable-line bg-billable-soft text-billable"
                   : "border-line-strong bg-surface text-muted hover:bg-surface-2",
               )}
             >

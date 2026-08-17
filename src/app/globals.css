@@ -3,108 +3,143 @@
 /* ==========================================================================
    Horas — sistema visual
 
-   La app es un instrumento de medida, y se comporta como tal: la interfaz es
-   monocroma y hay un unico color, el naranja, que significa siempre lo mismo
-   -aqui esta pasando el tiempo ahora mismo-. Si el naranja apareciera tambien
-   en botones o enlaces dejaria de querer decir nada.
+   Solo hay dos colores, y cada uno significa una cosa en toda la app:
+
+     naranja  el tiempo esta corriendo ahora mismo
+     verde    esto se cobra
+
+   Todo lo demas -botones, enlaces, lo seleccionado- es grafito. Si el naranja
+   o el verde aparecieran tambien ahi dejarian de querer decir nada.
 
    Los numeros son el contenido de verdad, asi que van todos en monoespaciada
    con cifras tabulares: las columnas de duraciones e importes cuadran solas.
+
+   La barra lateral va oscura en los dos temas, como el lomo de un cuaderno:
+   separa de un vistazo donde se navega de donde se trabaja.
    ========================================================================== */
 
 :root {
-  /* Papel frio, de plano tecnico, no crema */
-  --paper: #f1f3f5;
+  /* Papel neutro con un punto calido: cansa menos que el gris puro */
+  --paper: #efeeea;
   --surface: #ffffff;
-  --surface-2: #e9edf1;
-  --surface-3: #dde3e9;
-  --line: #dbe0e6;
-  --line-strong: #bfc7d1;
+  --surface-2: #f0efec;
+  --surface-3: #e3e1dc;
+  --line: #e0ded8;
+  --line-strong: #c2bfb7;
 
-  --ink: #0f1419;
-  --ink-soft: #39424d;
-  --muted: #69737f;
+  --ink: #16181a;
+  --ink-soft: #40454a;
+  --muted: #757873;
 
-  /* El unico color: la aguja del cronometro */
-  --live: #d94f04;
-  --live-soft: #fdefe7;
-  --live-line: #f3b78e;
+  /* La barra lateral es oscura en los dos temas: es el lomo del cuaderno */
+  --lateral: #16191c;
+  --lateral-2: #21262a;
+  --lateral-ink: #eceae5;
+  --lateral-muted: #8d938f;
+  --lateral-line: #2b3034;
+
+  /* Ahora mismo esta corriendo el tiempo */
+  --live: #e2580a;
+  --live-soft: #fbeee4;
+  --live-line: #f0b385;
+
+  /* Esto se cobra */
+  --billable: #157a5b;
+  --billable-soft: #e5f1eb;
+  --billable-line: #9ccebb;
 
   --danger: #b3261e;
   --danger-soft: #fbecea;
 
-  /* Alias para lo interactivo: grafito, nunca color */
+  /* Lo interactivo es grafito, nunca color */
   --accent: var(--ink);
   --accent-hover: #000000;
-  --accent-soft: #e4e9ee;
+  --accent-soft: #e6e4df;
   --accent-fg: #ffffff;
 
-  /* El cronometro en marcha y lo facturable comparten senal */
   --running: var(--live);
   --running-soft: var(--live-soft);
-  --billable: var(--live);
-  --billable-soft: var(--live-soft);
 
-  --radio: 6px;
-  --radio-sm: 4px;
+  --radio: 8px;
+  --radio-sm: 5px;
   --shadow: none;
-  --shadow-lg: 0 12px 32px -8px rgb(15 20 25 / 0.18), 0 0 0 1px rgb(15 20 25 / 0.06);
+  --shadow-lg: 0 16px 40px -12px rgb(22 24 26 / 0.22), 0 0 0 1px rgb(22 24 26 / 0.06);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #0e1317;
-    --surface: #151b21;
-    --surface-2: #1c242b;
-    --surface-3: #263038;
-    --line: #28323a;
-    --line-strong: #3b4750;
+    --paper: #101214;
+    --surface: #17191c;
+    --surface-2: #1e2124;
+    --surface-3: #282c30;
+    --line: #292d31;
+    --line-strong: #3c4145;
 
-    --ink: #e9eef3;
-    --ink-soft: #b6c1cb;
-    --muted: #8592a0;
+    --ink: #eceae5;
+    --ink-soft: #b8b9b5;
+    --muted: #8b8e8a;
+
+    --lateral: #0a0b0d;
+    --lateral-2: #1a1d20;
+    --lateral-ink: #eceae5;
+    --lateral-muted: #83867f;
+    --lateral-line: #212528;
 
     --live: #ff7a33;
-    --live-soft: #2b1a10;
+    --live-soft: #2a1810;
     --live-line: #6b3a1c;
+
+    --billable: #3fbf95;
+    --billable-soft: #10241d;
+    --billable-line: #1f5a45;
 
     --danger: #f2796b;
     --danger-soft: #2c1613;
 
     --accent: var(--ink);
     --accent-hover: #ffffff;
-    --accent-soft: #232c34;
-    --accent-fg: #0e1317;
+    --accent-soft: #242729;
+    --accent-fg: #101214;
 
-    --shadow-lg: 0 12px 32px -8px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.06);
+    --shadow-lg: 0 16px 40px -12px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 255 255 / 0.07);
   }
 }
 
 :root[data-theme="dark"] {
-  --paper: #0e1317;
-  --surface: #151b21;
-  --surface-2: #1c242b;
-  --surface-3: #263038;
-  --line: #28323a;
-  --line-strong: #3b4750;
+  --paper: #101214;
+  --surface: #17191c;
+  --surface-2: #1e2124;
+  --surface-3: #282c30;
+  --line: #292d31;
+  --line-strong: #3c4145;
 
-  --ink: #e9eef3;
-  --ink-soft: #b6c1cb;
-  --muted: #8592a0;
+  --ink: #eceae5;
+  --ink-soft: #b8b9b5;
+  --muted: #8b8e8a;
+
+  --lateral: #0a0b0d;
+  --lateral-2: #1a1d20;
+  --lateral-ink: #eceae5;
+  --lateral-muted: #83867f;
+  --lateral-line: #212528;
 
   --live: #ff7a33;
-  --live-soft: #2b1a10;
+  --live-soft: #2a1810;
   --live-line: #6b3a1c;
+
+  --billable: #3fbf95;
+  --billable-soft: #10241d;
+  --billable-line: #1f5a45;
 
   --danger: #f2796b;
   --danger-soft: #2c1613;
 
   --accent: var(--ink);
   --accent-hover: #ffffff;
-  --accent-soft: #232c34;
-  --accent-fg: #0e1317;
+  --accent-soft: #242729;
+  --accent-fg: #101214;
 
-  --shadow-lg: 0 12px 32px -8px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.06);
+  --shadow-lg: 0 16px 40px -12px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 255 255 / 0.07);
 }
 
 @theme inline {
@@ -130,7 +165,13 @@
   --color-danger-soft: var(--danger-soft);
   --color-billable: var(--billable);
   --color-billable-soft: var(--billable-soft);
-  --font-sans: var(--font-archivo);
+  --color-billable-line: var(--billable-line);
+  --color-lateral: var(--lateral);
+  --color-lateral-2: var(--lateral-2);
+  --color-lateral-ink: var(--lateral-ink);
+  --color-lateral-muted: var(--lateral-muted);
+  --color-lateral-line: var(--lateral-line);
+  --font-sans: var(--font-instrument);
   --font-mono: var(--font-plex-mono);
 }
 
@@ -148,7 +189,7 @@
   body {
     background: var(--paper);
     color: var(--ink);
-    font-family: var(--font-archivo), system-ui, sans-serif;
+    font-family: var(--font-instrument), system-ui, sans-serif;
     font-size: 0.9375rem;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
@@ -186,25 +227,6 @@
   }
 }
 
-/* Las duraciones y los importes son columnas de numeros: tienen que alinearse */
-.tabular,
-.cifra {
-  font-family: var(--font-plex-mono), ui-monospace, monospace;
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum";
-  letter-spacing: -0.01em;
-}
-
-/** Rotulo de instrumento: pequeno, en versales y muy espaciado. */
-.rotulo {
-  font-family: var(--font-plex-mono), ui-monospace, monospace;
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
 ::selection {
   background: var(--live);
   color: #ffffff;
@@ -223,6 +245,28 @@
 /* ------------------------------------------------------------- componentes */
 
 @layer components {
+  /* Van en esta capa, no sueltas: asi una utilidad de Tailwind puede
+     cambiarles el color o el tamano cuando haga falta. */
+
+  /** Duraciones e importes: columnas de numeros que tienen que alinearse. */
+  .tabular,
+  .cifra {
+    font-family: var(--font-plex-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    letter-spacing: -0.01em;
+  }
+
+  /** Rotulo de instrumento: pequeno, en versales y muy espaciado. */
+  .rotulo {
+    font-family: var(--font-plex-mono), ui-monospace, monospace;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
   .card {
     background: var(--surface);
     border: 1px solid var(--line);
@@ -317,7 +361,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
-    border-radius: 2px;
+    border-radius: 3px;
     border: 1px solid var(--line);
     background: var(--surface-2);
     padding: 0.0625rem 0.375rem;
@@ -325,6 +369,22 @@
     font-size: 0.6875rem;
     font-weight: 500;
     line-height: 1.6;
+  }
+
+  /** Se cobra: mismo verde en el icono, en el importe y en el marco. */
+  .chip-facturable {
+    border-color: var(--billable-line);
+    background: var(--billable-soft);
+    color: var(--billable);
+  }
+
+  /**
+   * Marca de facturable sobre la linea de color del proyecto: un recuadro
+   * verde alrededor de la barra, para distinguirlo sin tocar el color propio
+   * del proyecto.
+   */
+  .marca-facturable {
+    box-shadow: 0 0 0 1.5px var(--billable);
   }
 
   .label {

@@ -752,6 +752,17 @@ export type Database = {
         }[]
       }
       my_email: { Args: never; Returns: string }
+      resumen_proyectos: {
+        Args: { p_workspace: string }
+        Returns: {
+          project_id: string
+          segundos: number
+          segundos_facturables: number
+          importe: number
+          entradas: number
+          ultima: string | null
+        }[]
+      }
       responder_invitacion: {
         Args: { p_invitacion: string; p_aceptar: boolean }
         Returns: {

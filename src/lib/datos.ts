@@ -41,6 +41,8 @@ export async function cargarEntradas(opciones: {
   desde: string
   hasta: string
   userId?: string
+  projectId?: string
+  limite?: number
 }): Promise<EntradaVista[]> {
   const supabase = await createClient()
 
@@ -53,6 +55,8 @@ export async function cargarEntradas(opciones: {
     .order("start_at", { ascending: false })
 
   if (opciones.userId) consulta = consulta.eq("user_id", opciones.userId)
+  if (opciones.projectId) consulta = consulta.eq("project_id", opciones.projectId)
+  if (opciones.limite) consulta = consulta.limit(opciones.limite)
 
   const { data, error } = await consulta
   if (error) throw error

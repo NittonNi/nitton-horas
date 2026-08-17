@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from "next"
-import { Archivo, IBM_Plex_Mono } from "next/font/google"
+import { IBM_Plex_Mono, Instrument_Sans } from "next/font/google"
 
 import "./globals.css"
 
-/** Grotesca industrial: rotulos de instrumento, no de folleto. */
-const archivo = Archivo({
-  variable: "--font-archivo",
+/** Humanista y algo estrecha: aguanta bien la letra pequena de las tablas. */
+const instrument = Instrument_Sans({
+  variable: "--font-instrument",
   subsets: ["latin"],
   display: "swap",
 })
@@ -28,8 +28,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f1f3f5" },
-    { media: "(prefers-color-scheme: dark)", color: "#0e1317" },
+    { media: "(prefers-color-scheme: light)", color: "#efeeea" },
+    { media: "(prefers-color-scheme: dark)", color: "#101214" },
   ],
 }
 
@@ -40,7 +40,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       // El script de abajo pone data-theme antes de hidratar: el servidor no
       // puede saber el tema guardado, y esa diferencia es esperada.
       suppressHydrationWarning
-      className={`${archivo.variable} ${plexMono.variable} h-full antialiased`}
+      className={`${instrument.variable} ${plexMono.variable} h-full antialiased`}
     >
       <head>
         {/* Aplica el tema guardado antes de pintar, para que no parpadee */}

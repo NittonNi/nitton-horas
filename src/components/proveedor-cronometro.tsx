@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { aEntradaEnMarcha, SELECT_EN_MARCHA } from "@/lib/cronometro"
-import type { BorradorEntrada, EntradaEnMarcha } from "@/lib/tipos"
+import type { BorradorEntrada, Entrada, EntradaEnMarcha } from "@/lib/tipos"
 
 type Contexto = {
   enMarcha: EntradaEnMarcha | null
@@ -21,7 +21,8 @@ type Contexto = {
   segundos: number
   cargando: boolean
   arrancar: (borrador: BorradorEntrada) => Promise<void>
-  parar: () => Promise<void>
+  /** Devuelve la entrada ya cerrada: hace falta para proponerla a otros. */
+  parar: () => Promise<Entrada | null>
   descartar: () => Promise<void>
   /** Vuelve a leer el cronómetro del servidor (otra pestaña, el movil...). */
   recargar: () => Promise<void>
@@ -126,12 +127,14 @@ export function ProveedorCronometro({
   const parar = useCallback(async () => {
     setCargando(true)
     try {
-      const { error } = await supabaseRef.current.rpc("stop_timer")
+      const { data, error } = await supabaseRef.current.rpc("stop_timer")
       if (error) throw error
       setEnMarcha(null)
       router.refresh()
+      return (data as Entrada | null) ?? null
     } catch (err) {
       alert(mensajeError(err))
+      return null
     } finally {
       setCargando(false)
     }

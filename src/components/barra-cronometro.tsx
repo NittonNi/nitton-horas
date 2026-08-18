@@ -11,18 +11,32 @@ import { useSesion } from "@/components/proveedor-sesion"
 import { SelectorProyecto } from "@/components/selector-proyecto"
 import { SelectorEtiquetas } from "@/components/selector-etiquetas"
 import { SelectorEdicion } from "@/components/selector-edicion"
+import { SelectorPersonas } from "@/components/selector-personas"
+import { proponerHoras } from "@/lib/compartir"
 import {
   combineDateAndTime,
   formatDuration,
   parseDurationToSeconds,
   todayKey,
 } from "@/lib/time"
-import { BORRADOR_VACIO, type BorradorEntrada, type Catalogo } from "@/lib/tipos"
+import {
+  BORRADOR_VACIO,
+  type BorradorEntrada,
+  type Catalogo,
+  type Miembro,
+} from "@/lib/tipos"
 import { cn } from "@/lib/utils"
 
 type Modo = "cronometro" | "manual"
 
-export function BarraCronometro({ catalogo }: { catalogo: Catalogo }) {
+export function BarraCronometro({
+  catalogo,
+  miembros = [],
+}: {
+  catalogo: Catalogo
+  /** El resto del equipo, para poder compartir estas horas. */
+  miembros?: Miembro[]
+}) {
   const router = useRouter()
   const { perfil, espacio } = useSesion()
   const { enMarcha, segundos, arrancar, parar, descartar, cargando, recargar } =
@@ -33,6 +47,9 @@ export function BarraCronometro({ catalogo }: { catalogo: Catalogo }) {
   const [guardando, setGuardando] = useState(false)
   // Cuando el espacio no deja parar sin proyecto, hay que decirlo aquí mismo
   const [faltaProyecto, setFaltaProyecto] = useState(false)
+  // A quien mas le cuentan estas horas. No se les apunta: se les propone.
+  const [compartidos, setCompartidos] = useState<string[]>([])
+  const [avisoCompartir, setAvisoCompartir] = useState<string | null>(null)
   const supabase = useRef(createClient())
 
   // Mientras corre el cronómetro, la barra muestra y edita esa entrada
@@ -111,6 +128,49 @@ export function BarraCronometro({ catalogo }: { catalogo: Catalogo }) {
     })
   }
 
+  /** Al cerrar una entrada se propone a quien se haya elegido arriba. */
+  async function compartirSiHaceFalta(entrada: {
+    id: string
+    project_id: string | null
+    edition_id: string | null
+    task_id: string | null
+    description: string
+    billable: boolean
+    start_at: string
+    end_at: string | null
+  }) {
+    if (compartidos.length === 0 || !entrada.end_at) return
+
+    const { error } = await proponerHoras(supabase.current, {
+      espacioId: espacio.id,
+      entradaId: entrada.id,
+      deQuien: perfil.id,
+      aQuienes: compartidos,
+      project_id: entrada.project_id,
+      edition_id: entrada.edition_id,
+      task_id: entrada.task_id,
+      description: entrada.description,
+      start_at: entrada.start_at,
+      end_at: entrada.end_at,
+      billable: entrada.billable,
+    })
+
+    if (error) {
+      setAvisoCompartir(
+        "Tus horas se han guardado, pero no se ha podido avisar al resto: " +
+          mensajeError(error),
+      )
+      return
+    }
+
+    setAvisoCompartir(
+      compartidos.length === 1
+        ? "Propuesta enviada. Hasta que la acepte no se le apunta nada."
+        : "Propuestas enviadas. Hasta que las acepten no se les apunta nada.",
+    )
+    setCompartidos([])
+  }
+
   async function alPulsarPrincipal() {
     if (enMarcha) {
       // Nada de horas huérfanas: si el espacio lo exige, no se para sin proyecto
@@ -118,12 +178,16 @@ export function BarraCronometro({ catalogo }: { catalogo: Catalogo }) {
         setFaltaProyecto(true)
         return
       }
-      await parar()
-    } else {
-      await arrancar({ ...borrador, description: descripcionLocal })
-      setBorrador(BORRADOR_VACIO)
-      setDescripcionLocal("")
+      setAvisoCompartir(null)
+      const cerrada = await parar()
+      if (cerrada) await compartirSiHaceFalta(cerrada)
+      return
     }
+
+    setAvisoCompartir(null)
+    await arrancar({ ...borrador, description: descripcionLocal })
+    setBorrador(BORRADOR_VACIO)
+    setDescripcionLocal("")
   }
 
   return (
@@ -238,7 +302,15 @@ export function BarraCronometro({ catalogo }: { catalogo: Catalogo }) {
               borrador={{ ...borrador, description: descripcionLocal }}
               guardando={guardando}
               setGuardando={setGuardando}
-              alGuardar={() => {
+              alGuardar={async (creada) => {
+                await compartirSiHaceFalta({
+                  ...creada,
+                  project_id: borrador.project_id,
+                  edition_id: borrador.edition_id,
+                  task_id: borrador.task_id,
+                  description: descripcionLocal,
+                  billable: borrador.billable,
+                })
                 setBorrador(BORRADOR_VACIO)
                 setDescripcionLocal("")
                 router.refresh()
@@ -281,6 +353,33 @@ export function BarraCronometro({ catalogo }: { catalogo: Catalogo }) {
         </div>
       </div>
 
+      {/* --------------------------------------------- horas compartidas */}
+      <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-line pt-2">
+        <span className="rotulo shrink-0">También cuenta para</span>
+        <div className="w-56">
+          <SelectorPersonas
+            miembros={miembros}
+            seleccionadas={compartidos}
+            onChange={(ids) => {
+              setCompartidos(ids)
+              setAvisoCompartir(null)
+            }}
+          />
+        </div>
+        {compartidos.length > 0 && (
+          <span className="text-xs text-muted">
+            Al parar les llegará como propuesta: hasta que la acepten no se les
+            apunta nada.
+          </span>
+        )}
+      </div>
+
+      {avisoCompartir && (
+        <p className="mt-2 rounded-[var(--radio-sm)] border border-line bg-surface-2 px-3 py-2 text-sm text-ink-soft">
+          {avisoCompartir}
+        </p>
+      )}
+
       {faltaProyecto && (
         <p className="mt-2 rounded-[var(--radio-sm)] border border-live-line bg-live-soft px-3 py-2 text-sm text-live">
           Elige un proyecto para poder parar. Así no quedan horas sueltas.
@@ -304,7 +403,11 @@ function EntradaManual({
   borrador: BorradorEntrada
   guardando: boolean
   setGuardando: (v: boolean) => void
-  alGuardar: () => void
+  alGuardar: (entrada: {
+    id: string
+    start_at: string
+    end_at: string
+  }) => void | Promise<void>
 }) {
   const [inicio, setInicio] = useState("09:00")
   const [fin, setFin] = useState("10:00")
@@ -364,7 +467,7 @@ function EntradaManual({
           .from("time_entry_tags")
           .insert(borrador.tagIds.map((tag_id) => ({ entry_id: data.id, tag_id })))
       }
-      alGuardar()
+      await alGuardar({ id: data.id, start_at, end_at })
     } catch (err) {
       alert(mensajeError(err))
     } finally {

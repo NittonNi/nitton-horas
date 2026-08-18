@@ -12,6 +12,7 @@ import {
   parseObjetivo,
   subcategoriasDe,
 } from "@/lib/categorias"
+import { formatDurationShort } from "@/lib/time"
 import type { Categoria, ProyectoConCliente } from "@/lib/tipos"
 import { cn } from "@/lib/utils"
 
@@ -24,10 +25,13 @@ export function GestionCategorias({
   espacioId,
   categorias,
   proyectos,
+  segundosPorRama = {},
 }: {
   espacioId: string
   categorias: Categoria[]
   proyectos: ProyectoConCliente[]
+  /** Lo que llevas tu esta semana en cada rama, para leer el objetivo. */
+  segundosPorRama?: Record<string, number>
 }) {
   const router = useRouter()
   const [ocupado, setOcupado] = useState(false)
@@ -147,6 +151,7 @@ export function GestionCategorias({
               <Fila
                 categoria={padre}
                 proyectos={proyectos}
+                segundos={segundosPorRama[padre.id] ?? 0}
                 ocupado={ocupado}
                 onRenombrar={(n) => void renombrar(padre, n)}
                 onObjetivo={(t) => void ponerObjetivo(padre, t)}
@@ -163,6 +168,7 @@ export function GestionCategorias({
                     <Fila
                       categoria={hija}
                       proyectos={proyectos}
+                      segundos={segundosPorRama[hija.id] ?? 0}
                       ocupado={ocupado}
                       onRenombrar={(n) => void renombrar(hija, n)}
                       onObjetivo={(t) => void ponerObjetivo(hija, t)}
@@ -231,6 +237,7 @@ export function GestionCategorias({
 function Fila({
   categoria,
   proyectos,
+  segundos,
   ocupado,
   onRenombrar,
   onObjetivo,
@@ -238,6 +245,7 @@ function Fila({
 }: {
   categoria: Categoria
   proyectos: ProyectoConCliente[]
+  segundos: number
   ocupado: boolean
   onRenombrar: (nombre: string) => void
   onObjetivo: (texto: string) => void
@@ -273,6 +281,19 @@ function Fila({
           : cuantos === 1
             ? "1 proyecto"
             : cuantos + " proyectos"}
+      </span>
+
+      <span
+        className={cn(
+          "cifra shrink-0 text-xs",
+          categoria.goal_weekly_minutes &&
+            segundos >= categoria.goal_weekly_minutes * 60
+            ? "font-medium text-billable"
+            : "text-muted",
+        )}
+        title="Lo que llevas tú esta semana en esta rama"
+      >
+        {segundos > 0 ? formatDurationShort(segundos) : ""}
       </span>
 
       <input

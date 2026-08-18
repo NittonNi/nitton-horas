@@ -2,7 +2,12 @@ import Link from "next/link"
 
 import { getSesion } from "@/lib/sesion"
 import { veTodo } from "@/lib/roles"
-import { cargarCatalogo, cargarEntradas, cargarPropuestas } from "@/lib/datos"
+import {
+  cargarCatalogo,
+  cargarEntradas,
+  cargarMiembros,
+  cargarPropuestas,
+} from "@/lib/datos"
 import { BarraCronometro } from "@/components/barra-cronometro"
 import { ListaEntradas } from "@/components/lista-entradas"
 import { PropuestasPendientes } from "@/components/propuestas-pendientes"
@@ -23,10 +28,11 @@ export default async function PaginaCronometro() {
   const lunes = toDateKey(startOfWeek(new Date()))
   const desde = toDateKey(addDays(new Date(), -20))
 
-  const [catalogo, entradas, propuestas] = await Promise.all([
+  const [catalogo, entradas, propuestas, miembros] = await Promise.all([
     cargarCatalogo(espacio.id),
     cargarEntradas({ espacioId: espacio.id, desde, hasta: hoy, userId: perfil.id }),
     cargarPropuestas(espacio.id),
+    cargarMiembros(espacio.id),
   ])
 
   const cerradas = entradas.filter((e) => e.end_at)
@@ -41,7 +47,10 @@ export default async function PaginaCronometro() {
 
   return (
     <div className="space-y-5">
-      <BarraCronometro catalogo={catalogo} />
+      <BarraCronometro
+        catalogo={catalogo}
+        miembros={miembros.filter((m) => m.active && m.id !== perfil.id)}
+      />
 
       <PropuestasPendientes propuestas={propuestas} />
 

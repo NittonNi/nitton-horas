@@ -73,10 +73,21 @@ real.
 - **Calendario**: rejilla semanal, arrastrar para crear, mover y estirar.
 - **Horas compartidas**: se proponen a otras personas y ellas aceptan o rechazan.
 - **Descarga en Excel** con columnas tipadas y hoja de resumen.
-- **Aspecto propio**: menu lateral oscuro en escritorio, barra inferior en
-  movil, tipografia y color propios.
+- **Aspecto**: menu lateral en escritorio, barra inferior en movil, gris
+  agrupado, tarjetas blancas y un solo azul para lo pulsable.
 - **Proyectos**: apartado propio con ficha por proyecto -horas, reparto por
   tarea y por persona, presupuesto, color y tareas- y creacion de proyectos y
   de tareas desde el propio selector.
 - **Facturable**: el mismo verde en todas partes, con recuadro sobre la linea
   de color del proyecto.
+
+## Dudas abiertas
+
+### Etiquetas
+
+Se usan como formas fijas de clasificar el tiempo, al margen del proyecto, y
+para poder buscar por ellas. Falta decidir:
+
+- si se filtra por etiqueta desde cualquier pantalla, y no solo desde informes;
+- si tienen ficha propia, como los proyectos, con sus horas;
+- si conviene que una entrada pueda llevar varias, o solo una.

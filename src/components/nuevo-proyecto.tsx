@@ -8,19 +8,23 @@ import { Loader2, Plus, X } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { SelectorColor } from "@/components/selector-color"
-import { COLORES_PROYECTO, type Cliente } from "@/lib/tipos"
+import { ramas, SIN_CATEGORIA } from "@/lib/categorias"
+import { COLORES_PROYECTO, type Categoria, type Cliente } from "@/lib/tipos"
 
 export function NuevoProyecto({
   espacioId,
   clientes,
+  categorias,
 }: {
   espacioId: string
   clientes: Cliente[]
+  categorias: Categoria[]
 }) {
   const router = useRouter()
   const [abierto, setAbierto] = useState(false)
   const [nombre, setNombre] = useState("")
   const [clienteId, setClienteId] = useState("")
+  const [categoriaId, setCategoriaId] = useState("")
   const [color, setColor] = useState<string>(COLORES_PROYECTO[0])
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -41,6 +45,7 @@ export function NuevoProyecto({
         workspace_id: espacioId,
         name: limpio,
         client_id: clienteId || null,
+        category_id: categoriaId || null,
         color,
       })
       .select("id")
@@ -55,6 +60,7 @@ export function NuevoProyecto({
     setAbierto(false)
     setNombre("")
     setClienteId("")
+    setCategoriaId("")
     router.push(`/proyectos/${data.id}`)
   }
 
@@ -95,7 +101,7 @@ export function NuevoProyecto({
                 className="field"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
-                placeholder="Rediseno de la web"
+                placeholder="Rediseño de la web"
               />
             </div>
 
@@ -118,6 +124,30 @@ export function NuevoProyecto({
                     </option>
                   ))}
               </select>
+            </div>
+
+            <div>
+              <label className="label" htmlFor="np-categoria">
+                Categoria
+              </label>
+              <select
+                id="np-categoria"
+                className="field"
+                value={categoriaId}
+                onChange={(e) => setCategoriaId(e.target.value)}
+              >
+                <option value="">{SIN_CATEGORIA}</option>
+                {ramas(categorias.filter((c) => !c.archived)).map(
+                  ({ categoria, camino }) => (
+                    <option key={categoria.id} value={categoria.id}>
+                      {camino}
+                    </option>
+                  ),
+                )}
+              </select>
+              <p className="mt-1.5 text-xs text-muted">
+                Cómo se organiza el equipo. El cliente, si lo hay, va arriba.
+              </p>
             </div>
 
             <div>

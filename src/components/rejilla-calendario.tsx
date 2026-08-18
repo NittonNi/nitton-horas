@@ -40,7 +40,7 @@ type Arrastre =
 
 type Nuevo = { dia: string; desde: number; hasta: number }
 
-const MINIMO = 15
+const Minimo = 15
 
 export function RejillaCalendario({
   entradas,
@@ -125,7 +125,7 @@ export function RejillaCalendario({
   }
 
   /**
-   * Los escuchadores se enganchan aqui mismo, no en un efecto: si se suelta el
+   * Los escuchadores se enganchan aquí mismo, no en un efecto: si se suelta el
    * raton antes de que React vuelva a pintar, el efecto llegaria tarde y el
    * arrastre se quedaria colgado.
    */
@@ -142,7 +142,7 @@ export function RejillaCalendario({
       if (previo.tipo === "crear") {
         siguiente = { ...previo, dia, hasta: minutos }
       } else if (previo.tipo === "redim") {
-        siguiente = { ...previo, hasta: Math.max(previo.desde + MINIMO, minutos) }
+        siguiente = { ...previo, hasta: Math.max(previo.desde + Minimo, minutos) }
       } else {
         // mover: se conserva la duracion y se respeta por donde se agarro
         const duracion = previo.hasta - previo.desde
@@ -174,7 +174,7 @@ export function RejillaCalendario({
       const desde = Math.min(final.ancla, final.hasta)
       const hasta = Math.max(final.ancla, final.hasta)
       // Un clic seco, sin arrastrar, crea una hora
-      const fin = hasta - desde < MINIMO ? desde + 60 : hasta
+      const fin = hasta - desde < Minimo ? desde + 60 : hasta
       setNuevo({ dia: final.dia, desde, hasta: Math.min(24 * 60, fin) })
       return
     }
@@ -376,7 +376,7 @@ export function RejillaCalendario({
       <p className="no-print text-xs text-muted">
         {mias
           ? "Arrastra sobre un hueco para apuntar horas. Mueve un bloque para cambiarlo de sitio, o estira su borde de abajo para alargarlo."
-          : "Estas viendo las horas de otra persona: solo lectura."}
+          : "Estás viendo las horas de otra persona: solo lectura."}
       </p>
 
       {nuevo && (
@@ -501,7 +501,7 @@ function ColumnaDia({
               if (!editable || e.button !== 0) return
               e.stopPropagation()
               const caja = e.currentTarget.getBoundingClientRect()
-              // los ultimos 8 px de alto son el tirador para alargar
+              // los últimos 8 px de alto son el tirador para alargar
               if (e.clientY > caja.bottom - 8) onRedimensionar(bloque)
               else {
                 const caso = limitar(
@@ -536,7 +536,7 @@ function ColumnaDia({
                 bloque.entrada.billable && "pr-3.5",
               )}
             >
-              {bloque.entrada.description || bloque.entrada.project_name || "Sin descripcion"}
+              {bloque.entrada.description || bloque.entrada.project_name || "Sin descripción"}
             </p>
             <p className="cifra truncate text-[10px] leading-tight text-muted">
               {comoHora(desde)}-{comoHora(hasta)}
@@ -605,7 +605,7 @@ function DialogoNuevaEntrada({
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  /* El arrastre solo propone: aqui se puede afinar la fecha y las horas */
+  /* El arrastre solo propone: aquí se puede afinar la fecha y las horas */
   const [fecha, setFecha] = useState(nuevo.dia)
   const [horaInicio, setHoraInicio] = useState(comoHoraInput(nuevo.desde))
   const [horaFin, setHoraFin] = useState(comoHoraInput(nuevo.hasta))
@@ -794,7 +794,7 @@ function DialogoNuevaEntrada({
             </div>
 
             <div>
-              <span className="label">Tambien cuenta para</span>
+              <span className="label">También cuenta para</span>
               <SelectorPersonas
                 miembros={miembros}
                 seleccionadas={compartidos}

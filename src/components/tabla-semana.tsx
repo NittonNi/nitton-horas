@@ -131,7 +131,7 @@ export function TablaSemana({
 
   const totalSemana = dias.reduce((suma, dia) => suma + totalDia(dia), 0)
 
-  /** 09:00, o justo despues de lo ultimo que haya ese dia. */
+  /** 09:00, o justo después de lo último que haya ese dia. */
   function inicioSugerido(dia: string): string {
     const delDia = entradas.filter((e) => e.local_date === dia && e.end_at)
     if (delDia.length === 0) {
@@ -154,7 +154,7 @@ export function TablaSemana({
     if (segundos === null && texto.trim() === "" && existentes.length === 0) return
     if (segundos !== null && segundos === actual) return
     if (texto.trim() !== "" && segundos === null) {
-      setError("No entiendo esa duracion. Prueba con 1:30, 90m o 1,5.")
+      setError("No entiendo esa duración. Prueba con 1:30, 90m o 1,5.")
       return
     }
 
@@ -165,7 +165,7 @@ export function TablaSemana({
     try {
       if (existentes.length > 1) {
         throw new Error(
-          "Ese dia tiene varias entradas sueltas: editalas desde la pantalla del cronometro.",
+          "Ese día tiene varias entradas sueltas: editalas desde la pantalla del cronómetro.",
         )
       }
 
@@ -316,7 +316,7 @@ export function TablaSemana({
             {filas.length === 0 && (
               <tr>
                 <td colSpan={9} className="px-3 py-6 text-center text-sm text-muted">
-                  No hay horas esta semana. Anade una fila para empezar a rellenar.
+                  No hay horas esta semana. Añade una fila para empezar a rellenar.
                 </td>
               </tr>
             )}
@@ -332,7 +332,7 @@ export function TablaSemana({
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">{fila.proyecto}</p>
                       <p className="truncate text-xs text-muted">
-                        {fila.descripcion || "Sin descripcion"}
+                        {fila.descripcion || "Sin descripción"}
                         {fila.cliente && ` · ${fila.cliente}`}
                       </p>
                     </div>
@@ -358,7 +358,7 @@ export function TablaSemana({
                         resaltar={dia === hoy}
                         titulo={
                           delDia.length > 1
-                            ? `${delDia.length} entradas ese dia`
+                            ? `${delDia.length} entradas ese día`
                             : undefined
                         }
                         onGuardar={(texto) => void guardarCelda(fila, dia, texto)}
@@ -501,7 +501,7 @@ function NuevaFila({
         className="btn no-print"
       >
         <Plus className="h-4 w-4" />
-        Anadir fila
+        Añadir fila
       </button>
     )
   }

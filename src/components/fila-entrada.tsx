@@ -164,7 +164,7 @@ export function FilaEntrada({
                 if (e.key === "Escape") setCampo(null)
               }}
               className="field py-1 text-[0.9375rem]"
-              placeholder="¿En que has trabajado?"
+              placeholder="¿En qué has trabajado?"
             />
           ) : (
             <button
@@ -174,7 +174,7 @@ export function FilaEntrada({
               className={cn(pulsable, "block w-full truncate text-[0.9375rem]")}
             >
               {entrada.description || (
-                <span className="text-muted">Sin descripcion</span>
+                <span className="text-muted">Sin descripción</span>
               )}
             </button>
           )}
@@ -338,6 +338,7 @@ export function FilaEntrada({
           onClick={() =>
             void arrancar({
               project_id: entrada.project_id,
+              edition_id: entrada.edition_id,
               task_id: entrada.task_id,
               description: entrada.description,
               billable: entrada.billable,
@@ -347,7 +348,6 @@ export function FilaEntrada({
           className="flex shrink-0 items-center gap-1 rounded-[6px] px-2 py-1.5 text-[0.8125rem] font-medium text-muted transition hover:bg-live-soft hover:text-live"
         >
           <Play className="h-3.5 w-3.5 fill-current" />
-          <span className="hidden xl:inline">Continuar</span>
         </button>
 
         <div className="flex w-[4rem] shrink-0 items-center justify-end gap-0.5 opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">

@@ -136,7 +136,7 @@ export function GestionEtiquetas({
 
       <ul className="mt-3 flex flex-wrap gap-1.5">
         {visibles.length === 0 && (
-          <li className="py-1 text-sm text-muted">Todavia no hay etiquetas.</li>
+          <li className="py-1 text-sm text-muted">Todavía no hay etiquetas.</li>
         )}
         {visibles.map((etiqueta) => (
           <li key={etiqueta.id}>

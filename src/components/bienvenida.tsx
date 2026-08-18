@@ -133,7 +133,7 @@ export function Bienvenida({
 
       {disponibles.length > 0 && (
         <section className="card mb-4 p-4">
-          <h2 className="mb-1 text-sm font-semibold">Te estan esperando</h2>
+          <h2 className="mb-1 text-sm font-semibold">Te están esperando</h2>
           <p className="mb-3 text-xs text-muted">
             Espacios a los que puedes unirte con tu correo.
           </p>
@@ -150,8 +150,8 @@ export function Bienvenida({
                   </span>
                   <span className="block text-xs text-muted">
                     {espacio.motivo === "invitacion"
-                      ? `Invitacion como ${NOMBRE_ROL[espacio.role].toLowerCase()}`
-                      : "Tu dominio de correo esta autorizado"}
+                      ? `Invitación como ${NOMBRE_ROL[espacio.role].toLowerCase()}`
+                      : "Tu dominio de correo está autorizado"}
                   </span>
                 </span>
                 <button
@@ -211,7 +211,7 @@ export function Bienvenida({
               ))}
             </select>
             <p className="mt-1 text-xs text-muted">
-              Decide a que dia cuenta cada hora. Se puede cambiar despues.
+              Decide a que dia cuenta cada hora. Se puede cambiar después.
             </p>
           </div>
 

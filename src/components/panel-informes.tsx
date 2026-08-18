@@ -13,6 +13,10 @@ import {
 } from "recharts"
 import { Download, FileSpreadsheet, FileText, Printer } from "lucide-react"
 
+import { createClient } from "@/lib/supabase/client"
+import { mensajeError } from "@/lib/errores"
+import { useSesion } from "@/components/proveedor-sesion"
+import { categoriasRaiz } from "@/lib/categorias"
 import { exportarCsv, exportarExcel, exportarPdf } from "@/lib/exportar"
 import { agrupar, porDia, rangos, totales } from "@/lib/informes"
 import {
@@ -43,14 +47,19 @@ export function PanelInformes({
   puedeVerImportes: boolean
 }) {
   const router = useRouter()
+  const { espacio } = useSesion()
   const [persona, setPersona] = useState("")
+  const [categoria, setCategoria] = useState("")
   const [cliente, setCliente] = useState("")
   const [proyecto, setProyecto] = useState("")
   const [etiqueta, setEtiqueta] = useState("")
   const [facturable, setFacturable] = useState<Facturable>("todo")
   const [busqueda, setBusqueda] = useState("")
   const [verTodo, setVerTodo] = useState(false)
-  const [generando, setGenerando] = useState<"excel" | "pdf" | null>(null)
+  const [generando, setGenerando] = useState<"excel" | "pdf" | "todo" | null>(
+    null,
+  )
+  const [errorDescarga, setErrorDescarga] = useState<string | null>(null)
 
   function cambiarRango(nuevoDesde: string, nuevoHasta: string) {
     router.push(`/informes?desde=${nuevoDesde}&hasta=${nuevoHasta}`)
@@ -62,6 +71,7 @@ export function PanelInformes({
       if (!entrada.end_at) return false
       if (persona && entrada.user_id !== persona) return false
       if (cliente && entrada.client_id !== cliente) return false
+      if (categoria && entrada.category_id !== categoria) return false
       if (proyecto && entrada.project_id !== proyecto) return false
       if (etiqueta && !entrada.tags.includes(etiqueta)) return false
       if (facturable === "si" && !entrada.billable) return false
@@ -72,7 +82,16 @@ export function PanelInformes({
       }
       return true
     })
-  }, [entradas, persona, cliente, proyecto, etiqueta, facturable, busqueda])
+  }, [
+    entradas,
+    persona,
+    cliente,
+    categoria,
+    proyecto,
+    etiqueta,
+    facturable,
+    busqueda,
+  ])
 
   const suma = useMemo(() => totales(filtradas), [filtradas])
   const serie = useMemo(() => porDia(filtradas, desde, hasta), [filtradas, desde, hasta])
@@ -118,6 +137,39 @@ export function PanelInformes({
     }
   }
 
+  /** Todo lo que hay, sin filtros ni fechas: el boton de "dame el Excel". */
+  async function todoElHistorico() {
+    setGenerando("todo")
+    setErrorDescarga(null)
+    try {
+      const { data, error } = await createClient()
+        .from("v_entries")
+        .select("*")
+        .eq("workspace_id", espacio.id)
+        .not("end_at", "is", null)
+        .order("local_date", { ascending: true })
+        .limit(50000)
+      if (error) throw error
+
+      const todas = (data ?? []) as EntradaVista[]
+      if (todas.length === 0) {
+        setErrorDescarga("Todavía no hay horas que descargar.")
+        return
+      }
+
+      await exportarExcel(todas, {
+        nombre: "horas-" + espacio.slug + "-completo",
+        desde: todas[0].local_date,
+        hasta: todas[todas.length - 1].local_date,
+        conImportes: puedeVerImportes,
+      })
+    } catch (err) {
+      setErrorDescarga(mensajeError(err))
+    } finally {
+      setGenerando(null)
+    }
+  }
+
   async function pdf() {
     setGenerando("pdf")
     try {
@@ -139,7 +191,7 @@ export function PanelInformes({
           "Persona",
           "Cliente",
           "Proyecto",
-          "Descripcion",
+          "Descripción",
           "Horas",
           ...(puedeVerImportes ? ["Importe"] : []),
         ],
@@ -239,6 +291,20 @@ export function PanelInformes({
 
           <select
             className="field w-auto py-1"
+            value={categoria}
+            onChange={(e) => setCategoria(e.target.value)}
+            aria-label="Categoría"
+          >
+            <option value="">Todas las categorías</option>
+            {categoriasRaiz(catalogo.categorias).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="field w-auto py-1"
             value={proyecto}
             onChange={(e) => setProyecto(e.target.value)}
             aria-label="Proyecto"
@@ -282,7 +348,7 @@ export function PanelInformes({
             className="field w-auto flex-1 py-1"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar en la descripcion"
+            placeholder="Buscar en la descripción"
             aria-label="Buscar"
           />
         </div>
@@ -323,7 +389,26 @@ export function PanelInformes({
             <Printer className="h-4 w-4" />
             Imprimir
           </button>
+
+          <span className="hidden w-px self-stretch bg-line sm:block" />
+
+          <button
+            type="button"
+            onClick={() => void todoElHistorico()}
+            disabled={generando !== null}
+            title="Un Excel con todas las horas del espacio, sin filtros ni fechas"
+            className="btn py-1.5"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            {generando === "todo" ? "Generando..." : "Todo, desde el principio"}
+          </button>
         </div>
+
+        {errorDescarga && (
+          <p className="rounded-[var(--radio-sm)] bg-danger-soft p-2.5 text-sm text-danger">
+            {errorDescarga}
+          </p>
+        )}
       </section>
 
       {/* ------------------------------------------------------------ resumen */}
@@ -343,7 +428,7 @@ export function PanelInformes({
           <Tarjeta
             etiqueta="Importe"
             valor={formatMoney(suma.importe)}
-            pie="Segun tarifas vigentes"
+            pie="Según tarifas vigentes"
           />
         ) : (
           <Tarjeta
@@ -353,17 +438,17 @@ export function PanelInformes({
           />
         )}
         <Tarjeta
-          etiqueta="Media por dia"
+          etiqueta="Media por día"
           valor={formatDurationShort(
             diasConHoras > 0 ? suma.segundos / diasConHoras : 0,
           )}
-          pie={`${diasConHoras} dias con horas`}
+          pie={`${diasConHoras} días con horas`}
         />
       </section>
 
       {/* ------------------------------------------------------------ grafico */}
       <section className="card p-4">
-        <h2 className="mb-3 text-sm font-semibold">Horas por dia</h2>
+        <h2 className="mb-3 text-sm font-semibold">Horas por día</h2>
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={serie} margin={{ top: 4, right: 8, bottom: 4, left: -20 }}>
@@ -463,7 +548,7 @@ export function PanelInformes({
                   <th className="py-2 pr-3 font-semibold">Fecha</th>
                   <th className="py-2 pr-3 font-semibold">Persona</th>
                   <th className="py-2 pr-3 font-semibold">Proyecto</th>
-                  <th className="py-2 pr-3 font-semibold">Descripcion</th>
+                  <th className="py-2 pr-3 font-semibold">Descripción</th>
                   <th className="py-2 pr-3 text-right font-semibold">Horas</th>
                   {puedeVerImportes && (
                     <th className="py-2 text-right font-semibold">Importe</th>

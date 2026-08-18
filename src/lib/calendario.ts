@@ -2,7 +2,7 @@
 
 import type { EntradaVista } from "@/lib/tipos"
 
-/** Alto de una hora, en pixeles. Todo lo demas se deriva de aqui. */
+/** Alto de una hora, en pixeles. Todo lo demas se deriva de aquí. */
 export const ALTO_HORA = 52
 export const MINUTOS_PASO = 15
 export const ALTO_PASO = (ALTO_HORA / 60) * MINUTOS_PASO
@@ -96,13 +96,13 @@ export function repartir(entradas: EntradaVista[]): Bloque[] {
 
 /**
  * La rejilla siempre pinta el dia entero: si se recortara a lo ya apuntado no
- * se podrian anadir horas fuera de esa franja, que es justo lo que hace falta
- * el dia que se empieza antes o se acaba mas tarde de lo normal.
+ * se podrian añadir horas fuera de esa franja, que es justo lo que hace falta
+ * el dia que se empieza antes o se acaba más tarde de lo normal.
  */
 export const DIA_ENTERO = { desde: 0, hasta: 24 * 60 }
 
 /**
- * A que hora conviene dejar el scroll al abrir: una hora antes de lo mas
+ * A que hora conviene dejar el scroll al abrir: una hora antes de lo más
  * temprano que haya, y si no hay nada, a las siete.
  */
 export function horaParaEmpezar(bloques: Bloque[]): number {

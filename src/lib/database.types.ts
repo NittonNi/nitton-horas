@@ -16,6 +16,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      categories: {
+        Row: {
+          archived: boolean
+          color: string
+          created_at: string
+          goal_weekly_minutes: number | null
+          id: string
+          name: string
+          parent_id: string | null
+          position: number
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          archived?: boolean
+          color?: string
+          created_at?: string
+          goal_weekly_minutes?: number | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          position?: number
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          archived?: boolean
+          color?: string
+          created_at?: string
+          goal_weekly_minutes?: number | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          position?: number
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           archived: boolean
@@ -57,6 +111,7 @@ export type Database = {
           created_at: string
           created_entry_id: string | null
           description: string
+          edition_id: string | null
           end_at: string
           from_user: string
           id: string
@@ -74,6 +129,7 @@ export type Database = {
           created_at?: string
           created_entry_id?: string | null
           description?: string
+          edition_id?: string | null
           end_at: string
           from_user: string
           id?: string
@@ -91,6 +147,7 @@ export type Database = {
           created_at?: string
           created_entry_id?: string | null
           description?: string
+          edition_id?: string | null
           end_at?: string
           from_user?: string
           id?: string
@@ -199,6 +256,63 @@ export type Database = {
         }
         Relationships: []
       }
+      project_editions: {
+        Row: {
+          archived: boolean
+          budget_hours: number | null
+          created_at: string
+          ends_on: string | null
+          id: string
+          name: string
+          position: number
+          project_id: string
+          starts_on: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          archived?: boolean
+          budget_hours?: number | null
+          created_at?: string
+          ends_on?: string | null
+          id?: string
+          name: string
+          position?: number
+          project_id: string
+          starts_on?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          archived?: boolean
+          budget_hours?: number | null
+          created_at?: string
+          ends_on?: string | null
+          id?: string
+          name?: string
+          position?: number
+          project_id?: string
+          starts_on?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_editions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_editions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_members: {
         Row: {
           created_at: string
@@ -237,6 +351,7 @@ export type Database = {
           archived: boolean
           billable_default: boolean
           budget_hours: number | null
+          category_id: string | null
           client_id: string | null
           color: string
           created_at: string
@@ -249,6 +364,7 @@ export type Database = {
           archived?: boolean
           billable_default?: boolean
           budget_hours?: number | null
+          category_id?: string | null
           client_id?: string | null
           color?: string
           created_at?: string
@@ -261,6 +377,7 @@ export type Database = {
           archived?: boolean
           billable_default?: boolean
           budget_hours?: number | null
+          category_id?: string | null
           client_id?: string | null
           color?: string
           created_at?: string
@@ -270,6 +387,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "projects_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "projects_client_id_fkey"
             columns: ["client_id"]
@@ -424,6 +548,7 @@ export type Database = {
           created_at: string
           description: string
           duration_seconds: number | null
+          edition_id: string | null
           end_at: string | null
           external_id: string | null
           id: string
@@ -442,6 +567,7 @@ export type Database = {
           created_at?: string
           description?: string
           duration_seconds?: number | null
+          edition_id?: string | null
           end_at?: string | null
           external_id?: string | null
           id?: string
@@ -460,6 +586,7 @@ export type Database = {
           created_at?: string
           description?: string
           duration_seconds?: number | null
+          edition_id?: string | null
           end_at?: string | null
           external_id?: string | null
           id?: string
@@ -474,6 +601,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "time_entries_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "project_editions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "time_entries_project_id_fkey"
             columns: ["project_id"]
@@ -585,9 +719,13 @@ export type Database = {
           allowed_domains: string[]
           created_at: string
           created_by: string | null
+          goal_daily_minutes: number | null
+          goal_weekly_minutes: number | null
           id: string
           name: string
+          require_project: boolean
           slug: string
+          tag_mode: string
           text_case: string
           timezone: string
           updated_at: string
@@ -596,9 +734,13 @@ export type Database = {
           allowed_domains?: string[]
           created_at?: string
           created_by?: string | null
+          goal_daily_minutes?: number | null
+          goal_weekly_minutes?: number | null
           id?: string
           name: string
+          require_project?: boolean
           slug: string
+          tag_mode?: string
           text_case?: string
           timezone?: string
           updated_at?: string
@@ -607,9 +749,13 @@ export type Database = {
           allowed_domains?: string[]
           created_at?: string
           created_by?: string | null
+          goal_daily_minutes?: number | null
+          goal_weekly_minutes?: number | null
           id?: string
           name?: string
+          require_project?: boolean
           slug?: string
+          tag_mode?: string
           text_case?: string
           timezone?: string
           updated_at?: string
@@ -631,8 +777,12 @@ export type Database = {
           amount: number | null
           billable: boolean | null
           client_id: string | null
+          category_id: string | null
+          category_name: string | null
           client_name: string | null
           description: string | null
+          edition_id: string | null
+          edition_name: string | null
           duration_seconds: number | null
           end_at: string | null
           hours: number | null
@@ -643,6 +793,7 @@ export type Database = {
           project_id: string | null
           project_name: string | null
           start_at: string | null
+          subcategory_name: string | null
           tags: string[] | null
           task_id: string | null
           task_name: string | null
@@ -704,14 +855,19 @@ export type Database = {
       can_read_entry: { Args: { p_entry: string }; Returns: boolean }
       can_see_all: { Args: { p_workspace: string }; Returns: boolean }
       create_workspace: {
-        Args: { p_name: string; p_timezone?: string }
+        Args: { p_name: string; p_plantilla?: boolean; p_timezone: string }
         Returns: {
           allowed_domains: string[]
           created_at: string
           created_by: string | null
+          goal_daily_minutes: number | null
+          goal_weekly_minutes: number | null
           id: string
           name: string
+          require_project: boolean
           slug: string
+          tag_mode: string
+          text_case: string
           timezone: string
           updated_at: string
         }
@@ -814,6 +970,7 @@ export type Database = {
         Args: {
           p_billable?: boolean
           p_description?: string
+          p_edition_id?: string
           p_project_id?: string
           p_tag_ids?: string[]
           p_task_id?: string

@@ -25,6 +25,7 @@ import { useCronometro } from "@/components/proveedor-cronometro"
 import { SelectorTema } from "@/components/selector-tema"
 import { formatDuration } from "@/lib/time"
 import { NOMBRE_ROL } from "@/lib/roles"
+import { RUTA_APP } from "@/lib/rutas"
 import { cn } from "@/lib/utils"
 
 /**
@@ -46,7 +47,7 @@ const GRUPOS: {
   {
     titulo: "Apuntar",
     enlaces: [
-      { href: "/", etiqueta: "Cronometro", icono: Timer, exacto: true },
+      { href: RUTA_APP, etiqueta: "Cronómetro", icono: Timer, exacto: true },
       { href: "/calendario", etiqueta: "Calendario", icono: CalendarDays },
       { href: "/semana", etiqueta: "Semana", icono: CalendarRange },
     ],
@@ -61,7 +62,7 @@ const GRUPOS: {
   {
     titulo: "Ajustar",
     soloGestores: true,
-    enlaces: [{ href: "/gestion", etiqueta: "Gestion", icono: Settings2 }],
+    enlaces: [{ href: "/gestión", etiqueta: "Gestión", icono: Settings2 }],
   },
 ]
 
@@ -215,15 +216,15 @@ function SelectorEspacio() {
   )
 }
 
-/* -------------------------------------------------------------- cronometro */
+/* -------------------------------------------------------------- cronómetro */
 
-/** Titulo de la pestana: la cuenta corre aunque la ventana este de fondo. */
+/** Titulo de la pestaña: la cuenta corre aunque la ventana este de fondo. */
 function useTituloCronometro() {
   const { enMarcha, segundos } = useCronometro()
 
   useEffect(() => {
     if (!enMarcha) {
-      document.title = "Horas"
+      document.title = "ClockLEINN"
       return
     }
     const etiqueta = enMarcha.description || enMarcha.proyecto?.name || "En marcha"
@@ -231,7 +232,7 @@ function useTituloCronometro() {
   }, [enMarcha, segundos])
 }
 
-/** En escritorio el cronometro vive abajo del todo, siempre a la vista. */
+/** En escritorio el cronómetro vive abajo del todo, siempre a la vista. */
 function CronometroLateral() {
   const { enMarcha, segundos, parar, cargando } = useCronometro()
   useTituloCronometro()
@@ -247,14 +248,14 @@ function CronometroLateral() {
             {formatDuration(segundos)}
           </p>
           <p className="mt-1 truncate text-xs text-ink-soft">
-            {enMarcha.description || enMarcha.proyecto?.name || "Sin descripcion"}
+            {enMarcha.description || enMarcha.proyecto?.name || "Sin descripción"}
           </p>
         </div>
         <button
           type="button"
           onClick={() => void parar()}
           disabled={cargando}
-          aria-label="Parar el cronometro"
+          aria-label="Parar el cronómetro"
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radio-sm)] bg-live-fill text-white transition hover:brightness-110 disabled:opacity-50"
         >
           <Square className="h-3 w-3 fill-current" />
@@ -281,7 +282,7 @@ function CronometroPastilla() {
         type="button"
         onClick={() => void parar()}
         disabled={cargando}
-        aria-label="Parar el cronometro"
+        aria-label="Parar el cronómetro"
         className="rounded p-1 text-live transition hover:bg-live/15 disabled:opacity-50"
       >
         <Square className="h-3 w-3 fill-current" />
@@ -377,7 +378,7 @@ function MenuUsuario() {
                 className="flex w-full items-center gap-2 rounded-[var(--radio-sm)] px-2 py-1.5 text-left text-sm text-danger outline-none transition hover:bg-danger-soft data-highlighted:bg-danger-soft"
               >
                 <LogOut className="h-4 w-4" />
-                Cerrar sesion
+                Cerrar sesión
               </button>
             </form>
           </DropdownMenu.Item>

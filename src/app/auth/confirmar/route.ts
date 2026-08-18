@@ -2,13 +2,14 @@ import { NextResponse, type NextRequest } from "next/server"
 import type { EmailOtpType } from "@supabase/supabase-js"
 
 import { createClient } from "@/lib/supabase/server"
+import { RUTA_APP } from "@/lib/rutas"
 
 /** Destino del enlace de confirmacion que Supabase manda por correo. */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl
   const token_hash = searchParams.get("token_hash")
   const type = searchParams.get("type") as EmailOtpType | null
-  const next = searchParams.get("next") ?? "/"
+  const next = searchParams.get("next") ?? RUTA_APP
 
   if (token_hash && type) {
     const supabase = await createClient()

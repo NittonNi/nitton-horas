@@ -4,7 +4,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 
 /**
- * Inter con las cifras tabulares activadas. Es la mas cercana a la del sistema
+ * Inter con las cifras tabulares activadas. Es la más cercana a la del sistema
  * de Apple, y en un Mac cae directamente en -apple-system por el fallback.
  */
 const inter = Inter({
@@ -15,10 +15,10 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "Horas",
-    template: "%s · Horas",
+    default: "ClockLEINN",
+    template: "%s · ClockLEINN",
   },
-  description: "Cronometro, hojas de horas e informes para equipos",
+  description: "Cronómetro, hojas de horas e informes para equipos",
 }
 
 export const viewport: Viewport = {

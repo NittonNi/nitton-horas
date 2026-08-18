@@ -9,12 +9,13 @@ import { PropuestasPendientes } from "@/components/propuestas-pendientes"
 import {
   addDays,
   formatDurationShort,
+  formatObjetivoCorto,
   startOfWeek,
   toDateKey,
   todayKey,
 } from "@/lib/time"
 
-export const metadata = { title: "Cronometro" }
+export const metadata = { title: "Cronómetro" }
 
 export default async function PaginaCronometro() {
   const { perfil, espacio, rol } = await getSesion()
@@ -45,8 +46,16 @@ export default async function PaginaCronometro() {
       <PropuestasPendientes propuestas={propuestas} />
 
       <div className="card grid grid-cols-3 divide-x divide-line">
-        <Resumen etiqueta="Hoy" valor={formatDurationShort(segsHoy)} />
-        <Resumen etiqueta="Esta semana" valor={formatDurationShort(segsSemana)} />
+        <Resumen
+          etiqueta="Hoy"
+          valor={formatDurationShort(segsHoy)}
+          pie={pieObjetivo(segsHoy, espacio.goal_daily_minutes)}
+        />
+        <Resumen
+          etiqueta="Esta semana"
+          valor={formatDurationShort(segsSemana)}
+          pie={pieObjetivo(segsSemana, espacio.goal_weekly_minutes)}
+        />
         <Resumen
           etiqueta="Facturable"
           valor={formatDurationShort(segsFacturables)}
@@ -62,7 +71,7 @@ export default async function PaginaCronometro() {
       {catalogo.proyectos.length === 0 && (
         <div className="card flex flex-wrap items-center gap-3 p-4">
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium">Aun no hay proyectos</p>
+            <p className="text-sm font-medium">Aún no hay proyectos</p>
             <p className="mt-0.5 text-sm text-muted">
               {veTodo(rol)
                 ? "Las horas se apuntan contra un proyecto. Crea el primero y ya puedes cronometrar."
@@ -70,16 +79,30 @@ export default async function PaginaCronometro() {
             </p>
           </div>
           {veTodo(rol) && (
-            <Link href="/gestion" className="btn btn-primary">
+            <Link href="/gestión" className="btn btn-primary">
               Crear proyecto
             </Link>
           )}
         </div>
       )}
 
-      <ListaEntradas entradas={entradas} catalogo={catalogo} />
+      <ListaEntradas
+        entradas={entradas}
+        catalogo={catalogo}
+        objetivoDia={espacio.goal_daily_minutes}
+        objetivoSemana={espacio.goal_weekly_minutes}
+      />
     </div>
   )
+}
+
+/** "Faltan 1:48" o "Objetivo cumplido", cuando el espacio ha fijado uno. */
+function pieObjetivo(segundos: number, objetivoMinutos: number | null) {
+  if (!objetivoMinutos) return undefined
+  const restante = objetivoMinutos * 60 - segundos
+  return restante > 0
+    ? `Faltan ${formatDurationShort(restante)} de ${formatObjetivoCorto(objetivoMinutos)}`
+    : "Objetivo cumplido"
 }
 
 function Resumen({

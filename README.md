@@ -1,14 +1,18 @@
-# Horas
+# ClockLEINN
 
-Control de horas para equipos: cronometro, hoja semanal, informes con importes
-e importacion del historico de Clockify. Cada equipo tiene su propio espacio de
-trabajo, aislado del resto.
+Control de horas para equipos LEINN: cronometro, hoja semanal, informes con
+importes e importacion del historico de Clockify. Cada equipo tiene su propio
+espacio de trabajo, aislado del resto.
+
+La raiz `/` es la portada publica y la aplicacion vive bajo `/panel`.
 
 Next.js 16 (App Router) + Supabase (Postgres con RLS) + Tailwind v4.
 
 ## Que hace
 
-- **Cronometro** (`/`): arrancar y parar, entrada manual y las ultimas semanas.
+- **Portada** (`/`): la pagina publica, con el cronometro corriendo de
+  ejemplo. Lleva a `/acceso`, y con la sesion abierta al espacio.
+- **Cronometro** (`/panel`): arrancar y parar, entrada manual y las ultimas semanas.
   Un unico cronometro en marcha por persona, sincronizado entre dispositivos.
 - **Calendario** (`/calendario`): la semana en rejilla. Se arrastra sobre un
   hueco para apuntar horas, se mueve un bloque para cambiarlo de sitio y se

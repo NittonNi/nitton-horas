@@ -1,8 +1,8 @@
 /**
  * Lectura de los informes detallados que exporta Clockify en CSV.
  *
- * El fichero cambia de idioma y de formato de fecha segun la configuracion de
- * la cuenta, asi que las cabeceras se reconocen por sinonimos y el formato de
+ * El fichero cambia de idioma y de formato de fecha según la configuración de
+ * la cuenta, así que las cabeceras se reconocen por sinonimos y el formato de
  * fecha se deduce mirando todas las filas antes de convertir ninguna.
  *
  * Las horas del informe vienen en el huso del espacio de trabajo, que damos por
@@ -49,13 +49,13 @@ const CAMPOS = {
   horaInicio: ["start time", "hora de inicio", "hora inicio"],
   fechaFin: ["end date", "fecha de finalizacion", "fecha de fin", "fecha fin"],
   horaFin: ["end time", "hora de finalizacion", "hora de fin", "hora fin"],
-  duracion: ["duration (h)", "duracion (h)", "duration", "duracion"],
-  duracionDecimal: ["duration (decimal)", "duracion (decimal)"],
+  duracion: ["duration (h)", "duración (h)", "duration", "duracion"],
+  duracionDecimal: ["duration (decimal)", "duración (decimal)"],
 } as const
 
 type Campo = keyof typeof CAMPOS
 
-/** minusculas, sin acentos y sin espacios de mas */
+/** minusculas, sin acentos y sin espacios de más */
 function normalizar(texto: string): string {
   return texto
     .toLowerCase()
@@ -85,9 +85,9 @@ function mapearCabeceras(cabeceras: string[]): Partial<Record<Campo, string>> {
 const SEPARADORES = /[/.\-]/
 
 /**
- * Mira todas las fechas del fichero: si alguna tiene un primer numero mayor
- * que 12 solo puede ser dia/mes; si lo tiene el segundo, mes/dia. Sin pistas,
- * dia/mes, que es lo que exporta una cuenta configurada en espanol.
+ * Mira todas las fechas del fichero: si alguna tiene un primer número mayor
+ * que 12 solo puede ser día/mes; si lo tiene el segundo, mes/día. Sin pistas,
+ * día/mes, que es lo que exporta una cuenta configurada en español.
  */
 export function detectarFormato(valores: string[]): FormatoFecha {
   let vistoDiaPrimero = false
@@ -180,7 +180,7 @@ function aIso(
   return new Date(y, m - 1, d, hh, mm, ss, 0).toISOString()
 }
 
-/* ------------------------------------------------------------------ analisis */
+/* ------------------------------------------------------------------ análisis */
 
 function esSi(valor: string): boolean {
   const limpio = normalizar(valor ?? "")
@@ -189,7 +189,7 @@ function esSi(valor: string): boolean {
 
 /**
  * Identificador estable de cada entrada para poder reimportar el mismo informe
- * sin duplicar: Clockify no exporta el id de la entrada, asi que se construye
+ * sin duplicar: Clockify no exporta el id de la entrada, así que se construye
  * con la persona y el intervalo exacto, que no se repite.
  */
 export function claveExterna(quien: string, inicio: string, fin: string): string {
@@ -240,7 +240,7 @@ export function analizarCsv(texto: string, forzarFormato?: FormatoFecha): Analis
 
     const inicio = aIso(fechaInicio, horaInicio)
 
-    // El fin puede venir en columnas propias o deducirse de la duracion
+    // El fin puede venir en columnas propias o deducirse de la duración
     const fechaFin = parsearFecha(valor(registro, "fechaFin"), formato)
     const horaFin = parsearHora(valor(registro, "horaFin"))
     const duracion =
@@ -253,7 +253,7 @@ export function analizarCsv(texto: string, forzarFormato?: FormatoFecha): Analis
     } else if (duracion !== null && duracion > 0) {
       fin = new Date(new Date(inicio).getTime() + duracion * 1000).toISOString()
     } else {
-      descartadas.push({ fila: numero, motivo: "Sin hora de fin ni duracion" })
+      descartadas.push({ fila: numero, motivo: "Sin hora de fin ni duración" })
       return
     }
 
@@ -267,7 +267,7 @@ export function analizarCsv(texto: string, forzarFormato?: FormatoFecha): Analis
       segundos += 86400
     }
     if (segundos <= 0) {
-      descartadas.push({ fila: numero, motivo: "Duracion cero o negativa" })
+      descartadas.push({ fila: numero, motivo: "Duración cero o negativa" })
       return
     }
 

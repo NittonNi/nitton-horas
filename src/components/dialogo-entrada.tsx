@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { SelectorProyecto } from "@/components/selector-proyecto"
 import { SelectorEtiquetas } from "@/components/selector-etiquetas"
+import { SelectorEdicion } from "@/components/selector-edicion"
 import {
   combineDateAndTime,
   formatDurationShort,
@@ -32,6 +33,7 @@ export function DialogoEntrada({
     project_id: entrada.project_id,
     task_id: entrada.task_id,
   })
+  const [edicionId, setEdicionId] = useState(entrada.edition_id)
   const [facturable, setFacturable] = useState(entrada.billable)
   const [fecha, setFecha] = useState(entrada.local_date)
   const [inicio, setInicio] = useState(toClockInput(entrada.start_at))
@@ -61,6 +63,10 @@ export function DialogoEntrada({
     return () => document.removeEventListener("keydown", esc)
   }, [onCerrar])
 
+  const ediciones = proyecto.project_id
+    ? catalogo.ediciones.filter((e) => e.project_id === proyecto.project_id)
+    : []
+
   function recalcularDuracion(desde: string, hasta: string) {
     if (!desde || !hasta) return
     const [h1, m1] = desde.split(":").map(Number)
@@ -85,7 +91,7 @@ export function DialogoEntrada({
     setError(null)
     const segs = parseDurationToSeconds(duracion)
     if (segs === null || segs <= 0) {
-      setError("La duracion no es valida. Prueba con 1:30, 90m o 1,5.")
+      setError("La duración no es válida. Prueba con 1:30, 90m o 1,5.")
       return
     }
 
@@ -100,6 +106,7 @@ export function DialogoEntrada({
         .update({
           description: descripcion,
           project_id: proyecto.project_id,
+          edition_id: edicionId,
           task_id: proyecto.task_id,
           billable: facturable,
           start_at,
@@ -159,7 +166,7 @@ export function DialogoEntrada({
               className="field"
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
-              placeholder="¿En que estuviste trabajando?"
+              placeholder="¿En qué estuviste trabajando?"
             />
           </div>
 
@@ -168,8 +175,20 @@ export function DialogoEntrada({
             <SelectorProyecto
               catalogo={catalogo}
               valor={proyecto}
-              onChange={setProyecto}
+              onChange={(sel) => {
+                if (sel.project_id !== proyecto.project_id) setEdicionId(null)
+                setProyecto(sel)
+              }}
             />
+            {ediciones.length > 0 && (
+              <div className="mt-2">
+                <SelectorEdicion
+                  ediciones={ediciones}
+                  valor={edicionId}
+                  onChange={setEdicionId}
+                />
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

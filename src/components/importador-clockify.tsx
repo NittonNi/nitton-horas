@@ -361,7 +361,7 @@ export function ImportadorClockify({
         <h2 className="mb-1 text-sm font-semibold">Importar de Clockify</h2>
         <p className="mb-3 text-xs text-muted">
           En Clockify: Informes &gt; Detallado, elige el rango de fechas y exporta
-          en CSV. Las entradas se reconocen por persona y hora exacta, asi que
+          en CSV. Las entradas se reconocen por persona y hora exacta, así que
           puedes reimportar el mismo fichero sin duplicar nada.
         </p>
 
@@ -376,7 +376,7 @@ export function ImportadorClockify({
         >
           <FileUp className="h-6 w-6 text-muted" />
           <p className="text-sm">
-            {nombreFichero || "Arrastra aqui el CSV o eligelo"}
+            {nombreFichero || "Arrastra aquí el CSV o eligelo"}
           </p>
           <input
             ref={entrada}
@@ -428,8 +428,8 @@ export function ImportadorClockify({
                     if (texto) analizar(texto, nuevo)
                   }}
                 >
-                  <option value="dmy">Dia/Mes/Ano</option>
-                  <option value="mdy">Mes/Dia/Ano</option>
+                  <option value="dmy">Día/Mes/Año</option>
+                  <option value="mdy">Mes/Día/Año</option>
                   <option value="iso">Ano-Mes-Dia</option>
                 </select>
               </label>
@@ -447,7 +447,7 @@ export function ImportadorClockify({
               </div>
             ) : (
               <p className="text-sm text-muted">
-                Ninguna persona del fichero esta asignada todavia.
+                Ninguna persona del fichero esta asignada todavía.
               </p>
             )}
 

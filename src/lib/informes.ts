@@ -64,7 +64,7 @@ export function agrupar(
   return [...mapa.values()].sort((a, b) => b.segundos - a.segundos)
 }
 
-/** Serie continua para el grafico: los dias sin horas tambien ocupan sitio. */
+/** Serie continua para el gráfico: los días sin horas también ocupan sitio. */
 export function porDia(entradas: EntradaVista[], desde: string, hasta: string) {
   const acumulado = new Map<string, { segundos: number; facturables: number }>()
 
@@ -122,13 +122,13 @@ export function rangos(hoy = new Date()) {
     },
     {
       clave: "trimestre",
-      etiqueta: "Ultimos 90 dias",
+      etiqueta: "Últimos 90 días",
       desde: dia(addDays(hoy, -89)),
       hasta: dia(hoy),
     },
     {
       clave: "ano",
-      etiqueta: "Este ano",
+      etiqueta: "Este año",
       desde: dia(new Date(hoy.getFullYear(), 0, 1)),
       hasta: dia(hoy),
     },

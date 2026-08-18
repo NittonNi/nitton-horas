@@ -10,6 +10,7 @@ import { useCronometro } from "@/components/proveedor-cronometro"
 import { useSesion } from "@/components/proveedor-sesion"
 import { SelectorProyecto } from "@/components/selector-proyecto"
 import { SelectorEtiquetas } from "@/components/selector-etiquetas"
+import { SelectorEdicion } from "@/components/selector-edicion"
 import {
   combineDateAndTime,
   formatDuration,
@@ -30,12 +31,15 @@ export function BarraCronometro({ catalogo }: { catalogo: Catalogo }) {
   const [modo, setModo] = useState<Modo>("cronometro")
   const [borrador, setBorrador] = useState<BorradorEntrada>(BORRADOR_VACIO)
   const [guardando, setGuardando] = useState(false)
+  // Cuando el espacio no deja parar sin proyecto, hay que decirlo aquí mismo
+  const [faltaProyecto, setFaltaProyecto] = useState(false)
   const supabase = useRef(createClient())
 
-  // Mientras corre el cronometro, la barra muestra y edita esa entrada
+  // Mientras corre el cronómetro, la barra muestra y edita esa entrada
   const activo = enMarcha
     ? {
         project_id: enMarcha.project_id,
+        edition_id: enMarcha.edition_id,
         task_id: enMarcha.task_id,
         description: enMarcha.description,
         billable: enMarcha.billable,
@@ -90,17 +94,30 @@ export function BarraCronometro({ catalogo }: { catalogo: Catalogo }) {
     else setBorrador((b) => ({ ...b, ...cambios }))
   }
 
+  /** Ediciones del proyecto que esta elegido ahora mismo. */
+  const edicionesDelProyecto = activo.project_id
+    ? catalogo.ediciones.filter((e) => e.project_id === activo.project_id)
+    : []
+
   /** Al elegir proyecto, hereda su marca de facturable si no se ha tocado. */
   function elegirProyecto(sel: { project_id: string | null; task_id: string | null }) {
     const proyecto = catalogo.proyectos.find((p) => p.id === sel.project_id)
+    if (sel.project_id) setFaltaProyecto(false)
     cambiar({
       ...sel,
+      // La edicion es de un proyecto: al cambiar de proyecto se cae
+      ...(sel.project_id !== activo.project_id ? { edition_id: null } : {}),
       ...(proyecto && !enMarcha ? { billable: proyecto.billable_default } : {}),
     })
   }
 
   async function alPulsarPrincipal() {
     if (enMarcha) {
+      // Nada de horas huérfanas: si el espacio lo exige, no se para sin proyecto
+      if (espacio.require_project && !enMarcha.project_id) {
+        setFaltaProyecto(true)
+        return
+      }
       await parar()
     } else {
       await arrancar({ ...borrador, description: descripcionLocal })
@@ -127,7 +144,7 @@ export function BarraCronometro({ catalogo }: { catalogo: Catalogo }) {
               if (modo === "cronometro") void alPulsarPrincipal()
             }
           }}
-          placeholder="¿En que estas trabajando?"
+          placeholder="¿En qué estás trabajando?"
           className="min-w-0 flex-1 bg-transparent px-1 text-[0.95rem] outline-none placeholder:text-muted"
         />
 
@@ -139,6 +156,12 @@ export function BarraCronometro({ catalogo }: { catalogo: Catalogo }) {
               onChange={elegirProyecto}
             />
           </div>
+
+          <SelectorEdicion
+            ediciones={edicionesDelProyecto}
+            valor={activo.edition_id}
+            onChange={(edition_id) => cambiar({ edition_id })}
+          />
 
           <SelectorEtiquetas
             etiquetas={catalogo.etiquetas}
@@ -197,7 +220,7 @@ export function BarraCronometro({ catalogo }: { catalogo: Catalogo }) {
                 <button
                   type="button"
                   onClick={() => {
-                    if (confirm("¿Descartar el tiempo de este cronometro?")) {
+                    if (confirm("¿Descartar el tiempo de este cronómetro?")) {
                       void descartar()
                     }
                   }}
@@ -228,7 +251,7 @@ export function BarraCronometro({ catalogo }: { catalogo: Catalogo }) {
               <button
                 type="button"
                 onClick={() => setModo("cronometro")}
-                title="Modo cronometro"
+                title="Modo cronómetro"
                 aria-pressed={modo === "cronometro"}
                 className={cn(
                   "rounded-md p-1.5 transition",
@@ -242,7 +265,7 @@ export function BarraCronometro({ catalogo }: { catalogo: Catalogo }) {
               <button
                 type="button"
                 onClick={() => setModo("manual")}
-                title="Anadir a mano"
+                title="Añadir a mano"
                 aria-pressed={modo === "manual"}
                 className={cn(
                   "rounded-md p-1.5 transition",
@@ -257,6 +280,12 @@ export function BarraCronometro({ catalogo }: { catalogo: Catalogo }) {
           )}
         </div>
       </div>
+
+      {faltaProyecto && (
+        <p className="mt-2 rounded-[var(--radio-sm)] border border-live-line bg-live-soft px-3 py-2 text-sm text-live">
+          Elige un proyecto para poder parar. Así no quedan horas sueltas.
+        </p>
+      )}
     </div>
   )
 }
@@ -302,7 +331,7 @@ function EntradaManual({
   async function guardar() {
     const segs = parseDurationToSeconds(duracion)
     if (!segs || segs <= 0) {
-      alert("Pon una duracion valida, por ejemplo 1:30 o 90m.")
+      alert("Pon una duración válida, por ejemplo 1:30 o 90m.")
       return
     }
 
@@ -319,6 +348,7 @@ function EntradaManual({
           workspace_id: espacioId,
           user_id: userId,
           project_id: borrador.project_id,
+          edition_id: borrador.edition_id,
           task_id: borrador.task_id,
           description: borrador.description,
           billable: borrador.billable,
@@ -369,7 +399,7 @@ function EntradaManual({
         value={duracion}
         onChange={(e) => aplicarDuracion(e.target.value)}
         className="field h-9 w-20 tabular text-center"
-        aria-label="Duracion"
+        aria-label="Duración"
         placeholder="1:30"
       />
       <button

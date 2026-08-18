@@ -23,7 +23,7 @@ type Contexto = {
   arrancar: (borrador: BorradorEntrada) => Promise<void>
   parar: () => Promise<void>
   descartar: () => Promise<void>
-  /** Vuelve a leer el cronometro del servidor (otra pestana, el movil...). */
+  /** Vuelve a leer el cronómetro del servidor (otra pestaña, el movil...). */
   recargar: () => Promise<void>
 }
 
@@ -34,7 +34,7 @@ export function ProveedorCronometro({
   inicial,
   children,
 }: {
-  /** El cronometro es unico por persona, pero solo se ve en su espacio. */
+  /** El cronómetro es único por persona, pero solo se ve en su espacio. */
   espacioId: string
   inicial: EntradaEnMarcha | null
   children: React.ReactNode
@@ -46,8 +46,8 @@ export function ProveedorCronometro({
   const supabaseRef = useRef(createClient())
 
   // Reloj: los segundos se calculan desde start_at en cada render en vez de
-  // acumularse, asi no se desincronizan si el navegador congela el intervalo
-  // (movil en segundo plano). Lo unico que se guarda es "que hora es".
+  // acumularse, así no se desincronizan si el navegador congela el intervalo
+  // (movil en segundo plano). Lo único que se guarda es "qué hora es".
   const segundos = enMarcha
     ? Math.max(
         0,
@@ -84,7 +84,7 @@ export function ProveedorCronometro({
     setEnMarcha(aEntradaEnMarcha(data))
   }, [espacioId])
 
-  // Si arrancaste el cronometro en el movil y abres el portatil, que cuadre.
+  // Si arrancaste el cronómetro en el movil y abres el portatil, que cuadre.
   useEffect(() => {
     const alVolver = () => {
       if (document.visibilityState === "visible") void recargar()
@@ -105,6 +105,7 @@ export function ProveedorCronometro({
           p_workspace_id: espacioId,
           // La funcion recibe uuid opcional: null y undefined valen lo mismo
           p_project_id: borrador.project_id ?? undefined,
+          p_edition_id: borrador.edition_id ?? undefined,
           p_task_id: borrador.task_id ?? undefined,
           p_description: borrador.description,
           p_billable: borrador.billable,

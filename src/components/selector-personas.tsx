@@ -7,7 +7,7 @@ import type { Miembro } from "@/lib/tipos"
 import { cn } from "@/lib/utils"
 
 /**
- * A quien mas le cuentan estas horas. No se las apunta directamente: a cada uno
+ * A quien más le cuentan estas horas. No se las apunta directamente: a cada uno
  * le llega una propuesta que tiene que aceptar.
  */
 export function SelectorPersonas({
@@ -22,7 +22,7 @@ export function SelectorPersonas({
   if (miembros.length === 0) {
     return (
       <p className="text-xs text-muted">
-        Cuando haya mas gente en el espacio podras compartir estas horas con
+        Cuando haya más gente en el espacio podrás compartir estas horas con
         ellos.
       </p>
     )
@@ -54,7 +54,7 @@ export function SelectorPersonas({
             ? "Solo para mi"
             : elegidas.length === 1
               ? elegidas[0].full_name
-              : `${elegidas.length} personas mas`}
+              : `${elegidas.length} personas más`}
         </span>
       </DropdownMenu.Trigger>
 

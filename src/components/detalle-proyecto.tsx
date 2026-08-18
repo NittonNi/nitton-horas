@@ -19,6 +19,8 @@ import {
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { SelectorColor } from "@/components/selector-color"
+import { EdicionesProyecto } from "@/components/ediciones-proyecto"
+import { caminoDe, ramas, SIN_CATEGORIA } from "@/lib/categorias"
 import { agrupar, totales } from "@/lib/informes"
 import {
   formatDateShort,
@@ -26,13 +28,22 @@ import {
   formatHoursDecimal,
   formatMoney,
 } from "@/lib/time"
-import type { Cliente, EntradaVista, ProyectoConCliente, Tarea } from "@/lib/tipos"
+import type {
+  Categoria,
+  Cliente,
+  Edicion,
+  EntradaVista,
+  ProyectoConCliente,
+  Tarea,
+} from "@/lib/tipos"
 import { cn } from "@/lib/utils"
 
 export function DetalleProyecto({
   proyecto,
   clientes,
+  categorias,
   tareas,
+  ediciones,
   entradas,
   espacioId,
   puedeGestionar,
@@ -40,7 +51,9 @@ export function DetalleProyecto({
 }: {
   proyecto: ProyectoConCliente
   clientes: Cliente[]
+  categorias: Categoria[]
   tareas: Tarea[]
+  ediciones: Edicion[]
   entradas: EntradaVista[]
   espacioId: string
   puedeGestionar: boolean
@@ -99,7 +112,11 @@ export function DetalleProyecto({
         </div>
 
         {puedeGestionar && (
-          <EditarProyecto proyecto={proyecto} clientes={clientes} />
+          <EditarProyecto
+            proyecto={proyecto}
+            clientes={clientes}
+            categorias={categorias}
+          />
         )}
       </div>
 
@@ -155,15 +172,23 @@ export function DetalleProyecto({
           titulo="Por tarea"
           grupos={porTarea}
           total={suma.segundos}
-          vacio="Las horas de este proyecto no estan repartidas en tareas."
+          vacio="Las horas de este proyecto no están repartidas en tareas."
         />
         <Desglose
           titulo="Por persona"
           grupos={porPersona}
           total={suma.segundos}
-          vacio="Todavia no hay horas apuntadas."
+          vacio="Todavía no hay horas apuntadas."
         />
       </div>
+
+      <EdicionesProyecto
+        espacioId={espacioId}
+        proyectoId={proyecto.id}
+        ediciones={ediciones}
+        entradas={cerradas}
+        puedeGestionar={puedeGestionar}
+      />
 
       <Tareas
         espacioId={espacioId}
@@ -324,7 +349,7 @@ function Tareas({
       </h2>
       <p className="mb-3 text-xs text-muted">
         Las formas fijas de desglosar este proyecto. Salen al elegir proyecto, y
-        se pueden crear tambien desde ahi.
+        se pueden crear también desde ahi.
       </p>
 
       {puedeGestionar && (
@@ -365,7 +390,7 @@ function Tareas({
 
       {tareas.length === 0 ? (
         <p className="py-2 text-sm text-muted">
-          Este proyecto no tiene tareas todavia.
+          Este proyecto no tiene tareas todavía.
         </p>
       ) : (
         <ul className="divide-y divide-line">
@@ -455,7 +480,7 @@ function Tareas({
   )
 }
 
-/* -------------------------------------------------------------- ultimas */
+/* -------------------------------------------------------------- últimas */
 
 function UltimasEntradas({
   entradas,
@@ -468,14 +493,14 @@ function UltimasEntradas({
 
   return (
     <section className="card p-4">
-      <h2 className="mb-3 text-sm font-semibold">Ultimas horas</h2>
+      <h2 className="mb-3 text-sm font-semibold">Últimas horas</h2>
       <div className="scroll-thin overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr>
               <th className="th">Fecha</th>
               <th className="th">Persona</th>
-              <th className="th">Descripcion</th>
+              <th className="th">Descripción</th>
               <th className="th text-right">Horas</th>
               {conImportes && <th className="th text-right">Importe</th>}
             </tr>
@@ -520,14 +545,17 @@ function UltimasEntradas({
 function EditarProyecto({
   proyecto,
   clientes,
+  categorias,
 }: {
   proyecto: ProyectoConCliente
   clientes: Cliente[]
+  categorias: Categoria[]
 }) {
   const router = useRouter()
   const [abierto, setAbierto] = useState(false)
   const [nombre, setNombre] = useState(proyecto.name)
   const [clienteId, setClienteId] = useState(proyecto.client_id ?? "")
+  const [categoriaId, setCategoriaId] = useState(proyecto.category_id ?? "")
   const [color, setColor] = useState(proyecto.color)
   const [facturable, setFacturable] = useState(proyecto.billable_default)
   const [presupuesto, setPresupuesto] = useState(
@@ -544,7 +572,7 @@ function EditarProyecto({
     }
     const horas = presupuesto.trim().replace(",", ".")
     if (horas && Number.isNaN(Number(horas))) {
-      setError("El presupuesto tiene que ser un numero de horas.")
+      setError("El presupuesto tiene que ser un número de horas.")
       return
     }
 
@@ -556,6 +584,7 @@ function EditarProyecto({
       .update({
         name: limpio,
         client_id: clienteId || null,
+        category_id: categoriaId || null,
         color,
         billable_default: facturable,
         budget_hours: horas ? Number(horas) : null,
@@ -662,6 +691,27 @@ function EditarProyecto({
                   inputMode="decimal"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="label" htmlFor="ep-categoria">
+                Categoria
+              </label>
+              <select
+                id="ep-categoria"
+                className="field"
+                value={categoriaId}
+                onChange={(e) => setCategoriaId(e.target.value)}
+              >
+                <option value="">{SIN_CATEGORIA}</option>
+                {ramas(
+                  categorias.filter((c) => !c.archived || c.id === categoriaId),
+                ).map(({ categoria, camino }) => (
+                  <option key={categoria.id} value={categoria.id}>
+                    {camino}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>

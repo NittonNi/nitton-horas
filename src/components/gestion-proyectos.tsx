@@ -141,7 +141,7 @@ export function GestionProyectos({
 
       {visibles.length === 0 && !creando && (
         <p className="py-3 text-sm text-muted">
-          Todavia no hay proyectos. Crea el primero para poder cronometrar.
+          Todavía no hay proyectos. Crea el primero para poder cronometrar.
         </p>
       )}
 
@@ -307,7 +307,7 @@ function FormularioProyecto({
     }
     const horas = valores.budget_hours.trim().replace(",", ".")
     if (horas && Number.isNaN(Number(horas))) {
-      setError("El presupuesto tiene que ser un numero de horas.")
+      setError("El presupuesto tiene que ser un número de horas.")
       return
     }
 

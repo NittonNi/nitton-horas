@@ -1,5 +1,5 @@
 /**
- * Duraciones, fechas y dinero. Todo en formato espanol: coma decimal,
+ * Duraciones, fechas y dinero. Todo en formato español: coma decimal,
  * semana que empieza en lunes y horario de Europe/Madrid (el mismo que usa
  * la columna generada `local_date` en Postgres).
  */
@@ -70,8 +70,8 @@ export function parseDurationToSeconds(raw: string): number | null {
     return Math.round(Number(`${decimal[1]}.${decimal[2]}`) * 3600)
   }
 
-  // un numero pelado: minutos hasta 59, horas a partir de ahi seria ambiguo,
-  // asi que se tratan siempre como minutos (es lo que espera quien teclea "45")
+  // un número pelado: minutos hasta 59, horas a partir de ahi sería ambiguo,
+  // así que se tratan siempre como minutos (es lo que espera quien teclea "45")
   const bare = input.match(/^(\d+)$/)
   if (bare) return Number(bare[1]) * 60
 
@@ -176,4 +176,51 @@ export function relativeDayLabel(key: string): string {
   if (key === today) return "Hoy"
   if (key === toDateKey(addDays(new Date(), -1))) return "Ayer"
   return formatDateLong(key)
+}
+
+/** "mié, 12 jun" — corto, para la cabecera de cada día. */
+export function formatDayAbbrev(key: string): string {
+  return fromDateKey(key).toLocaleDateString("es-ES", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  })
+}
+
+/** "Hoy", "Ayer" o "mié, 12 jun". */
+export function dayLabel(key: string): string {
+  const today = todayKey()
+  if (key === today) return "Hoy"
+  if (key === toDateKey(addDays(new Date(), -1))) return "Ayer"
+  return formatDayAbbrev(key)
+}
+
+/** El lunes de la semana de una fecha, en clave. */
+export function weekKey(key: string): string {
+  return toDateKey(startOfWeek(fromDateKey(key)))
+}
+
+/** "Esta semana", "Semana pasada" o "9 – 15 de junio". */
+export function weekLabel(mondayKey: string): string {
+  const estaSemana = toDateKey(startOfWeek(new Date()))
+  if (mondayKey === estaSemana) return "Esta semana"
+
+  const anterior = toDateKey(addDays(startOfWeek(new Date()), -7))
+  if (mondayKey === anterior) return "Semana pasada"
+
+  const lunes = fromDateKey(mondayKey)
+  const domingo = addDays(lunes, 6)
+  const mismoMes = lunes.getMonth() === domingo.getMonth()
+
+  const dia = (d: Date) => d.getDate()
+  const mes = (d: Date) => d.toLocaleDateString("es-ES", { month: "long" })
+
+  return mismoMes
+    ? `${dia(lunes)} – ${dia(domingo)} de ${mes(domingo)}`
+    : `${dia(lunes)} de ${mes(lunes)} – ${dia(domingo)} de ${mes(domingo)}`
+}
+
+/** Un objetivo en minutos, escrito como el resto de duraciones: "8:00". */
+export function formatObjetivoCorto(minutos: number): string {
+  return `${Math.floor(minutos / 60)}:${String(minutos % 60).padStart(2, "0")}`
 }

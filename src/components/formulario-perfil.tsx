@@ -80,7 +80,7 @@ export function FormularioPerfil({
             <p className="truncate text-sm">{perfil.email}</p>
           </div>
           <div>
-            <span className="label">Rol aqui</span>
+            <span className="label">Rol aquí</span>
             <p className="text-sm">
               {NOMBRE_ROL[rol]}
               {numeroEspacios > 1 && (

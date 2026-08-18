@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 
 import { getSesion } from "@/lib/sesion"
 import { veTodo } from "@/lib/roles"
+import { RUTA_APP } from "@/lib/rutas"
 import { SubNav } from "@/components/sub-nav"
 
 export default async function LayoutGestion({
@@ -10,21 +11,22 @@ export default async function LayoutGestion({
   children: React.ReactNode
 }) {
   const { rol } = await getSesion()
-  if (!veTodo(rol)) redirect("/")
+  if (!veTodo(rol)) redirect(RUTA_APP)
 
   const enlaces = [
-    { href: "/gestion", etiqueta: "Catalogo", exacto: true },
-    { href: "/gestion/equipo", etiqueta: "Equipo" },
-    { href: "/gestion/tarifas", etiqueta: "Tarifas", soloAdmin: true },
-    { href: "/gestion/importar", etiqueta: "Importar" },
+    { href: "/gestión", etiqueta: "Catálogo", exacto: true },
+    { href: "/gestión/categorías", etiqueta: "Categorización" },
+    { href: "/gestión/equipo", etiqueta: "Equipo" },
+    { href: "/gestión/tarifas", etiqueta: "Tarifas", soloAdmin: true },
+    { href: "/gestión/importar", etiqueta: "Importar" },
   ].filter((e) => !e.soloAdmin || rol === "admin")
 
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight">Gestion</h1>
+        <h1 className="text-lg font-semibold tracking-tight">Gestión</h1>
         <p className="mt-0.5 text-sm text-muted">
-          Clientes, proyectos, equipo y tarifas.
+          Clientes, proyectos, categorización, equipo y tarifas.
         </p>
       </div>
       <SubNav enlaces={enlaces} />

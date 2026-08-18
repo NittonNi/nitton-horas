@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
+import { RUTA_APP } from "@/lib/rutas"
 
 /** La G de Google, con sus colores. Va inline para no depender de nada. */
 function LogoGoogle() {
@@ -30,7 +31,7 @@ function LogoGoogle() {
   )
 }
 
-export function BotonGoogle({ volver = "/" }: { volver?: string }) {
+export function BotonGoogle({ volver = RUTA_APP }: { volver?: string }) {
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState<string | null>(null)
 

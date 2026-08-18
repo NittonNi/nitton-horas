@@ -38,12 +38,18 @@ export default async function PaginaProyectos() {
               : "Tus horas en cada uno."}
           </p>
         </div>
-        {gestor && <NuevoProyecto espacioId={espacio.id} clientes={catalogo.clientes} />}
+        {gestor && (
+          <NuevoProyecto
+            espacioId={espacio.id}
+            clientes={catalogo.clientes}
+            categorias={catalogo.categorias}
+          />
+        )}
       </div>
 
       {activos.length === 0 ? (
         <div className="card px-6 py-12 text-center">
-          <p className="text-sm font-medium">Aun no hay proyectos</p>
+          <p className="text-sm font-medium">Aún no hay proyectos</p>
           <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
             {gestor
               ? "Crea el primero y ya puedes empezar a apuntar horas contra el."

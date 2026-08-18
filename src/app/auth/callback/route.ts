@@ -1,15 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server"
 
 import { createClient } from "@/lib/supabase/server"
+import { RUTA_APP } from "@/lib/rutas"
 
 /**
- * Vuelta del acceso con Google. Supabase manda aqui un `code` de un solo uso
+ * Vuelta del acceso con Google. Supabase manda aquí un `code` de un solo uso
  * que hay que canjear por la sesion; a partir de ahi es una sesion normal.
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl
   const code = searchParams.get("code")
-  const next = searchParams.get("next") ?? "/"
+  const next = searchParams.get("next") ?? RUTA_APP
 
   // Google puede volver con un "no" (permiso denegado, cuenta equivocada...)
   const fallo = searchParams.get("error_description") ?? searchParams.get("error")

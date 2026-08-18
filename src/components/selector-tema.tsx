@@ -13,8 +13,8 @@ const OPCIONES: { valor: Tema; icono: typeof Sun; etiqueta: string }[] = [
 
 /**
  * El tema vive en localStorage, no en React: lo aplica el script del layout
- * antes de pintar nada. Aqui solo se lee y se escribe, con un almacen externo
- * para que el boton se entere de los cambios (incluidos los de otra pestana).
+ * antes de pintar nada. Aquí solo se lee y se escribe, con un almacen externo
+ * para que el boton se entere de los cambios (incluidos los de otra pestaña).
  */
 const oyentes = new Set<() => void>()
 

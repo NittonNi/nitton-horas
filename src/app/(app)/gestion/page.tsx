@@ -8,7 +8,7 @@ export const metadata = { title: "Catalogo" }
 
 export default async function PaginaCatalogo() {
   const { espacio } = await getSesion()
-  // Con archivados: aqui es justo donde se reactivan.
+  // Con archivados: aquí es justo donde se reactivan.
   const catalogo = await cargarCatalogo(espacio.id, true)
 
   return (

@@ -127,7 +127,7 @@ export function GestionClientes({
 
       <ul className="mt-3 divide-y divide-line">
         {visibles.length === 0 && (
-          <li className="py-3 text-sm text-muted">Todavia no hay clientes.</li>
+          <li className="py-3 text-sm text-muted">Todavía no hay clientes.</li>
         )}
         {visibles.map((cliente) => (
           <li

@@ -64,7 +64,7 @@ export function SelectorProyecto({
   const campoBusqueda = useRef<HTMLInputElement>(null)
 
   /**
-   * Lo recien creado desde aqui. El catalogo viene del servidor y tarda un
+   * Lo recien creado desde aquí. El catalogo viene del servidor y tarda un
    * instante en volver; hasta entonces se pinta de esta lista.
    */
   const [reciente, setReciente] = useState<{
@@ -336,7 +336,7 @@ export function SelectorProyecto({
                                 className="flex w-full items-center gap-1.5 py-1.5 pl-3 pr-2 text-left text-sm text-accent transition hover:bg-surface-2"
                               >
                                 <Plus className="h-3.5 w-3.5" />
-                                Anadir tarea
+                                Añadir tarea
                               </button>
                             ))}
 
@@ -355,7 +355,7 @@ export function SelectorProyecto({
                   <p className="px-3 py-6 text-center text-sm text-muted">
                     {consulta
                       ? `Nada coincide con «${consulta}».`
-                      : "Todavia no hay proyectos."}
+                      : "Todavía no hay proyectos."}
                   </p>
                 )}
               </div>
@@ -524,7 +524,7 @@ function FormularioProyecto({
                 void crear()
               }
             }}
-            placeholder="Rediseno de la web"
+            placeholder="Rediseño de la web"
           />
         </div>
 

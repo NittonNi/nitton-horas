@@ -22,7 +22,7 @@ export type Propuesta = {
 
 /**
  * Horas que alguien ha apuntado contando contigo. No son tuyas hasta que las
- * aceptas: por eso viven aparte y no suman en ningun total todavia.
+ * aceptas: por eso viven aparte y no suman en ningún total todavía.
  */
 export function PropuestasPendientes({ propuestas }: { propuestas: Propuesta[] }) {
   const router = useRouter()
@@ -84,7 +84,7 @@ export function PropuestasPendientes({ propuestas }: { propuestas: Propuesta[] }
               />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">
-                  {propuesta.description || propuesta.project_name || "Sin descripcion"}
+                  {propuesta.description || propuesta.project_name || "Sin descripción"}
                 </p>
                 <p className="truncate text-xs text-muted">
                   {propuesta.de} · {formatDateLong(propuesta.start_at.slice(0, 10))}

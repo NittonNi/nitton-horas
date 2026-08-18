@@ -2,9 +2,9 @@ import { createClient } from "@/lib/supabase/server"
 import type { Catalogo, EntradaVista, Miembro } from "@/lib/tipos"
 
 /**
- * Todo lo de aqui va filtrado por espacio de trabajo. La RLS ya lo impide por
- * su cuenta, pero el filtro explicito evita traer de mas y deja claro, leyendo
- * el codigo, que ninguna consulta se sale de su espacio.
+ * Todo lo de aquí va filtrado por espacio de trabajo. La RLS ya lo impide por
+ * su cuenta, pero el filtro explicito evita traer de más y deja claro, leyendo
+ * el código, que ninguna consulta se sale de su espacio.
  */
 
 export async function cargarCatalogo(
@@ -13,16 +13,33 @@ export async function cargarCatalogo(
 ): Promise<Catalogo> {
   const supabase = await createClient()
 
-  const [clientes, proyectos, tareas, etiquetas] = await Promise.all([
-    supabase.from("clients").select("*").eq("workspace_id", espacioId).order("name"),
-    supabase
-      .from("projects")
-      .select("*, clients(id, name)")
-      .eq("workspace_id", espacioId)
-      .order("name"),
-    supabase.from("tasks").select("*").eq("workspace_id", espacioId).order("name"),
-    supabase.from("tags").select("*").eq("workspace_id", espacioId).order("name"),
-  ])
+  const [clientes, proyectos, tareas, etiquetas, categorias, ediciones] =
+    await Promise.all([
+      supabase
+        .from("clients")
+        .select("*")
+        .eq("workspace_id", espacioId)
+        .order("name"),
+      supabase
+        .from("projects")
+        .select("*, clients(id, name)")
+        .eq("workspace_id", espacioId)
+        .order("name"),
+      supabase.from("tasks").select("*").eq("workspace_id", espacioId).order("name"),
+      supabase.from("tags").select("*").eq("workspace_id", espacioId).order("name"),
+      supabase
+        .from("categories")
+        .select("*")
+        .eq("workspace_id", espacioId)
+        .order("position")
+        .order("name"),
+      supabase
+        .from("project_editions")
+        .select("*")
+        .eq("workspace_id", espacioId)
+        .order("position")
+        .order("name"),
+    ])
 
   const vivo = <T extends { archived: boolean }>(filas: T[] | null) =>
     (filas ?? []).filter((f) => incluirArchivados || !f.archived)
@@ -32,10 +49,12 @@ export async function cargarCatalogo(
     proyectos: vivo(proyectos.data) as Catalogo["proyectos"],
     tareas: vivo(tareas.data),
     etiquetas: vivo(etiquetas.data),
+    categorias: vivo(categorias.data),
+    ediciones: vivo(ediciones.data),
   }
 }
 
-/** Entradas entre dos fechas (inclusive), de la mas reciente a la mas antigua. */
+/** Entradas entre dos fechas (inclusive), de la más reciente a la más antigua. */
 export async function cargarEntradas(opciones: {
   espacioId: string
   desde: string
@@ -64,14 +83,14 @@ export async function cargarEntradas(opciones: {
   return (data ?? []) as EntradaVista[]
 }
 
-/** Horas que otra persona ha apuntado contando conmigo, sin contestar todavia. */
+/** Horas que otra persona ha apuntado contando conmigo, sin contestar todavía. */
 export async function cargarPropuestas(espacioId: string) {
   const supabase = await createClient()
   const { data } = await supabase.rpc("mis_invitaciones", { p_workspace: espacioId })
   return data ?? []
 }
 
-/** El equipo de un espacio, con el rol que tiene cada uno alli. */
+/** El equipo de un espacio, con el rol que tiene cada uno allí. */
 export async function cargarMiembros(espacioId: string): Promise<Miembro[]> {
   const supabase = await createClient()
 

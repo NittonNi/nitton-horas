@@ -48,7 +48,9 @@ export default async function PaginaProyecto({
     <DetalleProyecto
       proyecto={proyecto}
       clientes={catalogo.clientes}
+      categorias={catalogo.categorias}
       tareas={catalogo.tareas.filter((t) => t.project_id === id)}
+      ediciones={catalogo.ediciones.filter((e) => e.project_id === id)}
       entradas={entradas}
       espacioId={espacio.id}
       puedeGestionar={gestor}

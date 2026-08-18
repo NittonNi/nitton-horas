@@ -21,7 +21,7 @@ export async function createClient() {
             )
           } catch {
             // Los Server Components no pueden escribir cookies. El middleware
-            // ya refresca la sesion, asi que aqui se puede ignorar.
+            // ya refresca la sesion, así que aquí se puede ignorar.
           }
         },
       },

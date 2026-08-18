@@ -13,7 +13,7 @@ export default async function LayoutApp({
   const sesion = await getSesion()
   const supabase = await createClient()
 
-  // El cronometro es unico por persona, pero solo se muestra si corre aqui
+  // El cronómetro es único por persona, pero solo se muestra si corre aquí
   const { data } = await supabase
     .from("time_entries")
     .select(SELECT_EN_MARCHA)

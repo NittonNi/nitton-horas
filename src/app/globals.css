@@ -51,8 +51,8 @@
   --running: var(--live);
   --running-soft: var(--live-soft);
 
-  --radio: 12px;
-  --radio-sm: 8px;
+  --radio: 8px;
+  --radio-sm: 6px;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.04);
   --shadow-lg: 0 12px 40px -8px rgb(0 0 0 / 0.16), 0 0 0 0.5px rgb(0 0 0 / 0.08);
 }

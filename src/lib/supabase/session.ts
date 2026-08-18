@@ -2,9 +2,10 @@ import { NextResponse, type NextRequest } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 
 import type { Database } from "@/lib/database.types"
+import { RUTA_APP } from "@/lib/rutas"
 
-/** Rutas accesibles sin sesion. */
-const PUBLIC_PATHS = ["/acceso", "/auth"]
+/** Rutas accesibles sin sesion: la raiz es la landing pública. */
+const PUBLIC_PATHS = ["/", "/acceso", "/auth"]
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request })
@@ -48,9 +49,11 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // La portada si se puede ver con la sesion abierta: ensena el producto y
+  // lleva al espacio. El formulario de acceso, en cambio, ya no pinta nada.
   if (user && path === "/acceso") {
     const url = request.nextUrl.clone()
-    url.pathname = "/"
+    url.pathname = RUTA_APP
     url.search = ""
     return NextResponse.redirect(url)
   }

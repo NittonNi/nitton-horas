@@ -1,8 +1,8 @@
 /**
  * Descargas del informe.
  *
- * El Excel es el formato que de verdad se usa despues: va con columnas
- * tipadas -la fecha es una fecha, las horas son un numero y el importe es
+ * El Excel es el formato que de verdad se usa después: va con columnas
+ * tipadas -la fecha es una fecha, las horas son un número y el importe es
  * moneda-, cabecera fijada y filtros, para poder ordenar y hacer tablas
  * dinamicas sin tener que arreglar nada antes.
  */
@@ -32,7 +32,10 @@ export function exportarCsv(entradas: EntradaVista[], nombre: string) {
     Fecha: formatDateShort(entrada.local_date),
     Persona: entrada.user_name,
     Cliente: entrada.client_name ?? "",
+    Categoria: entrada.category_name ?? "",
+    Subcategoria: entrada.subcategory_name ?? "",
     Proyecto: entrada.project_name ?? "",
+    Edicion: entrada.edition_name ?? "",
     Tarea: entrada.task_name ?? "",
     Descripcion: entrada.description,
     Etiquetas: entrada.tags.join(", "),
@@ -47,7 +50,7 @@ export function exportarCsv(entradas: EntradaVista[], nombre: string) {
         : "",
   }))
 
-  // Punto y coma y BOM: es lo que espera un Excel en espanol
+  // Punto y coma y BOM: es lo que espera un Excel en español
   const csv = Papa.unparse(filas, { delimiter: ";" })
   descargar(
     new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" }),
@@ -74,16 +77,19 @@ export async function exportarExcel(
   entradas: EntradaVista[],
   opciones: { nombre: string; desde: string; hasta: string; conImportes: boolean },
 ) {
-  // El paquete no tiene entrada raiz: hay que pedir la version de navegador
+  // El paquete no tiene entrada raiz: hay que pedir la versión de navegador
   const { default: writeXlsxFile } = await import("write-excel-file/browser")
 
   const columnas = [
     { column: "Fecha", width: 12 },
     { column: "Persona", width: 22 },
     { column: "Cliente", width: 22 },
+    { column: "Categoría", width: 20 },
+    { column: "Subcategoría", width: 20 },
     { column: "Proyecto", width: 26 },
+    { column: "Edición", width: 18 },
     { column: "Tarea", width: 22 },
-    { column: "Descripcion", width: 46 },
+    { column: "Descripción", width: 46 },
     { column: "Etiquetas", width: 22 },
     { column: "Horas", width: 10 },
     { column: "Facturable", width: 12 },
@@ -97,7 +103,10 @@ export async function exportarExcel(
         { value: fromDateKey(entrada.local_date), type: Date, format: "dd/mm/yyyy" },
         { value: entrada.user_name, type: String },
         { value: entrada.client_name ?? "", type: String },
+        { value: entrada.category_name ?? "", type: String },
+        { value: entrada.subcategory_name ?? "", type: String },
         { value: entrada.project_name ?? "", type: String },
+        { value: entrada.edition_name ?? "", type: String },
         { value: entrada.task_name ?? "", type: String },
         { value: entrada.description, type: String, wrap: true },
         { value: entrada.tags.join(", "), type: String },

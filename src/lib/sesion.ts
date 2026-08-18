@@ -52,7 +52,7 @@ export async function getPertenencias(userId: string): Promise<Pertenencia[]> {
 
 /**
  * Perfil + espacio activo + rol en ese espacio. Manda a /bienvenida a quien
- * todavia no pertenece a ninguno.
+ * todavía no pertenece a ninguno.
  */
 export async function getSesion(): Promise<Sesion> {
   const perfil = await getPerfil()

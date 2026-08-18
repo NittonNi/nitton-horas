@@ -11,7 +11,7 @@ export type EnlaceSub = {
   exacto?: boolean
 }
 
-/** Pestanas de segundo nivel, dentro de una seccion. */
+/** Pestañas de segundo nivel, dentro de una seccion. */
 export function SubNav({ enlaces }: { enlaces: EnlaceSub[] }) {
   const pathname = usePathname()
 

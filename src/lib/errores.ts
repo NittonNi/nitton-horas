@@ -12,7 +12,7 @@ export function mensajeError(error: unknown): string {
   // Postgres
   if (code === "23505") {
     if (raw.includes("one_running_per_user")) {
-      return "Ya tienes un cronometro en marcha."
+      return "Ya tienes un cronómetro en marcha."
     }
     if (raw.includes("clients_name_unique")) return "Ya existe un cliente con ese nombre."
     if (raw.includes("projects_name_per_client")) return "Ese cliente ya tiene un proyecto con ese nombre."
@@ -47,11 +47,11 @@ export function mensajeError(error: unknown): string {
     "Invalid login credentials": "Correo o contrasena incorrectos.",
     "Email not confirmed":
       "Tu correo esta sin confirmar. Revisa la bandeja de entrada.",
-    "User already registered": "Ya existe una cuenta con ese correo. Inicia sesion.",
+    "User already registered": "Ya existe una cuenta con ese correo. Inicia sesión.",
     "Password should be at least 6 characters":
       "La contrasena tiene que tener al menos 6 caracteres.",
     "Email rate limit exceeded":
-      "Se ha superado el limite de correos. Espera unos minutos.",
+      "Se ha superado el límite de correos. Espera unos minutos.",
     "Signups not allowed for this instance":
       "El registro esta cerrado. Pide a un administrador que te invite.",
   }
@@ -60,7 +60,7 @@ export function mensajeError(error: unknown): string {
   }
 
   if (raw.includes("Database error saving new user") || raw.includes("no esta autorizada")) {
-    return "Esa direccion no esta autorizada. Pide a un administrador que te invite."
+    return "Esa dirección no esta autorizada. Pide a un administrador que te invite."
   }
   if (raw.includes("Failed to fetch") || raw.includes("NetworkError")) {
     return "No hay conexion con el servidor. Comprueba tu red."

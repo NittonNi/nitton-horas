@@ -10,9 +10,9 @@ import { formatDateShort, formatMoney, todayKey } from "@/lib/time"
 import type { Miembro, ProyectoConCliente, Tarifa } from "@/lib/tipos"
 
 /**
- * La base resuelve la tarifa de cada entrada con `resolve_rate`: gana la mas
- * especifica (persona + proyecto), luego proyecto, luego persona, y por ultimo
- * la general. A igualdad de ambito, la mas reciente que ya este vigente.
+ * La base resuelve la tarifa de cada entrada con `resolve_rate`: gana la más
+ * especifica (persona + proyecto), luego proyecto, luego persona, y por último
+ * la general. A igualdad de ambito, la más reciente que ya este vigente.
  */
 export function GestionTarifas({
   espacioId,
@@ -48,7 +48,7 @@ export function GestionTarifas({
   }
 
   function prioridad(tarifa: Tarifa) {
-    if (tarifa.user_id && tarifa.project_id) return "Mas especifica"
+    if (tarifa.user_id && tarifa.project_id) return "Más especifica"
     if (tarifa.project_id) return "Por proyecto"
     if (tarifa.user_id) return "Por persona"
     return "Por defecto"
@@ -57,7 +57,7 @@ export function GestionTarifas({
   async function crear() {
     const valor = Number(importe.trim().replace(",", "."))
     if (!Number.isFinite(valor) || valor <= 0) {
-      setError("Escribe un importe por hora valido.")
+      setError("Escribe un importe por hora válido.")
       return
     }
     setOcupado(true)
@@ -192,7 +192,7 @@ export function GestionTarifas({
             ) : (
               <Plus className="h-4 w-4" />
             )}
-            Anadir tarifa
+            Añadir tarifa
           </button>
         </form>
 
@@ -210,7 +210,7 @@ export function GestionTarifas({
         </h2>
 
         {tarifas.length === 0 ? (
-          <p className="py-3 text-sm text-muted">Todavia no hay ninguna tarifa.</p>
+          <p className="py-3 text-sm text-muted">Todavía no hay ninguna tarifa.</p>
         ) : (
           <div className="scroll-thin overflow-x-auto">
             <table className="w-full text-sm">

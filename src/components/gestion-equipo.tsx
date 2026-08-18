@@ -6,6 +6,7 @@ import { Loader2, Mail, Plus, Trash2 } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
+import { formatObjetivo, parseObjetivo } from "@/lib/categorias"
 import { formatDateShort } from "@/lib/time"
 import { NOMBRE_ROL, type Rol } from "@/lib/roles"
 import {
@@ -110,7 +111,7 @@ function Miembros({
       <ul className="divide-y divide-line">
         {miembros.map((miembro) => {
           const soyYo = miembro.id === yoId
-          // No dejar el espacio sin ningun administrador activo
+          // No dejar el espacio sin ningún administrador activo
           const ultimoAdmin = miembro.role === "admin" && miembro.active && admins <= 1
 
           return (
@@ -136,7 +137,7 @@ function Miembros({
                   disabled={ocupado === miembro.id || ultimoAdmin}
                   title={
                     ultimoAdmin
-                      ? "Es el unico administrador activo"
+                      ? "Es el único administrador activo"
                       : "Rol dentro de este espacio"
                   }
                   onChange={(e) =>
@@ -211,7 +212,7 @@ function Invitaciones({
   async function invitar() {
     const correo = email.trim().toLowerCase()
     if (!correo.includes("@")) {
-      setError("Escribe una direccion de correo valida.")
+      setError("Escribe una dirección de correo válida.")
       return
     }
     setOcupado(true)
@@ -251,7 +252,7 @@ function Invitaciones({
     <section className="card p-4">
       <h2 className="mb-1 text-sm font-semibold">Invitaciones</h2>
       <p className="mb-3 text-xs text-muted">
-        Autoriza una direccion y esa persona vera este espacio nada mas entrar en
+        Autoriza una dirección y esa persona vera este espacio nada más entrar en
         la app, sin que le mandes nada.
       </p>
 
@@ -332,7 +333,7 @@ function Invitaciones({
                 onClick={() => void retirar(inv.id)}
                 disabled={ocupado}
                 className="btn btn-ghost p-1.5 text-danger"
-                aria-label={`Retirar la invitacion de ${inv.email}`}
+                aria-label={`Retirar la invitación de ${inv.email}`}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
@@ -352,6 +353,12 @@ function Ajustes({ espacio }: { espacio: Espacio }) {
   const [zona, setZona] = useState(espacio.timezone)
   const [dominios, setDominios] = useState(espacio.allowed_domains.join(", "))
   const [estiloTexto, setEstiloTexto] = useState(espacio.text_case)
+  const [modoEtiquetas, setModoEtiquetas] = useState(espacio.tag_mode)
+  const [exigeProyecto, setExigeProyecto] = useState(espacio.require_project)
+  const [objDia, setObjDia] = useState(formatObjetivo(espacio.goal_daily_minutes))
+  const [objSemana, setObjSemana] = useState(
+    formatObjetivo(espacio.goal_weekly_minutes),
+  )
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [guardado, setGuardado] = useState(false)
@@ -385,6 +392,14 @@ function Ajustes({ espacio }: { espacio: Espacio }) {
       .map((d) => d.trim().toLowerCase().replace(/^@/, ""))
       .filter(Boolean)
 
+    const dia = objDia.trim() ? parseObjetivo(objDia) : null
+    const semana = objSemana.trim() ? parseObjetivo(objSemana) : null
+    if ((objDia.trim() && dia === null) || (objSemana.trim() && semana === null)) {
+      setGuardando(false)
+      setError("No entiendo esas horas. Prueba con 8, 8h o 7:30.")
+      return
+    }
+
     const supabase = createClient()
     const { error: err } = await supabase
       .from("workspaces")
@@ -393,6 +408,10 @@ function Ajustes({ espacio }: { espacio: Espacio }) {
         timezone: zona,
         allowed_domains: lista,
         text_case: estiloTexto,
+        tag_mode: modoEtiquetas,
+        require_project: exigeProyecto,
+        goal_daily_minutes: dia,
+        goal_weekly_minutes: semana,
       })
       .eq("id", espacio.id)
 
@@ -452,7 +471,7 @@ function Ajustes({ espacio }: { espacio: Espacio }) {
 
         <div>
           <label className="label" htmlFor="ws-dominios">
-            Alta automatica por dominio
+            Alta automática por dominio
           </label>
           <input
             id="ws-dominios"
@@ -463,13 +482,73 @@ function Ajustes({ espacio }: { espacio: Espacio }) {
           />
           <p className="mt-1 text-xs text-muted">
             Quien entre con un correo de estos dominios podra unirse solo, como
-            miembro. Dejalo vacio para exigir invitacion.
+            miembro. Dejalo vacio para exigir invitación.
           </p>
         </div>
 
-        {error && (
-          <p className="rounded-lg bg-danger-soft p-2 text-sm text-danger">{error}</p>
-        )}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className="label" htmlFor="ws-objetivo-dia">
+              Objetivo al día
+            </label>
+            <input
+              id="ws-objetivo-dia"
+              className="field cifra"
+              value={objDia}
+              onChange={(e) => setObjDia(e.target.value)}
+              placeholder="Sin objetivo"
+            />
+          </div>
+          <div>
+            <label className="label" htmlFor="ws-objetivo-semana">
+              Objetivo a la semana
+            </label>
+            <input
+              id="ws-objetivo-semana"
+              className="field cifra"
+              value={objSemana}
+              onChange={(e) => setObjSemana(e.target.value)}
+              placeholder="Sin objetivo"
+            />
+          </div>
+        </div>
+        <p className="-mt-1 text-xs text-muted">
+          Horas por persona: lo mismo para todo el equipo. Se ven en el
+          cronómetro, restando lo que falta. Los objetivos por rama van en
+          Categorización, y los de un proyecto dentro del proyecto.
+        </p>
+
+        <div>
+          <label className="label" htmlFor="ws-etiquetas">
+            Etiquetas por entrada
+          </label>
+          <select
+            id="ws-etiquetas"
+            className="field"
+            value={modoEtiquetas}
+            onChange={(e) => setModoEtiquetas(e.target.value)}
+          >
+            <option value="varias">Se pueden poner varias</option>
+            <option value="una">Solo una por entrada</option>
+          </select>
+        </div>
+
+        <label className="flex items-start gap-2.5 rounded-[var(--radio-sm)] border border-line bg-surface-2/60 p-3">
+          <input
+            type="checkbox"
+            checked={exigeProyecto}
+            onChange={(e) => setExigeProyecto(e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-[color:var(--accent)]"
+          />
+          <span>
+            <span className="block text-sm font-medium">
+              No dejar parar el cronómetro sin proyecto
+            </span>
+            <span className="mt-0.5 block text-xs text-muted">
+              Así no quedan horas sueltas que luego nadie sabe dónde meter.
+            </span>
+          </span>
+        </label>
 
         <div>
           <label className="label" htmlFor="ws-texto">
@@ -486,8 +565,8 @@ function Ajustes({ espacio }: { espacio: Espacio }) {
           </select>
           <p className="mt-1 text-xs text-muted">
             Se aplica al guardar, a las descripciones y a los nombres de
-            clientes, proyectos, tareas y etiquetas. Vale tambien para lo que
-            entra por el importador, asi que nadie tiene que acordarse.
+            clientes, proyectos, tareas y etiquetas. Vale también para lo que
+            entra por el importador, así que nadie tiene que acordarse.
           </p>
         </div>
 

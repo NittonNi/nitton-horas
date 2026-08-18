@@ -4,7 +4,7 @@ import type { Rol } from "@/lib/roles"
 export type Perfil = Tables<"profiles">
 export type Espacio = Tables<"workspaces">
 
-/** Un espacio al que pertenezco, con el rol que tengo alli. */
+/** Un espacio al que pertenezco, con el rol que tengo allí. */
 export type Pertenencia = { espacio: Espacio; rol: Rol }
 
 export type Sesion = {
@@ -18,12 +18,14 @@ export type Sesion = {
 export type Cliente = Tables<"clients">
 export type Proyecto = Tables<"projects">
 export type Tarea = Tables<"tasks">
+export type Categoria = Tables<"categories">
+export type Edicion = Tables<"project_editions">
 export type Etiqueta = Tables<"tags">
 export type Entrada = Tables<"time_entries">
 export type Tarifa = Tables<"rates">
 export type Invitacion = Tables<"invitations">
 
-/** Una persona dentro de un espacio concreto: su perfil mas su rol alli. */
+/** Una persona dentro de un espacio concreto: su perfil más su rol allí. */
 export type Miembro = {
   id: string
   full_name: string
@@ -43,6 +45,11 @@ export type EntradaVista = {
   project_color: string | null
   client_id: string | null
   client_name: string | null
+  category_id: string | null
+  category_name: string | null
+  subcategory_name: string | null
+  edition_id: string | null
+  edition_name: string | null
   task_id: string | null
   task_name: string | null
   description: string
@@ -67,12 +74,25 @@ export type Catalogo = {
   proyectos: ProyectoConCliente[]
   tareas: Tarea[]
   etiquetas: Etiqueta[]
+  /** Arbol de dos niveles: las de primer nivel llevan parent_id nulo. */
+  categorias: Categoria[]
+  /** Ediciones de los proyectos que se repiten (TBCE 1, TBCE 2...). */
+  ediciones: Edicion[]
+}
+
+/** Una rama de la categorizacion con su camino ya montado, para pintarla. */
+export type RamaCategoria = {
+  categoria: Categoria
+  padre: Categoria | null
+  /** "Backoffice" o "Proyectos / Eventos". */
+  camino: string
 }
 
 export type EntradaEnMarcha = {
   id: string
   workspace_id: string
   project_id: string | null
+  edition_id: string | null
   task_id: string | null
   description: string
   start_at: string
@@ -85,6 +105,7 @@ export type EntradaEnMarcha = {
 /** Lo que hace falta para arrancar o guardar una entrada. */
 export type BorradorEntrada = {
   project_id: string | null
+  edition_id: string | null
   task_id: string | null
   description: string
   billable: boolean
@@ -93,6 +114,7 @@ export type BorradorEntrada = {
 
 export const BORRADOR_VACIO: BorradorEntrada = {
   project_id: null,
+  edition_id: null,
   task_id: null,
   description: "",
   billable: false,
@@ -101,8 +123,8 @@ export const BORRADOR_VACIO: BorradorEntrada = {
 
 /**
  * Colores de proyecto: una rueda completa pero toda a la misma saturacion y
- * luminosidad, para que ninguno grite mas que los demas y todos se lean igual
- * de bien sobre papel claro y sobre oscuro. Se evita el naranja de la senal.
+ * luminosidad, para que ninguno grite más que los demas y todos se lean igual
+ * de bien sobre papel claro y sobre oscuro. Se evita el naranja de la señal.
  */
 export const COLORES_PROYECTO = [
   "#3d6fb4",

@@ -6,6 +6,7 @@ import { AlertCircle, Loader2, MailCheck } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
+import { RUTA_APP } from "@/lib/rutas"
 import { BotonGoogle } from "@/components/boton-google"
 
 type Modo = "entrar" | "registrarse"
@@ -13,9 +14,12 @@ type Modo = "entrar" | "registrarse"
 export function FormularioAcceso() {
   const router = useRouter()
   const params = useSearchParams()
-  const volver = params.get("volver") || "/"
+  const volver = params.get("volver") || RUTA_APP
 
-  const [modo, setModo] = useState<Modo>("entrar")
+  // La portada enlaza directamente a crear cuenta con ?modo=registrarse
+  const [modo, setModo] = useState<Modo>(
+    params.get("modo") === "registrarse" ? "registrarse" : "entrar",
+  )
   const [nombre, setNombre] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -54,7 +58,7 @@ export function FormularioAcceso() {
         })
         if (error) throw error
 
-        // Si la confirmacion por correo esta activada no hay sesion todavia
+        // Si la confirmacion por correo esta activada no hay sesion todavía
         if (data.session) {
           router.push(volver)
           router.refresh()
@@ -76,7 +80,7 @@ export function FormularioAcceso() {
         <h2 className="font-semibold">Revisa tu correo</h2>
         <p className="mt-2 text-sm text-muted">
           Te hemos enviado un enlace a <strong>{email}</strong> para confirmar la
-          cuenta. Al pulsarlo entraras directamente.
+          cuenta. Al pulsarlo entrarás directamente.
         </p>
         <button
           type="button"
@@ -170,7 +174,7 @@ export function FormularioAcceso() {
           required
         />
         {modo === "registrarse" && (
-          <p className="mt-1.5 text-xs text-muted">Minimo 8 caracteres.</p>
+          <p className="mt-1.5 text-xs text-muted">Mínimo 8 caracteres.</p>
         )}
       </div>
 
@@ -188,7 +192,7 @@ export function FormularioAcceso() {
 
       {modo === "registrarse" && (
         <p className="text-center text-xs text-muted">
-          Al entrar podras crear tu espacio de trabajo o unirte a uno al que te
+          Al entrar podrás crear tu espacio de trabajo o unirte a uno al que te
           hayan invitado.
         </p>
       )}

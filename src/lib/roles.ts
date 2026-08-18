@@ -1,9 +1,9 @@
 import type { Enums } from "@/lib/database.types"
 
 /**
- * Roles dentro de un espacio de trabajo. Vive aparte de `sesion.ts` a
- * proposito: eso es codigo de servidor (lee cookies) y esto lo necesitan
- * tambien los componentes de cliente.
+ * Roles dentro de un espacio de trabajo. Vive aparte de `sesión.ts` a
+ * proposito: eso es código de servidor (lee cookies) y esto lo necesitan
+ * también los componentes de cliente.
  */
 export type Rol = Enums<"user_role">
 

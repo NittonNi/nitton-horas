@@ -4,6 +4,7 @@ import { ChevronRight } from "lucide-react"
 import { getSesion } from "@/lib/sesion"
 import { veTodo } from "@/lib/roles"
 import { cargarCatalogo } from "@/lib/datos"
+import { caminoDe } from "@/lib/categorias"
 import { createClient } from "@/lib/supabase/server"
 import { NuevoProyecto } from "@/components/nuevo-proyecto"
 import { formatDurationShort, formatMoney, formatDateShort } from "@/lib/time"
@@ -60,6 +61,7 @@ export default async function PaginaProyectos() {
         <Lista
           proyectos={activos}
           tareas={catalogo.tareas}
+          categorias={catalogo.categorias}
           porProyecto={porProyecto}
           conImportes={gestor}
         />
@@ -71,6 +73,7 @@ export default async function PaginaProyectos() {
           <Lista
             proyectos={archivados}
             tareas={catalogo.tareas}
+            categorias={catalogo.categorias}
             porProyecto={porProyecto}
             conImportes={gestor}
             apagados
@@ -93,12 +96,14 @@ type Resumen = {
 function Lista({
   proyectos,
   tareas,
+  categorias,
   porProyecto,
   conImportes,
   apagados = false,
 }: {
   proyectos: Awaited<ReturnType<typeof cargarCatalogo>>["proyectos"]
   tareas: Awaited<ReturnType<typeof cargarCatalogo>>["tareas"]
+  categorias: Awaited<ReturnType<typeof cargarCatalogo>>["categorias"]
   porProyecto: Map<string, Resumen>
   conImportes: boolean
   apagados?: boolean
@@ -130,7 +135,16 @@ function Lista({
             />
 
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{proyecto.name}</p>
+              <p className="flex min-w-0 items-center gap-2">
+                <span className="truncate text-sm font-medium">
+                  {proyecto.name}
+                </span>
+                {caminoDe(categorias, proyecto.category_id) && (
+                  <span className="chip shrink-0">
+                    {caminoDe(categorias, proyecto.category_id)}
+                  </span>
+                )}
+              </p>
               <p className="truncate text-xs text-muted">
                 {proyecto.clients?.name ?? "Sin cliente"}
                 {suyas > 0 && ` · ${suyas} ${suyas === 1 ? "tarea" : "tareas"}`}

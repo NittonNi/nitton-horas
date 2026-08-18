@@ -11,6 +11,7 @@ import { DialogoEntrada } from "@/components/dialogo-entrada"
 import { SelectorPersonas } from "@/components/selector-personas"
 import { SelectorProyecto } from "@/components/selector-proyecto"
 import { SelectorEtiquetas } from "@/components/selector-etiquetas"
+import { SelectorEdicion } from "@/components/selector-edicion"
 import {
   ALTO_HORA,
   comoHora,
@@ -595,6 +596,7 @@ function DialogoNuevaEntrada({
 }) {
   const router = useRouter()
   const [descripcion, setDescripcion] = useState("")
+  const [edicionId, setEdicionId] = useState<string | null>(null)
   const [proyecto, setProyecto] = useState<{
     project_id: string | null
     task_id: string | null
@@ -617,6 +619,11 @@ function DialogoNuevaEntrada({
     minutosInicio === null || minutosFin === null
       ? null
       : (minutosFin > minutosInicio ? minutosFin : minutosFin + 24 * 60) - minutosInicio
+
+  /** Ediciones del proyecto elegido; casi ningun proyecto tiene. */
+  const ediciones = proyecto.project_id
+    ? catalogo.ediciones.filter((e) => e.project_id === proyecto.project_id)
+    : []
 
   function elegirProyecto(sel: { project_id: string | null; task_id: string | null }) {
     setProyecto(sel)
@@ -643,6 +650,7 @@ function DialogoNuevaEntrada({
         workspace_id: espacioId,
         user_id: userId,
         project_id: proyecto.project_id,
+        edition_id: edicionId,
         task_id: proyecto.task_id,
         description: descripcion,
         billable: facturable,
@@ -679,6 +687,7 @@ function DialogoNuevaEntrada({
           from_user: userId,
           to_user,
           project_id: proyecto.project_id,
+          edition_id: edicionId,
           task_id: proyecto.task_id,
           description: descripcion,
           start_at: inicio,
@@ -780,8 +789,21 @@ function DialogoNuevaEntrada({
               <SelectorProyecto
                 catalogo={catalogo}
                 valor={proyecto}
-                onChange={elegirProyecto}
+                onChange={(sel) => {
+                  // la edicion es de un proyecto: al cambiarlo, se cae
+                  if (sel.project_id !== proyecto.project_id) setEdicionId(null)
+                  elegirProyecto(sel)
+                }}
               />
+              {ediciones.length > 0 && (
+                <div className="mt-2">
+                  <SelectorEdicion
+                    ediciones={ediciones}
+                    valor={edicionId}
+                    onChange={setEdicionId}
+                  />
+                </div>
+              )}
             </div>
 
             <div>

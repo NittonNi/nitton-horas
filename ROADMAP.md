@@ -45,99 +45,34 @@ no existen:
 Todo esto sale de la sesion del 18-ago-2026, al girar el producto de "horas
 para un equipo" a "horas para cualquier equipo de LEINN".
 
-### Estado a 18-ago-2026
+### Estado a 19-ago-2026
 
 **Hecho**: nombre ClockLEINN; portada publica en `/` y aplicacion en `/panel`;
 categorizacion de dos niveles con objetivo por rama, elegible al crear y al
-editar proyecto y con columna por nivel en informes y Excel; ediciones de
-proyecto (TBCE 1 / TBCE 2) con fechas, presupuesto y horas, elegibles desde el
-cronometro y desde el dialogo de entrada; objetivos de dia y semana del espacio,
-visibles restando en el cronometro y en cada cabecera de dia y de semana;
-etiquetas que se crean desde el propio selector y ajuste de una-o-varias; boton
-de descargar todo el historico y filtro por categoria en informes; repaso de
-tildes y enes en toda la interfaz; bordes mas rectos; continuar sin la palabra.
+editar proyecto, visible en el listado de proyectos y con una columna por nivel
+en informes y Excel; ediciones de proyecto (TBCE 1 / TBCE 2) con fechas,
+presupuesto y horas, elegibles desde el cronometro, el calendario, el dialogo
+de entrada y la propia fila; objetivos de dia y semana del espacio, visibles
+restando en el cronometro y en cada cabecera de dia y de semana, y objetivo por
+rama con lo que llevas esta semana; horas compartidas desde el cronometro, con
+el selector siempre a la vista; etiquetas que se crean desde el propio selector
+y ajuste de una-o-varias; no se puede parar el cronometro sin proyecto
+-probado en vivo-; resumen del cronometro con tres huecos que cada uno elige
+(hoy, semana, facturable, mes, lo que falta, media por dia); informes con
+filtro por categoria, desgloses por categoria y por edicion y descarga de todo
+el historico; repaso de tildes y enes; bordes mas rectos; continuar sin la
+palabra; menu lateral con la gestion desplegada.
 
-**Pendiente**, en orden de falta que hace:
+**Pendiente**:
 
-1. **Horas compartidas**: mandar y aceptar horas de otra persona sigue solo en
-   el calendario y sin forma de descubrirlo. Es lo que mas se echa en falta.
-2. **Objetivos por categoria**: se guardan y se editan, pero todavia no se
-   pintan en ninguna pantalla.
-3. **Ediciones**: faltan en el calendario y en la edicion en linea de una fila.
-4. **No parar sin proyecto**: escrito en la base y en la barra, sin probar en
-   vivo con el cronometro corriendo.
-5. **Resumen del cronometro**: quedo fijo a proposito; el desplegable
-   personalizable esta aplazado.
-6. **Identidad**: falta logo y favicon propios y renombrar el repositorio, que
+1. **Horas compartidas, segunda vuelta**: falta verlas en la propia entrada
+   -a quien le cuenta y en que estado- y poder proponerlas desde la hoja
+   semanal. Avisar a quien acepto si luego cambia la hora.
+2. **Identidad**: logo y favicon propios, y renombrar el repositorio, que
    sigue siendo `nitton-horas`.
-
-### 1. Categorizacion
-
-Lo mas gordo y lo que cambia el modelo de datos. Hoy los equipos usan el
-campo *cliente* de Clockify como filtro, que no es lo que es. Entonces:
-
-- **Clientes** pasa a ser clientes de verdad -quien paga-, y se queda donde
-  esta.
-- **Categorizacion** es un apartado nuevo: cada espacio monta su propio arbol y
-  ve ahi sus proyectos ordenados. El de LEINN seria:
-
-  ```
-  BACKOFFICE          CONOCIMIENTO        PROYECTOS (o EMPRESA)
-    TLT                                     EVENTOS
-    FINANCIAL                               PROYECTOS
-    LEGAL                                   OPORTUNIDADES
-    CARE TEAM
-    ...
-  ```
-
-- Es **etiqueta de filtro, no carpeta**: el proyecto sigue siendo del espacio y
-  se puede mirar por cualquier nivel.
-- Al crear un proyecto se elige, ademas del color, a que rama pertenece.
-- En informes y en el Excel sale **una columna por nivel**:
-  `CATEGORIA / SUBCATEGORIA 1 / SUBCATEGORIA 2 / ...`. De ahi salen las tablas
-  dinamicas sin pelearse.
-
-Por decidir: como se llama la unidad que mide horas. "Proyecto" se entiende,
-pero un equipo tambien mide conocimiento o backoffice, que no son proyectos.
-
-### 2. Ediciones de un mismo proyecto
-
-The Bilbao Coffee Experience tiene TBCE 1 y TBCE 2; los torneos, lo mismo. Hoy
-hay que crear dos proyectos distintos y se lia el historico. **Las tareas no
-valen** para esto: se necesitan para lo que son. Hace falta un nivel de
-*edicion* propio dentro del proyecto, con sus fechas y su presupuesto, que se
-pueda comparar entre ediciones y sumar en el total del proyecto.
-
-### 3. Objetivos de horas
-
-- Por semana y por dia, y tambien por categoria o subcategoria: se editan en
-  los ajustes del espacio.
-- Por proyecto: se edita dentro del proyecto, no en el general.
-- Se ven en el cronometro, restando: cuanto queda para llegar.
-
-### 4. Cronometro: la tarjeta del dia
-
-- Arriba a la izquierda, **Hoy** o **Ayer** cuando toque; si no, la fecha con
-  el dia de la semana abreviado.
-- A la misma altura, a la derecha, el total del dia. Si hay objetivo, `7 / 8`.
-- Justo encima, la semana: **Esta semana** o el rango de lunes a domingo, con
-  su total y su objetivo si lo hay.
-- El resumen de arriba pasa a ser un desplegable -semana, hoy, facturable- y
-  si no se complica, que cada uno elija que ve en sus preferencias.
-
-### 5. Etiquetas
-
-- Ahora mismo **no se pueden crear etiquetas sueltas**; hace falta el apartado.
-- En preferencias del espacio: si una entrada admite una etiqueta o varias.
-
-### 6. Repasos pendientes
-
-- **Tildes y enes**: la interfaz esta escrita sin acentos. Repaso completo.
-- **Informes**: un boton de descargar todo, desde el principio, sin filtrar.
-- **Bordes**: las cajas del cronometro, mas rectas. Bajar `--radio`.
-- **No parar sin proyecto**: si el cronometro corre sin proyecto, no dejar
-  pararlo hasta elegir uno. Nada de horas huerfanas.
-- **Continuar**: en la lista de horas, solo el simbolo, sin la palabra.
+3. **Despliegue**: Vercel, dominio y las URLs de Google con el dominio real.
+4. **Ojo**: las rutas y los identificadores van SIN tilde -son URLs y
+   carpetas- y los textos CON ella. Un `href="/gestión"` da 404; ya paso.
 
 ## Siguiente
 

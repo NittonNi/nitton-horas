@@ -10,6 +10,7 @@ import { mensajeError } from "@/lib/errores"
 import { useCronometro } from "@/components/proveedor-cronometro"
 import { SelectorProyecto } from "@/components/selector-proyecto"
 import { SelectorEtiquetas } from "@/components/selector-etiquetas"
+import { SelectorEdicion } from "@/components/selector-edicion"
 import {
   combineDateAndTime,
   formatClock,
@@ -44,6 +45,11 @@ export function FilaEntrada({
   const [error, setError] = useState<string | null>(null)
 
   const bloqueada = entrada.locked
+
+  /** Solo las del proyecto de esta entrada; si no tiene, no se ve nada. */
+  const ediciones = entrada.project_id
+    ? catalogo.ediciones.filter((e) => e.project_id === entrada.project_id)
+    : []
 
   async function guardar(cambios: TablesUpdate<"time_entries">) {
     setOcupado(true)
@@ -183,18 +189,32 @@ export function FilaEntrada({
         {/* ----------------------------------------------------- proyecto */}
         <div className="hidden w-52 shrink-0 md:block">
           {campo === "proyecto" ? (
-            <SelectorProyecto
-              catalogo={catalogo}
-              compacto
-              autoAbrir
-              valor={{ project_id: entrada.project_id, task_id: entrada.task_id }}
-              onChange={(sel) =>
-                void guardar({
-                  project_id: sel.project_id,
-                  task_id: sel.task_id,
-                })
-              }
-            />
+            <div className="space-y-1.5">
+              <SelectorProyecto
+                catalogo={catalogo}
+                compacto
+                autoAbrir
+                valor={{ project_id: entrada.project_id, task_id: entrada.task_id }}
+                onChange={(sel) =>
+                  void guardar({
+                    project_id: sel.project_id,
+                    task_id: sel.task_id,
+                    // la edicion es de un proyecto: al cambiarlo, se cae
+                    ...(sel.project_id !== entrada.project_id
+                      ? { edition_id: null }
+                      : {}),
+                  })
+                }
+              />
+              {ediciones.length > 0 && (
+                <SelectorEdicion
+                  ediciones={ediciones}
+                  valor={entrada.edition_id}
+                  compacto
+                  onChange={(edition_id) => void guardar({ edition_id })}
+                />
+              )}
+            </div>
           ) : (
             <button
               type="button"
@@ -214,6 +234,9 @@ export function FilaEntrada({
                   />
                   <span className="min-w-0 truncate text-[0.8125rem]">
                     {entrada.project_name}
+                    {entrada.edition_name && (
+                      <span className="text-muted"> · {entrada.edition_name}</span>
+                    )}
                     {entrada.task_name && (
                       <span className="text-muted"> · {entrada.task_name}</span>
                     )}

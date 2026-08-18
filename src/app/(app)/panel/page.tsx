@@ -10,6 +10,7 @@ import {
 } from "@/lib/datos"
 import { BarraCronometro } from "@/components/barra-cronometro"
 import { ListaEntradas } from "@/components/lista-entradas"
+import { ResumenCronometro } from "@/components/resumen-cronometro"
 import { PropuestasPendientes } from "@/components/propuestas-pendientes"
 import {
   addDays,
@@ -26,7 +27,9 @@ export default async function PaginaCronometro() {
   const { perfil, espacio, rol } = await getSesion()
   const hoy = todayKey()
   const lunes = toDateKey(startOfWeek(new Date()))
-  const desde = toDateKey(addDays(new Date(), -20))
+  const inicioMes = toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
+  const haceVeinte = toDateKey(addDays(new Date(), -20))
+  const desde = inicioMes < haceVeinte ? inicioMes : haceVeinte
 
   const [catalogo, entradas, propuestas, miembros] = await Promise.all([
     cargarCatalogo(espacio.id),
@@ -44,6 +47,10 @@ export default async function PaginaCronometro() {
   const segsFacturables = semana
     .filter((e) => e.billable)
     .reduce((s, e) => s + (e.duration_seconds ?? 0), 0)
+  const segsMes = cerradas
+    .filter((e) => e.local_date >= inicioMes)
+    .reduce((s, e) => s + (e.duration_seconds ?? 0), 0)
+  const diasConHoras = new Set(semana.map((e) => e.local_date)).size
 
   return (
     <div className="space-y-5">
@@ -54,28 +61,18 @@ export default async function PaginaCronometro() {
 
       <PropuestasPendientes propuestas={propuestas} />
 
-      <div className="card grid grid-cols-3 divide-x divide-line">
-        <Resumen
-          etiqueta="Hoy"
-          valor={formatDurationShort(segsHoy)}
-          pie={pieObjetivo(segsHoy, espacio.goal_daily_minutes)}
-        />
-        <Resumen
-          etiqueta="Esta semana"
-          valor={formatDurationShort(segsSemana)}
-          pie={pieObjetivo(segsSemana, espacio.goal_weekly_minutes)}
-        />
-        <Resumen
-          etiqueta="Facturable"
-          valor={formatDurationShort(segsFacturables)}
-          resaltado={segsFacturables > 0}
-          pie={
-            segsSemana > 0
-              ? `${Math.round((segsFacturables / segsSemana) * 100)}% de la semana`
-              : undefined
-          }
-        />
-      </div>
+      <ResumenCronometro
+        espacioId={espacio.id}
+        cifras={{
+          hoy: segsHoy,
+          semana: segsSemana,
+          facturableSemana: segsFacturables,
+          mes: segsMes,
+          diasConHoras,
+          objetivoDia: espacio.goal_daily_minutes,
+          objetivoSemana: espacio.goal_weekly_minutes,
+        }}
+      />
 
       {catalogo.proyectos.length === 0 && (
         <div className="card flex flex-wrap items-center gap-3 p-4">

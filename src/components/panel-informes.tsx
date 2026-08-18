@@ -16,7 +16,7 @@ import { Download, FileSpreadsheet, FileText, Printer } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { useSesion } from "@/components/proveedor-sesion"
-import { categoriasRaiz } from "@/lib/categorias"
+import { categoriasRaiz, SIN_CATEGORIA } from "@/lib/categorias"
 import { exportarCsv, exportarExcel, exportarPdf } from "@/lib/exportar"
 import { agrupar, porDia, rangos, totales } from "@/lib/informes"
 import {
@@ -117,6 +117,31 @@ export function PanelInformes({
   )
   const porPersona = useMemo(
     () => agrupar(filtradas, (e) => e.user_id, (e) => e.user_name),
+    [filtradas],
+  )
+  /* La categorizacion se lee por rama entera: la subcategoria cuenta dentro de
+     su categoria, que es como se miran los objetivos. */
+  const porCategoria = useMemo(
+    () =>
+      agrupar(
+        filtradas,
+        (e) => e.category_id ?? "sin",
+        (e) =>
+          e.category_name
+            ? e.subcategory_name
+              ? e.category_name + " / " + e.subcategory_name
+              : e.category_name
+            : SIN_CATEGORIA,
+      ),
+    [filtradas],
+  )
+  const porEdicion = useMemo(
+    () =>
+      agrupar(
+        filtradas.filter((e) => e.edition_id),
+        (e) => e.edition_id ?? "sin",
+        (e) => (e.project_name ?? "") + " · " + (e.edition_name ?? ""),
+      ),
     [filtradas],
   )
 
@@ -516,6 +541,31 @@ export function PanelInformes({
             total={suma.segundos}
             conImporte={puedeVerImportes}
           />
+        )}
+
+        <Desglose
+          titulo="Por categoría"
+          grupos={porCategoria}
+          total={suma.segundos}
+          conImporte={puedeVerImportes}
+        />
+
+        {porEdicion.length > 0 ? (
+          <Desglose
+            titulo="Por edición"
+            grupos={porEdicion}
+            total={suma.segundos}
+            conImporte={puedeVerImportes}
+          />
+        ) : (
+          miembros.length > 0 && (
+            <Desglose
+              titulo="Por cliente"
+              grupos={porCliente}
+              total={suma.segundos}
+              conImporte={puedeVerImportes}
+            />
+          )
         )}
       </div>
 

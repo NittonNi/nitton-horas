@@ -331,24 +331,26 @@ export function FilaEntrada({
         </div>
 
         {/* ---------------------------------------------------- acciones */}
-        <div className="flex w-[5.5rem] shrink-0 items-center justify-end gap-0.5 opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">
-          <button
-            type="button"
-            title="Seguir con esta tarea"
-            aria-label="Seguir con esta tarea"
-            onClick={() =>
-              void arrancar({
-                project_id: entrada.project_id,
-                task_id: entrada.task_id,
-                description: entrada.description,
-                billable: entrada.billable,
-                tagIds: etiquetasPuestas,
-              })
-            }
-            className="btn btn-ghost p-1.5 text-muted hover:text-live"
-          >
-            <Play className="h-3.5 w-3.5" />
-          </button>
+        {/* Continuar: arranca ahora mismo con lo mismo de esta entrada */}
+        <button
+          type="button"
+          title="Continuar con esto ahora"
+          onClick={() =>
+            void arrancar({
+              project_id: entrada.project_id,
+              task_id: entrada.task_id,
+              description: entrada.description,
+              billable: entrada.billable,
+              tagIds: etiquetasPuestas,
+            })
+          }
+          className="flex shrink-0 items-center gap-1 rounded-[6px] px-2 py-1.5 text-[0.8125rem] font-medium text-muted transition hover:bg-live-soft hover:text-live"
+        >
+          <Play className="h-3.5 w-3.5 fill-current" />
+          <span className="hidden xl:inline">Continuar</span>
+        </button>
+
+        <div className="flex w-[4rem] shrink-0 items-center justify-end gap-0.5 opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">
           <button
             type="button"
             title="Duplicar"

@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useMemo, useState } from "react"
+import * as Popover from "@radix-ui/react-popover"
 import { Check, Search, TagIcon } from "lucide-react"
 
 import type { Etiqueta } from "@/lib/tipos"
@@ -22,7 +23,6 @@ export function SelectorEtiquetas({
 }) {
   const [abierto, setAbierto] = useState(autoAbrir)
   const [filtro, setFiltro] = useState("")
-  const contenedor = useRef<HTMLDivElement>(null)
 
   const filtradas = useMemo(() => {
     const q = filtro.trim().toLowerCase()
@@ -33,15 +33,6 @@ export function SelectorEtiquetas({
 
   const elegidas = etiquetas.filter((e) => seleccionadas.includes(e.id))
 
-  useEffect(() => {
-    if (!abierto) return
-    const fuera = (e: MouseEvent) => {
-      if (!contenedor.current?.contains(e.target as Node)) setAbierto(false)
-    }
-    document.addEventListener("mousedown", fuera)
-    return () => document.removeEventListener("mousedown", fuera)
-  }, [abierto])
-
   function alternar(id: string) {
     onChange(
       seleccionadas.includes(id)
@@ -51,10 +42,9 @@ export function SelectorEtiquetas({
   }
 
   return (
-    <div ref={contenedor} className="relative">
-      <button
-        type="button"
-        onClick={() => setAbierto((v) => !v)}
+    /* En un portal: dentro de una fila con overflow oculto se recortaria */
+    <Popover.Root open={abierto} onOpenChange={setAbierto}>
+      <Popover.Trigger
         title="Etiquetas"
         className={cn(
           "flex items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-2.5 text-sm transition hover:bg-surface-2",
@@ -62,7 +52,6 @@ export function SelectorEtiquetas({
           elegidas.length > 0 ? "text-ink" : "text-muted",
         )}
         aria-haspopup="listbox"
-        aria-expanded={abierto}
       >
         <TagIcon className="h-4 w-4 shrink-0" />
         {elegidas.length > 0 && (
@@ -72,11 +61,14 @@ export function SelectorEtiquetas({
               : `${elegidas.length} etiquetas`}
           </span>
         )}
-      </button>
+      </Popover.Trigger>
 
-      {abierto && (
-        <div
-          className="card absolute right-0 top-full z-50 mt-1 w-64 overflow-hidden p-0"
+      <Popover.Portal>
+        <Popover.Content
+          align="start"
+          sideOffset={6}
+          collisionPadding={12}
+          className="card z-50 w-64 overflow-hidden p-0"
           style={{ boxShadow: "var(--shadow-lg)" }}
         >
           <div className="flex items-center gap-2 border-b border-line px-3 py-2">
@@ -129,8 +121,8 @@ export function SelectorEtiquetas({
               Quitar todas
             </button>
           )}
-        </div>
-      )}
-    </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   )
 }

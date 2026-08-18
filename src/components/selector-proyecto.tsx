@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
+import * as Popover from "@radix-ui/react-popover"
 import {
   ArrowLeft,
   Check,
@@ -60,7 +61,6 @@ export function SelectorProyecto({
   const [anadiendoEn, setAnadiendoEn] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const contenedor = useRef<HTMLDivElement>(null)
   const campoBusqueda = useRef<HTMLInputElement>(null)
 
   /**
@@ -117,16 +117,6 @@ export function SelectorProyecto({
   const proyectoElegido = proyectos.find((p) => p.id === valor.project_id) ?? null
   const tareaElegida = tareas.find((t) => t.id === valor.task_id) ?? null
 
-  useEffect(() => {
-    if (!abierto) return
-    campoBusqueda.current?.focus()
-    const fuera = (e: MouseEvent) => {
-      if (!contenedor.current?.contains(e.target as Node)) cerrar()
-    }
-    document.addEventListener("mousedown", fuera)
-    return () => document.removeEventListener("mousedown", fuera)
-  }, [abierto])
-
   function cerrar() {
     setAbierto(false)
     setVista("lista")
@@ -168,17 +158,18 @@ export function SelectorProyecto({
   }
 
   return (
-    <div ref={contenedor} className="relative">
-      <button
-        type="button"
-        onClick={() => (abierto ? cerrar() : setAbierto(true))}
+    /* En un portal: dentro de una fila con overflow oculto se recortaria */
+    <Popover.Root
+      open={abierto}
+      onOpenChange={(v) => (v ? setAbierto(true) : cerrar())}
+    >
+      <Popover.Trigger
         autoFocus={autoFoco}
         className={cn(
           "flex w-full items-center gap-2 rounded-[var(--radio-sm)] border border-line-strong bg-surface px-2.5 text-left text-sm transition hover:bg-surface-2",
           compacto ? "h-8" : "h-9",
         )}
         aria-haspopup="listbox"
-        aria-expanded={abierto}
       >
         {proyectoElegido ? (
           <>
@@ -200,11 +191,18 @@ export function SelectorProyecto({
           </>
         )}
         <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted" />
-      </button>
+      </Popover.Trigger>
 
-      {abierto && (
-        <div
-          className="card absolute left-0 top-full z-50 mt-1.5 w-[23rem] max-w-[calc(100vw-2rem)] overflow-hidden p-0"
+      <Popover.Portal>
+        <Popover.Content
+          align="start"
+          sideOffset={6}
+          collisionPadding={12}
+          onOpenAutoFocus={(e) => {
+            e.preventDefault()
+            campoBusqueda.current?.focus()
+          }}
+          className="card z-50 w-[23rem] max-w-[calc(100vw-2rem)] overflow-hidden p-0"
           style={{ boxShadow: "var(--shadow-lg)" }}
         >
           {vista === "nuevo" ? (
@@ -380,9 +378,9 @@ export function SelectorProyecto({
               )}
             </>
           )}
-        </div>
-      )}
-    </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   )
 }
 

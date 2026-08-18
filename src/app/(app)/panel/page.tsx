@@ -79,7 +79,7 @@ export default async function PaginaCronometro() {
             </p>
           </div>
           {veTodo(rol) && (
-            <Link href="/gestión" className="btn btn-primary">
+            <Link href="/gestion" className="btn btn-primary">
               Crear proyecto
             </Link>
           )}

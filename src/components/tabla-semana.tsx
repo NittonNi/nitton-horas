@@ -518,7 +518,7 @@ function NuevaFila({
       </div>
       <div className="min-w-[14rem] flex-1">
         <label className="label" htmlFor="fila-descripcion">
-          Descripcion
+          Descripción
         </label>
         <input
           id="fila-descripcion"
@@ -539,7 +539,7 @@ function NuevaFila({
         disabled={!proyecto.project_id}
         className="btn btn-primary"
       >
-        Anadir
+        Añadir
       </button>
       <button
         type="button"

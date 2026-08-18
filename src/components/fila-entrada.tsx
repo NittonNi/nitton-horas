@@ -442,7 +442,7 @@ function PopoverHorario({
           <div className="space-y-2.5">
             <div>
               <label className="label" htmlFor={`fecha-${entrada.id}`}>
-                Dia
+                Día
               </label>
               <input
                 id={`fecha-${entrada.id}`}

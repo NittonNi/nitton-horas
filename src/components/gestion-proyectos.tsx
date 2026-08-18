@@ -529,7 +529,7 @@ function TareasProyecto({
           ) : (
             <Plus className="h-4 w-4" />
           )}
-          Anadir
+          Añadir
         </button>
       </form>
 

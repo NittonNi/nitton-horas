@@ -105,7 +105,7 @@ export function GestionEtiquetas({
             ) : (
               <Plus className="h-4 w-4" />
             )}
-            Anadir
+            Añadir
           </button>
         </div>
         <div className="flex flex-wrap gap-1.5">

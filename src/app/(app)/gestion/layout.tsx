@@ -14,11 +14,11 @@ export default async function LayoutGestion({
   if (!veTodo(rol)) redirect(RUTA_APP)
 
   const enlaces = [
-    { href: "/gestión", etiqueta: "Catálogo", exacto: true },
-    { href: "/gestión/categorías", etiqueta: "Categorización" },
-    { href: "/gestión/equipo", etiqueta: "Equipo" },
-    { href: "/gestión/tarifas", etiqueta: "Tarifas", soloAdmin: true },
-    { href: "/gestión/importar", etiqueta: "Importar" },
+    { href: "/gestion", etiqueta: "Catálogo", exacto: true },
+    { href: "/gestion/categorias", etiqueta: "Categorización" },
+    { href: "/gestion/equipo", etiqueta: "Equipo" },
+    { href: "/gestion/tarifas", etiqueta: "Tarifas", soloAdmin: true },
+    { href: "/gestion/importar", etiqueta: "Importar" },
   ].filter((e) => !e.soloAdmin || rol === "admin")
 
   return (

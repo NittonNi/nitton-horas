@@ -6,17 +6,22 @@ import { usePathname } from "next/navigation"
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu"
 import {
   BarChart3,
+  Boxes,
   CalendarDays,
   CalendarRange,
   Check,
   ChevronsUpDown,
+  Euro,
   FolderKanban,
+  Layers,
   LogOut,
   Plus,
   Settings2,
   Square,
   Timer,
+  Upload,
   User,
+  Users,
 } from "lucide-react"
 
 import { cambiarEspacio } from "@/app/acciones"
@@ -37,7 +42,13 @@ type Enlace = {
   etiqueta: string
   icono: typeof Timer
   exacto?: boolean
+  soloAdmin?: boolean
 }
+
+/**
+ * Las rutas van sin tildes -son URLs y carpetas- y los rotulos con ellas.
+ * No confundirlos: un href acentuado da 404.
+ */
 
 const GRUPOS: {
   titulo: string
@@ -62,18 +73,41 @@ const GRUPOS: {
   {
     titulo: "Ajustar",
     soloGestores: true,
-    enlaces: [{ href: "/gestión", etiqueta: "Gestión", icono: Settings2 }],
+    enlaces: [
+      { href: "/gestion/categorias", etiqueta: "Categorización", icono: Layers },
+      { href: "/gestion", etiqueta: "Catálogo", icono: Boxes, exacto: true },
+      { href: "/gestion/equipo", etiqueta: "Equipo", icono: Users },
+      {
+        href: "/gestion/tarifas",
+        etiqueta: "Tarifas",
+        icono: Euro,
+        soloAdmin: true,
+      },
+      { href: "/gestion/importar", etiqueta: "Importar", icono: Upload },
+    ],
   },
 ]
 
 function useGrupos() {
   const { rol } = useSesion()
   const puedeGestionar = rol === "admin" || rol === "manager"
-  return GRUPOS.filter((g) => !g.soloGestores || puedeGestionar)
+  return GRUPOS.filter((g) => !g.soloGestores || puedeGestionar).map((g) => ({
+    ...g,
+    enlaces: g.enlaces.filter((e) => !e.soloAdmin || rol === "admin"),
+  }))
 }
 
-function useEnlaces() {
-  return useGrupos().flatMap((g) => g.enlaces)
+/**
+ * En movil no caben todas: van las de apuntar y revisar, y toda la gestion
+ * detras de una sola entrada, que ya tiene sus pestanas dentro.
+ */
+function useEnlacesMovil(): Enlace[] {
+  const { rol } = useSesion()
+  const puedeGestionar = rol === "admin" || rol === "manager"
+  const base = GRUPOS.filter((g) => !g.soloGestores).flatMap((g) => g.enlaces)
+  return puedeGestionar
+    ? [...base, { href: "/gestion", etiqueta: "Gestión", icono: Settings2 }]
+    : base
 }
 
 function estaActivo(pathname: string, href: string, exacto?: boolean) {
@@ -294,7 +328,7 @@ function CronometroPastilla() {
 /* ------------------------------------------------------------------ movil */
 
 function BarraInferior() {
-  const enlaces = useEnlaces()
+  const enlaces = useEnlacesMovil()
   const pathname = usePathname()
 
   return (

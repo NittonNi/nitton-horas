@@ -159,7 +159,7 @@ export function DialogoEntrada({
         <div className="space-y-4 p-4">
           <div>
             <label className="label" htmlFor="descripcion">
-              Descripcion
+              Descripción
             </label>
             <input
               id="descripcion"
@@ -239,7 +239,7 @@ export function DialogoEntrada({
           <div className="flex flex-wrap items-end gap-3">
             <div className="w-24">
               <label className="label" htmlFor="duracion">
-                Duracion
+                Duración
               </label>
               <input
                 id="duracion"

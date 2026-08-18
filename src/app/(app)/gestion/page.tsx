@@ -4,7 +4,7 @@ import { GestionClientes } from "@/components/gestion-clientes"
 import { GestionEtiquetas } from "@/components/gestion-etiquetas"
 import { GestionProyectos } from "@/components/gestion-proyectos"
 
-export const metadata = { title: "Catalogo" }
+export const metadata = { title: "Catálogo" }
 
 export default async function PaginaCatalogo() {
   const { espacio } = await getSesion()

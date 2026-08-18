@@ -128,7 +128,7 @@ export function NuevoProyecto({
 
             <div>
               <label className="label" htmlFor="np-categoria">
-                Categoria
+                Categoría
               </label>
               <select
                 id="np-categoria"

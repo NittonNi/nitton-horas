@@ -185,7 +185,7 @@ export function GestionCategorias({
                       className="flex items-center gap-1 py-1 text-xs font-medium text-muted transition hover:text-accent"
                     >
                       <Plus className="h-3 w-3" />
-                      Subcategoria
+                      Subcategoría
                     </button>
                   )}
                 </li>
@@ -219,7 +219,7 @@ export function GestionCategorias({
           ) : (
             <Plus className="h-4 w-4" />
           )}
-          Anadir
+          Añadir
         </button>
       </form>
     </section>
@@ -338,7 +338,7 @@ function NuevoNombre({
         disabled={!valor.trim()}
         className="btn h-7 shrink-0 px-2 py-0"
       >
-        Anadir
+        Añadir
       </button>
       <button
         type="button"

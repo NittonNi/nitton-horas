@@ -44,16 +44,16 @@ export function mensajeError(error: unknown): string {
 
   // Supabase Auth
   const auth: Record<string, string> = {
-    "Invalid login credentials": "Correo o contrasena incorrectos.",
+    "Invalid login credentials": "Correo o contraseña incorrectos.",
     "Email not confirmed":
-      "Tu correo esta sin confirmar. Revisa la bandeja de entrada.",
+      "Tu correo está sin confirmar. Revisa la bandeja de entrada.",
     "User already registered": "Ya existe una cuenta con ese correo. Inicia sesión.",
     "Password should be at least 6 characters":
-      "La contrasena tiene que tener al menos 6 caracteres.",
+      "La contraseña tiene que tener al menos 6 caracteres.",
     "Email rate limit exceeded":
       "Se ha superado el límite de correos. Espera unos minutos.",
     "Signups not allowed for this instance":
-      "El registro esta cerrado. Pide a un administrador que te invite.",
+      "El registro está cerrado. Pide a un administrador que te invite.",
   }
   for (const [en, es] of Object.entries(auth)) {
     if (raw.includes(en)) return es

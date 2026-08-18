@@ -161,7 +161,7 @@ export function FormularioAcceso() {
 
       <div>
         <label className="label" htmlFor="password">
-          Contrasena
+          Contraseña
         </label>
         <input
           id="password"

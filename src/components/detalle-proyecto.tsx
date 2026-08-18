@@ -377,7 +377,7 @@ function Tareas({
             ) : (
               <Plus className="h-4 w-4" />
             )}
-            Anadir
+            Añadir
           </button>
         </form>
       )}
@@ -695,7 +695,7 @@ function EditarProyecto({
 
             <div>
               <label className="label" htmlFor="ep-categoria">
-                Categoria
+                Categoría
               </label>
               <select
                 id="ep-categoria"

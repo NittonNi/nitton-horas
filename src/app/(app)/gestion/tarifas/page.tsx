@@ -11,7 +11,7 @@ export const metadata = { title: "Tarifas" }
 
 export default async function PaginaTarifas() {
   const { espacio, rol } = await getSesion()
-  if (!esAdmin(rol)) redirect("/gestión")
+  if (!esAdmin(rol)) redirect("/gestion")
 
   const supabase = await createClient()
   const [tarifas, miembros, catalogo] = await Promise.all([

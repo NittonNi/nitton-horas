@@ -409,7 +409,7 @@ function EntradaManual({
         className="btn btn-primary h-9"
       >
         {guardando && <Loader2 className="h-4 w-4 animate-spin" />}
-        Anadir
+        Añadir
       </button>
     </>
   )

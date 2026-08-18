@@ -10,11 +10,15 @@ import { mensajeError } from "@/lib/errores"
 import { DialogoEntrada } from "@/components/dialogo-entrada"
 import { SelectorPersonas } from "@/components/selector-personas"
 import { SelectorProyecto } from "@/components/selector-proyecto"
+import { SelectorEtiquetas } from "@/components/selector-etiquetas"
 import {
   ALTO_HORA,
   comoHora,
-  franjaVisible,
+  comoHoraInput,
+  DIA_ENTERO,
+  horaParaEmpezar,
   limitar,
+  minutosDeHora,
   redondear,
   repartir,
   type Bloque,
@@ -84,10 +88,8 @@ export function RejillaCalendario({
     return mapa
   }, [entradas, dias])
 
-  const franja = useMemo(
-    () => franjaVisible([...porDia.values()].flat()),
-    [porDia],
-  )
+  // El dia entero, siempre: apuntar a las 6 o a las 23 tiene que ser posible
+  const franja = DIA_ENTERO
   const alto = ((franja.hasta - franja.desde) / 60) * ALTO_HORA
 
   // La linea del momento actual, al minuto
@@ -95,6 +97,16 @@ export function RejillaCalendario({
     const id = setInterval(() => setAhora(new Date()), 60_000)
     return () => clearInterval(id)
   }, [])
+
+  /* Al abrir la semana, el scroll cae donde empieza la jornada */
+  const refScroll = useRef<HTMLDivElement>(null)
+  const semanaVista = useRef<string | null>(null)
+  useEffect(() => {
+    if (semanaVista.current === lunes) return
+    semanaVista.current = lunes
+    const minuto = horaParaEmpezar([...porDia.values()].flat())
+    refScroll.current?.scrollTo({ top: (minuto / 60) * ALTO_HORA })
+  }, [lunes, porDia])
 
   /* ------------------------------------------------------------- arrastre */
 
@@ -296,7 +308,7 @@ export function RejillaCalendario({
         </div>
 
         {/* rejilla */}
-        <div className="scroll-thin max-h-[70vh] overflow-y-auto">
+        <div ref={refScroll} className="scroll-thin max-h-[70vh] overflow-y-auto">
           <div className="grid grid-cols-[3.25rem_repeat(7,minmax(0,1fr))]">
             {/* columna de horas */}
             <div className="relative" style={{ height: alto }}>
@@ -589,8 +601,22 @@ function DialogoNuevaEntrada({
   }>({ project_id: null, task_id: null })
   const [facturable, setFacturable] = useState(false)
   const [compartidos, setCompartidos] = useState<string[]>([])
+  const [etiquetas, setEtiquetas] = useState<string[]>([])
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  /* El arrastre solo propone: aqui se puede afinar la fecha y las horas */
+  const [fecha, setFecha] = useState(nuevo.dia)
+  const [horaInicio, setHoraInicio] = useState(comoHoraInput(nuevo.desde))
+  const [horaFin, setHoraFin] = useState(comoHoraInput(nuevo.hasta))
+
+  const minutosInicio = minutosDeHora(horaInicio)
+  const minutosFin = minutosDeHora(horaFin)
+  // Si el fin es menor que el inicio, es que cruza la medianoche
+  const duracion =
+    minutosInicio === null || minutosFin === null
+      ? null
+      : (minutosFin > minutosInicio ? minutosFin : minutosFin + 24 * 60) - minutosInicio
 
   function elegirProyecto(sel: { project_id: string | null; task_id: string | null }) {
     setProyecto(sel)
@@ -599,11 +625,16 @@ function DialogoNuevaEntrada({
   }
 
   async function guardar() {
+    if (minutosInicio === null || duracion === null || duracion <= 0) {
+      setError("Revisa las horas: el fin tiene que ser posterior al inicio.")
+      return
+    }
+
     setGuardando(true)
     setError(null)
 
-    const inicio = instante(nuevo.dia, nuevo.desde)
-    const fin = instante(nuevo.dia, nuevo.hasta)
+    const inicio = instante(fecha, minutosInicio)
+    const fin = new Date(new Date(inicio).getTime() + duracion * 60_000).toISOString()
 
     const supabase = createClient()
     const { data, error: err } = await supabase
@@ -626,6 +657,17 @@ function DialogoNuevaEntrada({
       setGuardando(false)
       setError(mensajeError(err))
       return
+    }
+
+    if (etiquetas.length > 0) {
+      const { error: errTags } = await supabase
+        .from("time_entry_tags")
+        .insert(etiquetas.map((tag_id) => ({ entry_id: data.id, tag_id })))
+      if (errTags) {
+        setGuardando(false)
+        setError(mensajeError(errTags))
+        return
+      }
     }
 
     // Al resto no se le apuntan las horas: se le proponen
@@ -674,20 +716,49 @@ function DialogoNuevaEntrada({
           </div>
 
           <div className="space-y-3 p-4">
-            <p className="cifra text-sm">
-              {fromDateKey(nuevo.dia).toLocaleDateString("es-ES", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-              })}
-              {"  "}
-              <span className="font-semibold">
-                {comoHora(nuevo.desde)}-{comoHora(nuevo.hasta)}
-              </span>
-              <span className="text-muted">
-                {"  "}
-                {formatDurationShort((nuevo.hasta - nuevo.desde) * 60)}
-              </span>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="col-span-2">
+                <label className="label" htmlFor="cal-fecha">
+                  Fecha
+                </label>
+                <input
+                  id="cal-fecha"
+                  type="date"
+                  className="field tabular"
+                  value={fecha}
+                  onChange={(e) => setFecha(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label" htmlFor="cal-inicio">
+                  Inicio
+                </label>
+                <input
+                  id="cal-inicio"
+                  type="time"
+                  className="field tabular"
+                  value={horaInicio}
+                  onChange={(e) => setHoraInicio(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label" htmlFor="cal-fin">
+                  Fin
+                </label>
+                <input
+                  id="cal-fin"
+                  type="time"
+                  className="field tabular"
+                  value={horaFin}
+                  onChange={(e) => setHoraFin(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <p className="text-xs text-muted">
+              {duracion && duracion > 0
+                ? `Son ${formatDurationShort(duracion * 60)} horas.`
+                : "El fin tiene que ser posterior al inicio."}
             </p>
 
             <div>
@@ -710,6 +781,15 @@ function DialogoNuevaEntrada({
                 catalogo={catalogo}
                 valor={proyecto}
                 onChange={elegirProyecto}
+              />
+            </div>
+
+            <div>
+              <span className="label">Etiquetas</span>
+              <SelectorEtiquetas
+                etiquetas={catalogo.etiquetas}
+                seleccionadas={etiquetas}
+                onChange={setEtiquetas}
               />
             </div>
 

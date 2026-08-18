@@ -94,13 +94,29 @@ export function repartir(entradas: EntradaVista[]): Bloque[] {
   return bloques
 }
 
-/** Franja visible por defecto: se ajusta a lo que haya apuntado esa semana. */
-export function franjaVisible(bloques: Bloque[]): { desde: number; hasta: number } {
-  if (bloques.length === 0) return { desde: 8 * 60, hasta: 20 * 60 }
-  const desde = Math.min(...bloques.map((b) => b.desde))
-  const hasta = Math.max(...bloques.map((b) => b.hasta))
-  return {
-    desde: Math.max(0, Math.floor((desde - 60) / 60) * 60),
-    hasta: Math.min(24 * 60, Math.ceil((hasta + 60) / 60) * 60),
-  }
+/**
+ * La rejilla siempre pinta el dia entero: si se recortara a lo ya apuntado no
+ * se podrian anadir horas fuera de esa franja, que es justo lo que hace falta
+ * el dia que se empieza antes o se acaba mas tarde de lo normal.
+ */
+export const DIA_ENTERO = { desde: 0, hasta: 24 * 60 }
+
+/**
+ * A que hora conviene dejar el scroll al abrir: una hora antes de lo mas
+ * temprano que haya, y si no hay nada, a las siete.
+ */
+export function horaParaEmpezar(bloques: Bloque[]): number {
+  if (bloques.length === 0) return 7 * 60
+  const primera = Math.min(...bloques.map((b) => b.desde))
+  return Math.max(0, Math.floor((primera - 60) / 60) * 60)
+}
+
+/** "09:30" -> 570. Devuelve null si el campo esta a medias. */
+export function minutosDeHora(valor: string): number | null {
+  const trozos = valor.match(/^(\d{1,2}):(\d{2})$/)
+  if (!trozos) return null
+  const horas = Number(trozos[1])
+  const minutos = Number(trozos[2])
+  if (horas > 23 || minutos > 59) return null
+  return horas * 60 + minutos
 }

@@ -11,13 +11,16 @@ export function SelectorEtiquetas({
   seleccionadas,
   onChange,
   compacto = false,
+  autoAbrir = false,
 }: {
   etiquetas: Etiqueta[]
   seleccionadas: string[]
   onChange: (ids: string[]) => void
   compacto?: boolean
+  /** Empieza desplegado: se usa al editar una fila en el sitio. */
+  autoAbrir?: boolean
 }) {
-  const [abierto, setAbierto] = useState(false)
+  const [abierto, setAbierto] = useState(autoAbrir)
   const [filtro, setFiltro] = useState("")
   const contenedor = useRef<HTMLDivElement>(null)
 

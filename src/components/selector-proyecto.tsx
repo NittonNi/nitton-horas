@@ -39,18 +39,21 @@ export function SelectorProyecto({
   onChange,
   compacto = false,
   autoFoco = false,
+  autoAbrir = false,
 }: {
   catalogo: Catalogo
   valor: Seleccion
   onChange: (seleccion: Seleccion) => void
   compacto?: boolean
   autoFoco?: boolean
+  /** Empieza desplegado: se usa al editar una fila en el sitio. */
+  autoAbrir?: boolean
 }) {
   const router = useRouter()
   const { espacio, rol } = useSesion()
   const puedeCrear = rol === "admin" || rol === "manager"
 
-  const [abierto, setAbierto] = useState(false)
+  const [abierto, setAbierto] = useState(autoAbrir)
   const [vista, setVista] = useState<"lista" | "nuevo">("lista")
   const [filtro, setFiltro] = useState("")
   const [desplegados, setDesplegados] = useState<string[]>([])

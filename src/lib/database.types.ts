@@ -588,6 +588,7 @@ export type Database = {
           id: string
           name: string
           slug: string
+          text_case: string
           timezone: string
           updated_at: string
         }
@@ -598,6 +599,7 @@ export type Database = {
           id?: string
           name: string
           slug: string
+          text_case?: string
           timezone?: string
           updated_at?: string
         }
@@ -608,6 +610,7 @@ export type Database = {
           id?: string
           name?: string
           slug?: string
+          text_case?: string
           timezone?: string
           updated_at?: string
         }
@@ -752,6 +755,10 @@ export type Database = {
         }[]
       }
       my_email: { Args: never; Returns: string }
+      normalizar_texto_existente: {
+        Args: { p_workspace: string }
+        Returns: number
+      }
       resumen_proyectos: {
         Args: { p_workspace: string }
         Returns: {

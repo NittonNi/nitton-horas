@@ -80,6 +80,12 @@ real.
   de tareas desde el propio selector.
 - **Facturable**: el mismo verde en todas partes, con recuadro sobre la linea
   de color del proyecto.
+- **Editar en el sitio**: en el cronometro se cambia la descripcion, el
+  proyecto, la tarea, las etiquetas, el dia, las horas y si se cobra pulsando
+  encima del dato, sin abrir ningun dialogo.
+- **Preferencias de edicion**: el espacio puede fijar que todo se guarde en
+  MAYUSCULAS. Va en la base, con disparador, asi que vale tambien para lo que
+  entra por el importador.
 
 ## Dudas abiertas
 

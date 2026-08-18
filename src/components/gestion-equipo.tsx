@@ -351,9 +351,29 @@ function Ajustes({ espacio }: { espacio: Espacio }) {
   const [nombre, setNombre] = useState(espacio.name)
   const [zona, setZona] = useState(espacio.timezone)
   const [dominios, setDominios] = useState(espacio.allowed_domains.join(", "))
+  const [estiloTexto, setEstiloTexto] = useState(espacio.text_case)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [guardado, setGuardado] = useState(false)
+  const [normalizando, setNormalizando] = useState(false)
+  const [normalizado, setNormalizado] = useState<number | null>(null)
+
+  /** Reescribe en mayusculas lo que ya estaba apuntado. */
+  async function normalizar() {
+    setNormalizando(true)
+    setError(null)
+    const supabase = createClient()
+    const { data, error: err } = await supabase.rpc("normalizar_texto_existente", {
+      p_workspace: espacio.id,
+    })
+    setNormalizando(false)
+    if (err) {
+      setError(mensajeError(err))
+      return
+    }
+    setNormalizado(data ?? 0)
+    router.refresh()
+  }
 
   async function guardar() {
     setGuardando(true)
@@ -372,6 +392,7 @@ function Ajustes({ espacio }: { espacio: Espacio }) {
         name: nombre.trim() || espacio.name,
         timezone: zona,
         allowed_domains: lista,
+        text_case: estiloTexto,
       })
       .eq("id", espacio.id)
 
@@ -450,14 +471,66 @@ function Ajustes({ espacio }: { espacio: Espacio }) {
           <p className="rounded-lg bg-danger-soft p-2 text-sm text-danger">{error}</p>
         )}
 
+        <div>
+          <label className="label" htmlFor="ws-texto">
+            Como se escribe el texto
+          </label>
+          <select
+            id="ws-texto"
+            className="field"
+            value={estiloTexto}
+            onChange={(e) => setEstiloTexto(e.target.value)}
+          >
+            <option value="libre">Tal cual lo escriba cada uno</option>
+            <option value="mayusculas">Siempre en MAYUSCULAS</option>
+          </select>
+          <p className="mt-1 text-xs text-muted">
+            Se aplica al guardar, a las descripciones y a los nombres de
+            clientes, proyectos, tareas y etiquetas. Vale tambien para lo que
+            entra por el importador, asi que nadie tiene que acordarse.
+          </p>
+        </div>
+
+        {error && (
+          <p className="rounded-[var(--radio-sm)] bg-danger-soft p-2 text-sm text-danger">
+            {error}
+          </p>
+        )}
+
         <div className="flex items-center gap-2">
           <button type="submit" disabled={guardando} className="btn btn-primary">
             {guardando && <Loader2 className="h-4 w-4 animate-spin" />}
             Guardar
           </button>
-          {guardado && <span className="text-xs text-running">Guardado</span>}
+          {guardado && <span className="text-xs text-billable">Guardado</span>}
         </div>
       </form>
+
+      {espacio.text_case === "mayusculas" && (
+        <div className="mt-4 border-t border-line pt-4">
+          <p className="text-sm font-medium">Lo que ya estaba escrito</p>
+          <p className="mt-0.5 text-xs text-muted">
+            El cambio solo afecta a lo nuevo. Esto pasa a mayusculas lo que ya
+            hay apuntado, y no tiene vuelta atras.
+          </p>
+          <button
+            type="button"
+            onClick={() => void normalizar()}
+            disabled={normalizando}
+            className="btn mt-2"
+          >
+            {normalizando && <Loader2 className="h-4 w-4 animate-spin" />}
+            Pasar lo anterior a mayusculas
+          </button>
+          {normalizado !== null && (
+            <p className="mt-2 text-xs text-billable">
+              {normalizado === 0
+                ? "Ya estaba todo en mayusculas."
+                : `${normalizado} registros actualizados.`}
+            </p>
+          )}
+        </div>
+      )}
     </section>
   )
 }

@@ -3,143 +3,128 @@
 /* ==========================================================================
    Horas — sistema visual
 
-   Solo hay dos colores, y cada uno significa una cosa en toda la app:
+   Discreto a proposito. El color no decora: solo aparece cuando dice algo.
 
-     naranja  el tiempo esta corriendo ahora mismo
-     verde    esto se cobra
+     azul    lo que se puede pulsar, y lo que esta seleccionado
+     verde   esto se cobra
+     naranja el tiempo esta corriendo ahora mismo
+     rojo    esto borra
 
-   Todo lo demas -botones, enlaces, lo seleccionado- es grafito. Si el naranja
-   o el verde aparecieran tambien ahi dejarian de querer decir nada.
+   Todo lo demas es gris. Los grises hacen el trabajo pesado: fondo agrupado,
+   tarjetas blancas encima y separadores finisimos en vez de marcos.
 
-   Los numeros son el contenido de verdad, asi que van todos en monoespaciada
-   con cifras tabulares: las columnas de duraciones e importes cuadran solas.
-
-   La barra lateral va oscura en los dos temas, como el lomo de un cuaderno:
-   separa de un vistazo donde se navega de donde se trabaja.
+   Una sola tipografia, con cifras tabulares donde hay numeros en columna.
    ========================================================================== */
 
 :root {
-  /* Papel neutro con un punto calido: cansa menos que el gris puro */
-  --paper: #efeeea;
+  --paper: #f5f5f7;
   --surface: #ffffff;
-  --surface-2: #f0efec;
-  --surface-3: #e3e1dc;
-  --line: #e0ded8;
-  --line-strong: #c2bfb7;
+  --surface-2: #f0f0f3;
+  --surface-3: #e8e8ed;
+  --line: #e3e3e8;
+  --line-strong: #c7c7cc;
 
-  --ink: #16181a;
-  --ink-soft: #40454a;
-  --muted: #757873;
+  --ink: #1d1d1f;
+  --ink-soft: #46464b;
+  --muted: #86868b;
 
-  /* La barra lateral es oscura en los dos temas: es el lomo del cuaderno */
-  --lateral: #16191c;
-  --lateral-2: #21262a;
-  --lateral-ink: #eceae5;
-  --lateral-muted: #8d938f;
-  --lateral-line: #2b3034;
-
-  /* Ahora mismo esta corriendo el tiempo */
-  --live: #e2580a;
-  --live-soft: #fbeee4;
-  --live-line: #f0b385;
-
-  /* Esto se cobra */
-  --billable: #157a5b;
-  --billable-soft: #e5f1eb;
-  --billable-line: #9ccebb;
-
-  --danger: #b3261e;
-  --danger-soft: #fbecea;
-
-  /* Lo interactivo es grafito, nunca color */
-  --accent: var(--ink);
-  --accent-hover: #000000;
-  --accent-soft: #e6e4df;
+  --accent: #0071e3;
+  --accent-hover: #0062c4;
+  --accent-soft: #eaf3fe;
   --accent-fg: #ffffff;
+
+  /* Corriendo ahora */
+  --live: #d1720a;
+  --live-fill: #ff9500;
+  --live-soft: #fff6e9;
+  --live-line: #f5d6a8;
+
+  /* Se cobra */
+  --billable: #1a8245;
+  --billable-fill: #34c759;
+  --billable-soft: #ecf8f0;
+  --billable-line: #b4e2c6;
+
+  --danger: #d70015;
+  --danger-soft: #fdeeee;
 
   --running: var(--live);
   --running-soft: var(--live-soft);
 
-  --radio: 8px;
-  --radio-sm: 5px;
-  --shadow: none;
-  --shadow-lg: 0 16px 40px -12px rgb(22 24 26 / 0.22), 0 0 0 1px rgb(22 24 26 / 0.06);
+  --radio: 12px;
+  --radio-sm: 8px;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+  --shadow-lg: 0 12px 40px -8px rgb(0 0 0 / 0.16), 0 0 0 0.5px rgb(0 0 0 / 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #101214;
-    --surface: #17191c;
-    --surface-2: #1e2124;
-    --surface-3: #282c30;
-    --line: #292d31;
-    --line-strong: #3c4145;
+    --paper: #000000;
+    --surface: #1c1c1e;
+    --surface-2: #2c2c2e;
+    --surface-3: #3a3a3c;
+    --line: #2e2e30;
+    --line-strong: #48484a;
 
-    --ink: #eceae5;
-    --ink-soft: #b8b9b5;
-    --muted: #8b8e8a;
+    --ink: #f5f5f7;
+    --ink-soft: #c7c7cc;
+    --muted: #8e8e93;
 
-    --lateral: #0a0b0d;
-    --lateral-2: #1a1d20;
-    --lateral-ink: #eceae5;
-    --lateral-muted: #83867f;
-    --lateral-line: #212528;
+    --accent: #0a84ff;
+    --accent-hover: #3b9bff;
+    --accent-soft: #10233a;
+    --accent-fg: #ffffff;
 
-    --live: #ff7a33;
-    --live-soft: #2a1810;
-    --live-line: #6b3a1c;
+    --live: #ff9f0a;
+    --live-fill: #ff9f0a;
+    --live-soft: #2a1e08;
+    --live-line: #57411a;
 
-    --billable: #3fbf95;
-    --billable-soft: #10241d;
-    --billable-line: #1f5a45;
+    --billable: #30d158;
+    --billable-fill: #30d158;
+    --billable-soft: #10281a;
+    --billable-line: #1f5232;
 
-    --danger: #f2796b;
-    --danger-soft: #2c1613;
+    --danger: #ff453a;
+    --danger-soft: #2c1414;
 
-    --accent: var(--ink);
-    --accent-hover: #ffffff;
-    --accent-soft: #242729;
-    --accent-fg: #101214;
-
-    --shadow-lg: 0 16px 40px -12px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 255 255 / 0.07);
+    --shadow: none;
+    --shadow-lg: 0 12px 40px -8px rgb(0 0 0 / 0.7), 0 0 0 0.5px rgb(255 255 255 / 0.1);
   }
 }
 
 :root[data-theme="dark"] {
-  --paper: #101214;
-  --surface: #17191c;
-  --surface-2: #1e2124;
-  --surface-3: #282c30;
-  --line: #292d31;
-  --line-strong: #3c4145;
+  --paper: #000000;
+  --surface: #1c1c1e;
+  --surface-2: #2c2c2e;
+  --surface-3: #3a3a3c;
+  --line: #2e2e30;
+  --line-strong: #48484a;
 
-  --ink: #eceae5;
-  --ink-soft: #b8b9b5;
-  --muted: #8b8e8a;
+  --ink: #f5f5f7;
+  --ink-soft: #c7c7cc;
+  --muted: #8e8e93;
 
-  --lateral: #0a0b0d;
-  --lateral-2: #1a1d20;
-  --lateral-ink: #eceae5;
-  --lateral-muted: #83867f;
-  --lateral-line: #212528;
+  --accent: #0a84ff;
+  --accent-hover: #3b9bff;
+  --accent-soft: #10233a;
+  --accent-fg: #ffffff;
 
-  --live: #ff7a33;
-  --live-soft: #2a1810;
-  --live-line: #6b3a1c;
+  --live: #ff9f0a;
+  --live-fill: #ff9f0a;
+  --live-soft: #2a1e08;
+  --live-line: #57411a;
 
-  --billable: #3fbf95;
-  --billable-soft: #10241d;
-  --billable-line: #1f5a45;
+  --billable: #30d158;
+  --billable-fill: #30d158;
+  --billable-soft: #10281a;
+  --billable-line: #1f5232;
 
-  --danger: #f2796b;
-  --danger-soft: #2c1613;
+  --danger: #ff453a;
+  --danger-soft: #2c1414;
 
-  --accent: var(--ink);
-  --accent-hover: #ffffff;
-  --accent-soft: #242729;
-  --accent-fg: #101214;
-
-  --shadow-lg: 0 16px 40px -12px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 255 255 / 0.07);
+  --shadow: none;
+  --shadow-lg: 0 12px 40px -8px rgb(0 0 0 / 0.7), 0 0 0 0.5px rgb(255 255 255 / 0.1);
 }
 
 @theme inline {
@@ -157,6 +142,7 @@
   --color-accent-soft: var(--accent-soft);
   --color-accent-fg: var(--accent-fg);
   --color-live: var(--live);
+  --color-live-fill: var(--live-fill);
   --color-live-soft: var(--live-soft);
   --color-live-line: var(--live-line);
   --color-running: var(--running);
@@ -164,21 +150,16 @@
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-billable: var(--billable);
+  --color-billable-fill: var(--billable-fill);
   --color-billable-soft: var(--billable-soft);
   --color-billable-line: var(--billable-line);
-  --color-lateral: var(--lateral);
-  --color-lateral-2: var(--lateral-2);
-  --color-lateral-ink: var(--lateral-ink);
-  --color-lateral-muted: var(--lateral-muted);
-  --color-lateral-line: var(--lateral-line);
-  --font-sans: var(--font-instrument);
-  --font-mono: var(--font-plex-mono);
+  --font-sans: var(--font-inter);
 }
 
 /* ------------------------------------------------------------------- base
-   Todo esto va dentro de @layer base a proposito: si se queda sin capa, el
-   CSS sin capa gana a las capas y `button { color: inherit }` acaba pintando
-   el texto de los botones del mismo color que su fondo.
+   Dentro de @layer base a proposito: sin capa, el CSS suelto gana a las capas
+   y `button { color: inherit }` acaba pintando el texto de los botones del
+   mismo color que su fondo.
    ------------------------------------------------------------------------ */
 
 @layer base {
@@ -189,16 +170,18 @@
   body {
     background: var(--paper);
     color: var(--ink);
-    font-family: var(--font-instrument), system-ui, sans-serif;
-    font-size: 0.9375rem;
-    line-height: 1.5;
+    font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, system-ui,
+      sans-serif;
+    font-size: 0.875rem;
+    line-height: 1.47;
+    letter-spacing: -0.01em;
     -webkit-font-smoothing: antialiased;
   }
 
   h1,
   h2,
   h3 {
-    letter-spacing: -0.015em;
+    letter-spacing: -0.022em;
   }
 
   input,
@@ -207,6 +190,7 @@
   button {
     font: inherit;
     color: inherit;
+    letter-spacing: inherit;
   }
 
   input[type="number"] {
@@ -219,17 +203,15 @@
     margin: 0;
   }
 
-  /* El foco es del color de la senal: siempre visible, nunca discreto */
   :focus-visible {
-    outline: 2px solid var(--live);
-    outline-offset: 2px;
-    border-radius: 2px;
+    outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    outline-offset: 1px;
+    border-radius: 4px;
   }
 }
 
 ::selection {
-  background: var(--live);
-  color: #ffffff;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -245,25 +227,18 @@
 /* ------------------------------------------------------------- componentes */
 
 @layer components {
-  /* Van en esta capa, no sueltas: asi una utilidad de Tailwind puede
-     cambiarles el color o el tamano cuando haga falta. */
-
-  /** Duraciones e importes: columnas de numeros que tienen que alinearse. */
+  /** Numeros en columna: misma anchura de cifra para que cuadren. */
   .tabular,
   .cifra {
-    font-family: var(--font-plex-mono), ui-monospace, monospace;
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum";
-    letter-spacing: -0.01em;
   }
 
-  /** Rotulo de instrumento: pequeno, en versales y muy espaciado. */
+  /** Titulillo de seccion: pequeno y en gris, sin gritar. */
   .rotulo {
-    font-family: var(--font-plex-mono), ui-monospace, monospace;
-    font-size: 0.6875rem;
-    font-weight: 500;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: 590;
+    letter-spacing: -0.005em;
     color: var(--muted);
   }
 
@@ -271,6 +246,7 @@
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--radio);
+    box-shadow: var(--shadow);
   }
 
   .field {
@@ -278,15 +254,15 @@
     background: var(--surface);
     border: 1px solid var(--line-strong);
     border-radius: var(--radio-sm);
-    padding: 0.4375rem 0.625rem;
+    padding: 0.4375rem 0.6875rem;
     font-size: 0.875rem;
     outline: none;
-    transition: border-color 0.12s;
+    transition: border-color 0.15s, box-shadow 0.15s;
   }
   .field:focus {
-    border-color: var(--ink);
-    outline: 2px solid var(--live);
-    outline-offset: -1px;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+    outline: none;
   }
   .field:disabled {
     background: var(--surface-2);
@@ -302,25 +278,24 @@
     border-radius: var(--radio-sm);
     border: 1px solid var(--line-strong);
     background: var(--surface);
-    padding: 0.4375rem 0.75rem;
+    padding: 0.4375rem 0.8125rem;
     font-size: 0.875rem;
     font-weight: 500;
     white-space: nowrap;
     cursor: pointer;
-    transition: background 0.12s, border-color 0.12s, opacity 0.12s;
+    transition: background 0.15s, border-color 0.15s, opacity 0.15s;
   }
   .btn:hover:not(:disabled) {
     background: var(--surface-2);
-    border-color: var(--ink-soft);
   }
   .btn:disabled {
-    opacity: 0.45;
+    opacity: 0.4;
     cursor: not-allowed;
   }
 
   .btn-primary {
-    background: var(--ink);
-    border-color: var(--ink);
+    background: var(--accent);
+    border-color: var(--accent);
     color: var(--accent-fg);
   }
   .btn-primary:hover:not(:disabled) {
@@ -328,24 +303,13 @@
     border-color: var(--accent-hover);
   }
 
-  /* Arrancar el cronometro es la unica accion que lleva color */
-  .btn-live {
-    background: var(--live);
-    border-color: var(--live);
-    color: #ffffff;
-  }
-  .btn-live:hover:not(:disabled) {
-    filter: brightness(1.08);
-  }
-
   .btn-danger {
     color: var(--danger);
-    border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+    border-color: color-mix(in srgb, var(--danger) 35%, transparent);
     background: transparent;
   }
   .btn-danger:hover:not(:disabled) {
     background: var(--danger-soft);
-    border-color: var(--danger);
   }
 
   .btn-ghost {
@@ -354,86 +318,52 @@
   }
   .btn-ghost:hover:not(:disabled) {
     background: var(--surface-2);
-    border-color: transparent;
   }
 
   .chip {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
-    border-radius: 3px;
+    border-radius: 6px;
     border: 1px solid var(--line);
     background: var(--surface-2);
-    padding: 0.0625rem 0.375rem;
-    font-family: var(--font-plex-mono), ui-monospace, monospace;
-    font-size: 0.6875rem;
+    padding: 0.0625rem 0.4375rem;
+    font-size: 0.75rem;
     font-weight: 500;
-    line-height: 1.6;
+    line-height: 1.5;
+    color: var(--ink-soft);
   }
 
-  /** Se cobra: mismo verde en el icono, en el importe y en el marco. */
+  /** Se cobra: el mismo verde en el icono, en el importe y en el marco. */
   .chip-facturable {
     border-color: var(--billable-line);
     background: var(--billable-soft);
     color: var(--billable);
   }
 
-  /**
-   * Marca de facturable sobre la linea de color del proyecto: un recuadro
-   * verde alrededor de la barra, para distinguirlo sin tocar el color propio
-   * del proyecto.
-   */
+  /** Aro verde sobre el punto de color del proyecto. */
   .marca-facturable {
-    box-shadow: 0 0 0 1.5px var(--billable);
+    box-shadow: 0 0 0 1.5px var(--billable-fill);
   }
 
   .label {
     display: block;
-    font-family: var(--font-plex-mono), ui-monospace, monospace;
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     font-weight: 500;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 0.3rem;
+    color: var(--ink-soft);
+    margin-bottom: 0.3125rem;
   }
 
-  /* Cabecera de tabla: mismo rotulo de instrumento */
+  /** Cabecera de tabla: gris, fina y sin mayusculas forzadas. */
   .th {
-    font-family: var(--font-plex-mono), ui-monospace, monospace;
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     font-weight: 500;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
     color: var(--muted);
     text-align: left;
     padding: 0.5rem 0.75rem 0.5rem 0;
     border-bottom: 1px solid var(--line);
     white-space: nowrap;
   }
-}
-
-/* --------------------------------------------------------------- la regla */
-
-/**
- * El motivo de la casa: una regla graduada. Marca el apartado abierto en el
- * menu y acompana al cronometro cuando corre. Las marcas son las de una regla
- * de verdad: una fina cada poco y una gruesa cada cinco.
- */
-.regla {
-  background-image: repeating-linear-gradient(
-    to bottom,
-    var(--live) 0 1px,
-    transparent 1px 4px
-  );
-}
-
-.regla-h {
-  background-image: repeating-linear-gradient(
-    to right,
-    var(--line-strong) 0 1px,
-    transparent 1px 8px
-  );
 }
 
 /* Late solo cuando el cronometro corre */
@@ -443,14 +373,13 @@
     opacity: 1;
   }
   50% {
-    opacity: 0.35;
+    opacity: 0.4;
   }
 }
 .latido {
   animation: latido 2s ease-in-out infinite;
 }
 
-/* Barra de desplazamiento discreta en las tablas largas */
 .scroll-thin::-webkit-scrollbar {
   height: 10px;
   width: 10px;

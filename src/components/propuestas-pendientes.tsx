@@ -50,7 +50,7 @@ export function PropuestasPendientes({ propuestas }: { propuestas: Propuesta[] }
   return (
     <section className="card overflow-hidden">
       <div className="flex items-center gap-2 border-b border-line px-4 py-2.5">
-        <span aria-hidden className="regla h-4 w-[3px] rounded-full" />
+        <span aria-hidden className="h-4 w-[3px] rounded-full bg-accent" />
         <h2 className="text-sm font-semibold">
           Horas que han apuntado contigo
         </h2>

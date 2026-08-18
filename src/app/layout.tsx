@@ -1,20 +1,15 @@
 import type { Metadata, Viewport } from "next"
-import { IBM_Plex_Mono, Instrument_Sans } from "next/font/google"
+import { Inter } from "next/font/google"
 
 import "./globals.css"
 
-/** Humanista y algo estrecha: aguanta bien la letra pequena de las tablas. */
-const instrument = Instrument_Sans({
-  variable: "--font-instrument",
+/**
+ * Inter con las cifras tabulares activadas. Es la mas cercana a la del sistema
+ * de Apple, y en un Mac cae directamente en -apple-system por el fallback.
+ */
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-  display: "swap",
-})
-
-/** Todas las cifras van aqui: duraciones, importes y fechas cuadran en columna. */
-const plexMono = IBM_Plex_Mono({
-  variable: "--font-plex-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
   display: "swap",
 })
 
@@ -28,8 +23,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#efeeea" },
-    { media: "(prefers-color-scheme: dark)", color: "#101214" },
+    { media: "(prefers-color-scheme: light)", color: "#f5f5f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
 }
 
@@ -40,7 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       // El script de abajo pone data-theme antes de hidratar: el servidor no
       // puede saber el tema guardado, y esa diferencia es esperada.
       suppressHydrationWarning
-      className={`${instrument.variable} ${plexMono.variable} h-full antialiased`}
+      className={`${inter.variable} h-full antialiased`}
     >
       <head>
         {/* Aplica el tema guardado antes de pintar, para que no parpadee */}

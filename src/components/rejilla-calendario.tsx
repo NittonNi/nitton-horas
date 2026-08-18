@@ -454,10 +454,10 @@ function ColumnaDia({
       {esHoy && enFranja && (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 z-10 h-px bg-live"
+          className="pointer-events-none absolute inset-x-0 z-10 h-px bg-live-fill"
           style={{ top: arriba(minutosAhora) }}
         >
-          <span className="absolute -left-0.5 -top-1 h-2 w-2 rounded-full bg-live" />
+          <span className="absolute -left-0.5 -top-1 h-2 w-2 rounded-full bg-live-fill" />
         </div>
       )}
 
@@ -544,13 +544,13 @@ function ColumnaDia({
 
       {fantasma && (
         <div
-          className="pointer-events-none absolute inset-x-0.5 rounded-[3px] border border-dashed border-live bg-live-soft px-1.5 py-1"
+          className="pointer-events-none absolute inset-x-0.5 rounded-[3px] border border-dashed border-accent bg-accent-soft px-1.5 py-1"
           style={{
             top: arriba(fantasma.desde),
             height: Math.max(14, ((fantasma.hasta - fantasma.desde) / 60) * ALTO_HORA),
           }}
         >
-          <p className="cifra text-[10px] font-medium text-live">
+          <p className="cifra text-[10px] font-medium text-accent">
             {comoHora(fantasma.desde)}-{comoHora(fantasma.hasta)}
           </p>
         </div>

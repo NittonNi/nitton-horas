@@ -50,6 +50,7 @@ export default async function PaginaCronometro() {
         <Resumen
           etiqueta="Facturable"
           valor={formatDurationShort(segsFacturables)}
+          resaltado={segsFacturables > 0}
           pie={
             segsSemana > 0
               ? `${Math.round((segsFacturables / segsSemana) * 100)}% de la semana`
@@ -85,15 +86,21 @@ function Resumen({
   etiqueta,
   valor,
   pie,
+  resaltado = false,
 }: {
   etiqueta: string
   valor: string
   pie?: string
+  resaltado?: boolean
 }) {
   return (
     <div className="px-4 py-3">
       <p className="rotulo">{etiqueta}</p>
-      <p className="cifra mt-1 text-2xl font-semibold leading-none">{valor}</p>
+      <p
+        className={`cifra mt-1 text-2xl font-semibold leading-none tracking-tight ${resaltado ? "text-billable" : ""}`}
+      >
+        {valor}
+      </p>
       <p className="mt-1.5 h-4 text-xs text-muted">{pie}</p>
     </div>
   )

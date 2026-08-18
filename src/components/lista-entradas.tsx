@@ -41,10 +41,6 @@ export function ListaEntradas({
   if (dias.length === 0) {
     return (
       <div className="card px-6 py-12 text-center">
-        <span
-          aria-hidden
-          className="regla-h mx-auto mb-4 block h-px w-32 opacity-60"
-        />
         <p className="text-sm font-medium">Aqui apareceran tus horas</p>
         <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
           Escribe arriba en que estas trabajando y dale al play, o cambia al modo
@@ -63,14 +59,14 @@ export function ListaEntradas({
             0,
           )
           return (
-            <section key={dia} className="card overflow-hidden">
-              <header className="flex items-baseline justify-between border-b border-line bg-surface-2 px-4 py-2">
+            <section key={dia}>
+              <header className="flex items-baseline justify-between px-1 pb-1.5">
                 <h2 className="text-sm font-semibold">{relativeDayLabel(dia)}</h2>
-                <span className="tabular text-sm font-semibold text-muted">
+                <span className="tabular text-sm text-muted">
                   {formatDurationShort(total)}
                 </span>
               </header>
-              <ul>
+              <ul className="card overflow-hidden">
                 {dEntradas.map((e) => (
                   <FilaEntrada
                     key={e.id}
@@ -166,63 +162,69 @@ function FilaEntrada({
   return (
     <li
       className={cn(
-        "group flex items-center gap-3 border-b border-line px-4 py-2.5 last:border-b-0 transition hover:bg-surface-2",
+        "group flex items-center gap-3 border-b border-line px-4 py-2.5 last:border-b-0 transition hover:bg-surface-2/60",
         ocupado && "opacity-50",
       )}
     >
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm">
-          {entrada.description || (
-            <span className="text-muted">Sin descripcion</span>
-          )}
-        </p>
-        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-          {entrada.project_name ? (
-            <span className="flex items-center gap-1.5">
-              {/* El punto es del proyecto; el aro verde dice que se cobra */}
-              <span
-                className={cn(
-                  "h-2 w-2 rounded-full",
-                  entrada.billable && "marca-facturable",
-                )}
-                style={{ background: entrada.project_color ?? "#888" }}
-              />
-              <span className="text-muted">
-                {entrada.client_name && `${entrada.client_name} · `}
-                <span className="text-ink">{entrada.project_name}</span>
-                {entrada.task_name && ` · ${entrada.task_name}`}
-              </span>
-            </span>
-          ) : (
-            <span className="text-muted">Sin proyecto</span>
-          )}
-          {mostrarPersona && (
-            <span className="chip">{entrada.user_name}</span>
-          )}
-          {entrada.tags.map((t) => (
-            <span key={t} className="chip">
-              {t}
-            </span>
-          ))}
-        </div>
-      </div>
+      {/* Descripcion: lo unico que se estira */}
+      <p className="min-w-0 flex-1 truncate text-[0.9375rem]">
+        {entrada.description || <span className="text-muted">Sin descripcion</span>}
+      </p>
 
-      {entrada.billable && (
-        <Euro
-          className="h-3.5 w-3.5 shrink-0 text-billable"
-          aria-label="Facturable"
-        />
-      )}
-
-      <span className="tabular hidden shrink-0 text-xs text-muted sm:block">
-        {formatClock(entrada.start_at)} – {formatClock(entrada.end_at)}
+      {/* Columnas de ancho fijo, para que todas las filas cuadren */}
+      <span className="hidden w-52 shrink-0 items-center gap-1.5 md:flex">
+        {entrada.project_name ? (
+          <>
+            {/* El punto es del proyecto; el aro verde dice que se cobra */}
+            <span
+              className={cn(
+                "h-2 w-2 shrink-0 rounded-full",
+                entrada.billable && "marca-facturable",
+              )}
+              style={{ background: entrada.project_color ?? "var(--line-strong)" }}
+            />
+            <span className="min-w-0 truncate text-[0.8125rem]">
+              {entrada.project_name}
+              {entrada.task_name && (
+                <span className="text-muted"> · {entrada.task_name}</span>
+              )}
+            </span>
+          </>
+        ) : (
+          <span className="text-[0.8125rem] text-muted">Sin proyecto</span>
+        )}
       </span>
 
-      <span className="tabular w-14 shrink-0 text-right text-sm font-semibold">
+      {/* Una etiqueta y un contador: mas de una y no cabe sin cortarse */}
+      <span className="hidden w-36 shrink-0 items-center gap-1 lg:flex">
+        {mostrarPersona && (
+          <span className="chip min-w-0 truncate">{entrada.user_name}</span>
+        )}
+        {entrada.tags.slice(0, 1).map((t) => (
+          <span key={t} className="chip min-w-0 truncate">
+            {t}
+          </span>
+        ))}
+        {entrada.tags.length > 1 && (
+          <span className="chip shrink-0">+{entrada.tags.length - 1}</span>
+        )}
+      </span>
+
+      <span className="flex w-4 shrink-0 justify-center">
+        {entrada.billable && (
+          <Euro className="h-3.5 w-3.5 text-billable" aria-label="Facturable" />
+        )}
+      </span>
+
+      <span className="tabular hidden w-24 shrink-0 text-right text-[0.8125rem] text-muted sm:block">
+        {formatClock(entrada.start_at)}–{formatClock(entrada.end_at)}
+      </span>
+
+      <span className="tabular w-14 shrink-0 text-right text-[0.9375rem] font-semibold">
         {formatDurationShort(entrada.duration_seconds)}
       </span>
 
-      <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">
+      <div className="flex w-[7.5rem] shrink-0 items-center justify-end gap-0.5 opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">
         <button
           type="button"
           title="Seguir con esta tarea"

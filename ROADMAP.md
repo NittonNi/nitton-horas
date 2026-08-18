@@ -3,6 +3,34 @@
 Lo que falta, en el orden en que tiene sentido hacerlo. Se va moviendo a
 "Hecho" segun entra en `main`.
 
+## Por arreglar
+
+### Continuar no arranca
+
+Nicolas dice que el boton de continuar de las filas de horas no hace nada
+(18-ago-2026). En la prueba del navegador si arrancaba el cronometro con el
+mismo proyecto, tarea, etiquetas y descripcion, asi que falta reproducirlo:
+preguntarle desde donde lo pulsa, si ya habia un cronometro en marcha, y si
+salta algun aviso. Sospechas a mirar primero:
+
+- que ya hubiera un cronometro corriendo — `start_timer` cierra el anterior y
+  abre otro, y visualmente puede parecer que no ha pasado nada;
+- que el error se trague en el `alert` de `arrancar` sin que se vea;
+- que la fila sea de otra persona, donde no deberia ni salir el boton.
+
+### Las horas compartidas no se ven
+
+Estan implementadas pero Nicolas no ha dado con ellas, que es como decir que
+no existen:
+
+- solo se pueden proponer desde el dialogo del calendario. Tienen que estar
+  tambien en el cronometro y en la hoja semanal.
+- el selector se esconde cuando eres el unico del espacio, asi que ahora
+  mismo no hay forma de descubrir la funcion. Deberia verse igual, explicando
+  que hace falta alguien mas.
+- falta enseñar en la propia entrada a quien mas le cuenta, y en que estado
+  esta cada uno (pendiente, aceptada, rechazada).
+
 ## Siguiente
 
 ### 1. Estadisticas
@@ -26,26 +54,39 @@ Decisiones pendientes:
   `external_id` de Clockify;
 - que hacer cuando el evento cambia de hora despues de haberlo importado.
 
-### 3. Control de las horas
+### 3. Proyectos: buscar y ficha mas completa
+
+- Buscar y filtrar en el listado: por nombre, cliente, si esta activo, si le
+  quedan horas de presupuesto.
+- Dentro del proyecto falta informacion: como va mes a mes, quien ha tocado
+  que, cuanto queda por facturar, y las etiquetas que mas aparecen.
+
+### 4. Equipo
+
+La pantalla se queda corta: solo lista y cambia roles. Falta ver cuanto
+trabaja cada uno, quien no ha rellenado la semana, y poder entrar en la ficha
+de una persona igual que se entra en la de un proyecto.
+
+### 5. Control de las horas
 
 - Bloquear semanas ya facturadas para que no se toquen.
 - Aprobar o devolver las horas de otra persona.
 - Avisar de dias sin rellenar antes de cerrar la semana.
 
-### 4. Flujos de alta y baja de horas
+### 6. Flujos de alta y baja de horas
 
 - Borrado y edicion en bloque desde los informes.
 - Mover un rango de horas de un proyecto a otro.
 - Duplicar una semana entera.
 - Deshacer lo ultimo.
 
-### 5. Identidad
+### 7. Identidad
 
 El producto se llama "Horas" en la interfaz, pero el repo sigue siendo
 `nitton-horas` y el icono es un cronometro generico. Falta nombre definitivo,
 logo y favicon propios.
 
-### 6. Despliegue
+### 8. Despliegue
 
 Vercel, dominio y repetir la configuracion de URLs de Google con el dominio
 real.

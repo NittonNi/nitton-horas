@@ -5,18 +5,27 @@ Lo que falta, en el orden en que tiene sentido hacerlo. Se va moviendo a
 
 ## Por arreglar
 
-### Continuar no arranca
+### Continuar arranca, pero no se nota
 
-Nicolas dice que el boton de continuar de las filas de horas no hace nada
-(18-ago-2026). En la prueba del navegador si arrancaba el cronometro con el
-mismo proyecto, tarea, etiquetas y descripcion, asi que falta reproducirlo:
-preguntarle desde donde lo pulsa, si ya habia un cronometro en marcha, y si
-salta algun aviso. Sospechas a mirar primero:
+Diagnosticado el 19-ago-2026. **Si funciona**: al pulsarlo se crea una entrada
+nueva que empieza en ese momento, con el mismo proyecto, tarea, etiquetas,
+descripcion y si se cobra. Se comprobo en el navegador y quedo el rastro en
+los datos de Nicolas: una entrada de **2 segundos** a las 02:42, que es
+exactamente el patron de arrancar y parar enseguida al no ver nada.
 
-- que ya hubiera un cronometro corriendo — `start_timer` cierra el anterior y
-  abre otro, y visualmente puede parecer que no ha pasado nada;
-- que el error se trague en el `alert` de `arrancar` sin que se vea;
-- que la fila sea de otra persona, donde no deberia ni salir el boton.
+El problema es que **no se ve**: el cronometro se pone en marcha en la barra
+de arriba y en la lateral, pero la lista de horas -que es donde estas mirando
+cuando pulsas- no cambia nada. Parece que el boton no ha hecho nada.
+
+Que hacer:
+
+- que la entrada en marcha salga **como una fila mas arriba del todo de la
+  lista**, contando en vivo, en lugar de vivir solo en la barra;
+- y que al arrancar se note, aunque sea un instante.
+
+Ojo tambien: las dos entradas iguales de LALALA a las 09:00 no son de
+continuar, son del boton de duplicar. Conviene mirar si duplicar deberia
+avisar de algo, porque deja dos filas identicas sin mas.
 
 ### Las horas compartidas no se ven
 

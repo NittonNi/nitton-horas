@@ -47,32 +47,30 @@ para un equipo" a "horas para cualquier equipo de LEINN".
 
 ### Estado a 19-ago-2026
 
-**Hecho**: nombre ClockLEINN; portada publica en `/` y aplicacion en `/panel`;
-categorizacion de dos niveles con objetivo por rama, elegible al crear y al
-editar proyecto, visible en el listado de proyectos y con una columna por nivel
-en informes y Excel; ediciones de proyecto (TBCE 1 / TBCE 2) con fechas,
-presupuesto y horas, elegibles desde el cronometro, el calendario, el dialogo
-de entrada y la propia fila; objetivos de dia y semana del espacio, visibles
-restando en el cronometro y en cada cabecera de dia y de semana, y objetivo por
-rama con lo que llevas esta semana; horas compartidas desde el cronometro, con
-el selector siempre a la vista; etiquetas que se crean desde el propio selector
-y ajuste de una-o-varias; no se puede parar el cronometro sin proyecto
--probado en vivo-; resumen del cronometro con tres huecos que cada uno elige
-(hoy, semana, facturable, mes, lo que falta, media por dia); informes con
-filtro por categoria, desgloses por categoria y por edicion y descarga de todo
-el historico; repaso de tildes y enes; bordes mas rectos; continuar sin la
-palabra; menu lateral con la gestion desplegada.
+Hecha toda la lista de la sesion. Por encima: nombre ClockLEINN; portada
+publica de producto en `/` -con lo que hace, la categorizacion, las ediciones,
+los tres pasos y las preguntas de siempre- y aplicacion en `/panel`;
+categorizacion de dos niveles con objetivo por rama, visible en el listado de
+proyectos y con una columna por nivel en informes y Excel; ediciones de
+proyecto en las cuatro pantallas donde se apuntan horas; objetivos de dia,
+semana y rama con lo que falta a la vista; horas compartidas desde el
+cronometro, con el selector siempre visible y con quien mas cuenta cada hora
+en su propia fila; etiquetas que se crean desde el selector; ninguna hora
+suelta -ni al parar, ni a mano, ni en el calendario- si el espacio lo exige;
+resumen del cronometro con tres huecos a gusto de cada uno; informes con
+filtro y desgloses por categoria y por edicion y descarga completa; tildes y
+enes; menu lateral con la gestion desplegada.
 
 **Pendiente**:
 
-1. **Horas compartidas, segunda vuelta**: falta verlas en la propia entrada
-   -a quien le cuenta y en que estado- y poder proponerlas desde la hoja
-   semanal. Avisar a quien acepto si luego cambia la hora.
+1. **Horas compartidas, tercera vuelta**: proponerlas tambien desde la hoja
+   semanal, y avisar a quien ya acepto si luego cambia la hora o se borra.
 2. **Identidad**: logo y favicon propios, y renombrar el repositorio, que
    sigue siendo `nitton-horas`.
 3. **Despliegue**: Vercel, dominio y las URLs de Google con el dominio real.
-4. **Ojo**: las rutas y los identificadores van SIN tilde -son URLs y
-   carpetas- y los textos CON ella. Un `href="/gestión"` da 404; ya paso.
+   Sin esto no lo puede usar ningun otro equipo de LEINN.
+4. **Ojo con las tildes**: rutas e identificadores SIN tilde -son URLs y
+   carpetas- y textos CON ella. Un `href="/gestión"` da 404; ya paso.
 
 ## Siguiente
 

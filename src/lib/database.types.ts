@@ -780,6 +780,7 @@ export type Database = {
           category_id: string | null
           category_name: string | null
           client_name: string | null
+          compartida_con: Json | null
           description: string | null
           edition_id: string | null
           edition_name: string | null

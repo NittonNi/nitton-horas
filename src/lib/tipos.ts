@@ -61,8 +61,13 @@ export type EntradaVista = {
   billable: boolean
   locked: boolean
   tags: string[]
+  /** A quien mas le cuentan estas horas, y como lo lleva cada uno. */
+  compartida_con: { nombre: string; estado: EstadoPropuesta }[]
   amount: number | null
 }
+
+/** Una propuesta se manda, y la otra persona la acepta o la rechaza. */
+export type EstadoPropuesta = "pendiente" | "aceptada" | "rechazada"
 
 export type ProyectoConCliente = Proyecto & {
   clients: Pick<Cliente, "id" | "name"> | null

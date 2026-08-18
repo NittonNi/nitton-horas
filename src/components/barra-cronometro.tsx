@@ -299,6 +299,7 @@ export function BarraCronometro({
             <EntradaManual
               espacioId={espacio.id}
               userId={perfil.id}
+              exigeProyecto={espacio.require_project}
               borrador={{ ...borrador, description: descripcionLocal }}
               guardando={guardando}
               setGuardando={setGuardando}
@@ -393,6 +394,7 @@ export function BarraCronometro({
 function EntradaManual({
   espacioId,
   userId,
+  exigeProyecto,
   borrador,
   guardando,
   setGuardando,
@@ -400,6 +402,8 @@ function EntradaManual({
 }: {
   espacioId: string
   userId: string
+  /** El espacio no quiere horas sin proyecto. */
+  exigeProyecto: boolean
   borrador: BorradorEntrada
   guardando: boolean
   setGuardando: (v: boolean) => void
@@ -435,6 +439,10 @@ function EntradaManual({
     const segs = parseDurationToSeconds(duracion)
     if (!segs || segs <= 0) {
       alert("Pon una duración válida, por ejemplo 1:30 o 90m.")
+      return
+    }
+    if (exigeProyecto && !borrador.project_id) {
+      alert("Elige un proyecto: este espacio no guarda horas sueltas.")
       return
     }
 

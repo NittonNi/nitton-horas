@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import * as Popover from "@radix-ui/react-popover"
-import { Copy, Euro, Play, Trash2 } from "lucide-react"
+import { Copy, Euro, Play, Trash2, Users } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
@@ -45,6 +45,10 @@ export function FilaEntrada({
   const [error, setError] = useState<string | null>(null)
 
   const bloqueada = entrada.locked
+
+  /* Quien mas cuenta estas horas. Un punto naranja avisa de que alguien no ha
+     contestado todavia. */
+  const compartida = entrada.compartida_con ?? []
 
   /** Solo las del proyecto de esta entrada; si no tiene, no se ve nada. */
   const ediciones = entrada.project_id
@@ -281,6 +285,20 @@ export function FilaEntrada({
               ))}
               {entrada.tags.length > 1 && (
                 <span className="chip shrink-0">+{entrada.tags.length - 1}</span>
+              )}
+              {compartida.length > 0 && (
+                <span
+                  className="chip shrink-0 gap-1"
+                  title={compartida
+                    .map((c) => c.nombre + ": " + c.estado)
+                    .join(", ")}
+                >
+                  <Users className="h-3 w-3" aria-hidden />
+                  {compartida.length}
+                  {compartida.some((c) => c.estado === "pendiente") && (
+                    <span className="text-live">·</span>
+                  )}
+                </span>
               )}
             </button>
           )}

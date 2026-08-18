@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, Euro, Loader2, X } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
+import { useSesion } from "@/components/proveedor-sesion"
 import { DialogoEntrada } from "@/components/dialogo-entrada"
 import { SelectorPersonas } from "@/components/selector-personas"
 import { SelectorProyecto } from "@/components/selector-proyecto"
@@ -595,6 +596,7 @@ function DialogoNuevaEntrada({
   onCerrar: () => void
 }) {
   const router = useRouter()
+  const { espacio } = useSesion()
   const [descripcion, setDescripcion] = useState("")
   const [edicionId, setEdicionId] = useState<string | null>(null)
   const [proyecto, setProyecto] = useState<{
@@ -634,6 +636,10 @@ function DialogoNuevaEntrada({
   async function guardar() {
     if (minutosInicio === null || duracion === null || duracion <= 0) {
       setError("Revisa las horas: el fin tiene que ser posterior al inicio.")
+      return
+    }
+    if (espacio.require_project && !proyecto.project_id) {
+      setError("Elige un proyecto: este espacio no guarda horas sueltas.")
       return
     }
 

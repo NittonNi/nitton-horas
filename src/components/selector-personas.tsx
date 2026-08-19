@@ -29,6 +29,7 @@ export function SelectorPersonas({
   }
 
   const elegidas = miembros.filter((m) => seleccionadas.includes(m.id))
+  const todas = elegidas.length === miembros.length && miembros.length > 0
 
   function alternar(id: string) {
     onChange(
@@ -51,10 +52,12 @@ export function SelectorPersonas({
         <Users className="h-4 w-4 shrink-0" />
         <span className="truncate">
           {elegidas.length === 0
-            ? "Solo para mi"
-            : elegidas.length === 1
-              ? elegidas[0].full_name
-              : `${elegidas.length} personas más`}
+            ? "Solo para mí"
+            : todas
+              ? "Todo el equipo"
+              : elegidas.length === 1
+                ? elegidas[0].full_name
+                : `${elegidas.length} personas más`}
         </span>
       </DropdownMenu.Trigger>
 
@@ -66,6 +69,30 @@ export function SelectorPersonas({
           style={{ boxShadow: "var(--shadow-lg)" }}
         >
           <p className="rotulo px-2 py-1.5">Compartir con</p>
+
+          {/* Una reunion es de todos: pedirlo persona a persona es un peaje */}
+          <DropdownMenu.Item
+            onSelect={(e) => {
+              e.preventDefault()
+              onChange(todas ? [] : miembros.map((m) => m.id))
+            }}
+            className="flex cursor-pointer items-center gap-2 rounded-[var(--radio-sm)] px-2 py-1.5 text-sm font-medium outline-none transition hover:bg-surface-2 data-highlighted:bg-surface-2"
+          >
+            <span
+              className={cn(
+                "flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border",
+                todas ? "border-ink bg-ink" : "border-line-strong",
+              )}
+            >
+              {todas && <Check className="h-3 w-3 text-[color:var(--accent-fg)]" />}
+            </span>
+            <span className="min-w-0 flex-1 truncate">
+              {todas ? "Quitar a todos" : "Todo el equipo"}
+            </span>
+            <span className="text-xs text-muted">{miembros.length}</span>
+          </DropdownMenu.Item>
+
+          <div className="my-1 h-px bg-line" />
           {miembros.map((miembro) => {
             const puesta = seleccionadas.includes(miembro.id)
             return (

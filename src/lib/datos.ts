@@ -22,7 +22,9 @@ export async function cargarCatalogo(
         .order("name"),
       supabase
         .from("projects")
-        .select("*, clients(id, name)")
+        /* `!projects_client_id_fkey`: desde que hay tabla puente de clientes hay
+           dos caminos de proyecto a cliente y hay que decir cual. */
+        .select("*, clients!projects_client_id_fkey(id, name)")
         .eq("workspace_id", espacioId)
         .order("name"),
       supabase.from("tasks").select("*").eq("workspace_id", espacioId).order("name"),

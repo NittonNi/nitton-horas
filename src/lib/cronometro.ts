@@ -5,7 +5,7 @@ import type { EntradaEnMarcha } from "@/lib/tipos"
  * la inferencia de tipos y el resultado sale como `GenericStringError`.
  */
 export const SELECT_EN_MARCHA =
-  "id, workspace_id, project_id, edition_id, task_id, description, start_at, billable, projects(id, name, color, clients(name)), tasks(id, name), time_entry_tags(tag_id)" as const
+  "id, workspace_id, project_id, edition_id, task_id, description, start_at, billable, projects(id, name, color, clients!projects_client_id_fkey(name)), tasks(id, name), time_entry_tags(tag_id)" as const
 
 type FilaEnMarcha = {
   id: string

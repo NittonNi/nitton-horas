@@ -42,6 +42,7 @@ import {
   type Resultado,
 } from "@/components/resultados-proyecto"
 import { TarjetasEdicion } from "@/components/tarjetas-edicion"
+import { ClientesProyecto } from "@/components/clientes-proyecto"
 import { cn } from "@/lib/utils"
 
 /** Los cuatro tipos de trabajo del equipo, cada uno se cierra a su ritmo. */
@@ -60,6 +61,8 @@ export function DetalleProyecto({
   ediciones,
   entradas,
   resultados,
+  clientesDelProyecto,
+  clientesDeEdiciones,
   objetivoHora,
   espacioId,
   puedeGestionar,
@@ -72,6 +75,10 @@ export function DetalleProyecto({
   ediciones: Edicion[]
   entradas: EntradaVista[]
   resultados: Resultado[]
+  /** Los clientes de este proyecto. Pueden ser varios. */
+  clientesDelProyecto: string[]
+  /** Que clientes participan en cada edicion. */
+  clientesDeEdiciones: { edition_id: string; client_id: string }[]
   /** Facturacion por hora a la que aspira el equipo. */
   objetivoHora: number | null
   espacioId: string
@@ -95,10 +102,25 @@ export function DetalleProyecto({
     [cerradas],
   )
 
-  const presupuesto = proyecto.budget_hours ?? null
-  const horas = suma.segundos / 3600
-  const consumido =
-    presupuesto && presupuesto > 0 ? (horas / presupuesto) * 100 : null
+  /** Para cada cliente, en que ediciones participa: se lee de un vistazo. */
+  const enEdiciones = useMemo(() => {
+    const mapa = new Map<string, string[]>()
+    for (const enlace of clientesDeEdiciones) {
+      const edicion = ediciones.find((e) => e.id === enlace.edition_id)
+      if (!edicion) continue
+      mapa.set(enlace.client_id, [
+        ...(mapa.get(enlace.client_id) ?? []),
+        edicion.name,
+      ])
+    }
+    return mapa
+  }, [clientesDeEdiciones, ediciones])
+
+  /* Cuando empezo y cuando acabo, sin escribir una sola fecha: la primera hora
+     apuntada -o el dia que se creo- y la ultima. */
+  const dias = cerradas.map((e) => e.local_date).sort()
+  const nacio = dias[0] ?? proyecto.created_at.slice(0, 10)
+  const ultima = dias[dias.length - 1] ?? null
 
   return (
     <div className="space-y-5">
@@ -169,45 +191,21 @@ export function DetalleProyecto({
         ) : (
           <Dato etiqueta="Entradas" valor={String(suma.entradas)} />
         )}
+        {/* Cuando nacio y cuando fue la ultima hora. Nada de esto se escribe:
+            lo dice el propio trabajo apuntado. */}
         <Dato
-          etiqueta="Presupuesto"
-          valor={presupuesto ? `${formatHoursDecimal(suma.segundos)} / ${presupuesto} h` : "Sin fijar"}
-          pie={consumido !== null ? `${Math.round(consumido)}% consumido` : undefined}
+          etiqueta="Desde"
+          valor={formatDateShort(nacio)}
+          pie={ultima ? `hasta el ${formatDateShort(ultima)}` : "sin horas todavía"}
         />
       </div>
 
       {puedeVerImportes && (
         <ResultadosProyecto
-          espacioId={espacioId}
-          proyectoId={proyecto.id}
-          ediciones={ediciones}
           entradas={entradas}
           resultados={resultados}
           objetivoHora={objetivoHora}
-          puedeGestionar={puedeGestionar}
         />
-      )}
-
-      {consumido !== null && (
-        <div className="card p-4">
-          <div className="h-2 overflow-hidden rounded-full bg-surface-2">
-            <div
-              className={cn(
-                "h-full rounded-full transition-all",
-                consumido > 100 && "bg-danger",
-              )}
-              style={{
-                width: `${Math.min(100, consumido)}%`,
-                background: consumido > 100 ? undefined : proyecto.color,
-              }}
-            />
-          </div>
-          <p className="mt-2 text-xs text-muted">
-            {consumido > 100
-              ? `Te has pasado ${formatHoursDecimal(suma.segundos - (presupuesto ?? 0) * 3600)} h del presupuesto.`
-              : `Quedan ${formatHoursDecimal((presupuesto ?? 0) * 3600 - suma.segundos)} h.`}
-          </p>
-        </div>
       )}
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
@@ -226,10 +224,20 @@ export function DetalleProyecto({
       </div>
 
 
+      <ClientesProyecto
+        espacioId={espacioId}
+        proyectoId={proyecto.id}
+        clientes={clientes}
+        puestos={clientesDelProyecto}
+        enEdiciones={enEdiciones}
+        puedeGestionar={puedeGestionar}
+      />
+
       <TarjetasEdicion
         espacioId={espacioId}
         proyectoId={proyecto.id}
-        clienteProyecto={proyecto.client_id}
+        clientesDelProyecto={clientesDelProyecto}
+        clientesDeEdiciones={clientesDeEdiciones}
         ediciones={ediciones}
         entradas={cerradas}
         resultados={resultados}
@@ -604,14 +612,10 @@ function EditarProyecto({
   const router = useRouter()
   const [abierto, setAbierto] = useState(false)
   const [nombre, setNombre] = useState(proyecto.name)
-  const [clienteId, setClienteId] = useState(proyecto.client_id ?? "")
   const [categoriaId, setCategoriaId] = useState(proyecto.category_id ?? "")
   const [color, setColor] = useState(proyecto.color)
   const [facturable, setFacturable] = useState(proyecto.billable_default)
   const [tipo, setTipo] = useState(proyecto.kind ?? "")
-  const [presupuesto, setPresupuesto] = useState(
-    proyecto.budget_hours != null ? String(proyecto.budget_hours) : "",
-  )
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -621,12 +625,6 @@ function EditarProyecto({
       setError("El proyecto necesita un nombre.")
       return
     }
-    const horas = presupuesto.trim().replace(",", ".")
-    if (horas && Number.isNaN(Number(horas))) {
-      setError("El presupuesto tiene que ser un número de horas.")
-      return
-    }
-
     setGuardando(true)
     setError(null)
     const supabase = createClient()
@@ -634,12 +632,10 @@ function EditarProyecto({
       .from("projects")
       .update({
         name: limpio,
-        client_id: clienteId || null,
         category_id: categoriaId || null,
         color,
         billable_default: facturable,
         kind: (tipo || null) as ProyectoConCliente["kind"],
-        budget_hours: horas ? Number(horas) : null,
       })
       .eq("id", proyecto.id)
 
@@ -707,34 +703,6 @@ function EditarProyecto({
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
               />
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-                <label className="label" htmlFor="ep-cliente">
-                  Cliente
-                </label>
-                <SelectorCliente
-                  id="ep-cliente"
-                  espacioId={proyecto.workspace_id}
-                  clientes={clientes}
-                  valor={clienteId}
-                  onChange={setClienteId}
-                />
-              </div>
-              <div>
-                <label className="label" htmlFor="ep-presupuesto">
-                  Presupuesto (horas)
-                </label>
-                <input
-                  id="ep-presupuesto"
-                  className="field cifra"
-                  value={presupuesto}
-                  onChange={(e) => setPresupuesto(e.target.value)}
-                  placeholder="Sin fijar"
-                  inputMode="decimal"
-                />
-              </div>
             </div>
 
             <div>

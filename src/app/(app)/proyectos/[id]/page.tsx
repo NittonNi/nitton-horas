@@ -4,8 +4,8 @@ import { getSesion } from "@/lib/sesion"
 import { veTodo } from "@/lib/roles"
 import { cargarCatalogo, cargarEntradas } from "@/lib/datos"
 import { createClient } from "@/lib/supabase/server"
-import type { Resultado } from "@/components/resultados-proyecto"
 import { DetalleProyecto } from "@/components/detalle-proyecto"
+import type { Resultado } from "@/components/resultados-proyecto"
 import { todayKey } from "@/lib/time"
 
 /** Todo lo que se ha apuntado nunca en este proyecto. */
@@ -33,7 +33,7 @@ export default async function PaginaProyecto({
   const gestor = veTodo(rol)
 
   const supabase = await createClient()
-  const [catalogo, entradas, resultados] = await Promise.all([
+  const [catalogo, entradas, resultados, delProyecto] = await Promise.all([
     cargarCatalogo(espacio.id, true),
     cargarEntradas({
       espacioId: espacio.id,
@@ -47,10 +47,23 @@ export default async function PaginaProyecto({
       .select("id, edition_id, label, starts_on, ends_on, income, expenses, notes")
       .eq("project_id", id)
       .order("starts_on", { ascending: false }),
+    supabase.from("project_clients").select("client_id").eq("project_id", id),
   ])
 
   const proyecto = catalogo.proyectos.find((p) => p.id === id)
   if (!proyecto) notFound()
+
+  const ediciones = catalogo.ediciones.filter((e) => e.project_id === id)
+  const deEdiciones =
+    ediciones.length > 0
+      ? await supabase
+          .from("edition_clients")
+          .select("edition_id, client_id")
+          .in(
+            "edition_id",
+            ediciones.map((e) => e.id),
+          )
+      : { data: [] }
 
   return (
     <DetalleProyecto
@@ -58,9 +71,14 @@ export default async function PaginaProyecto({
       clientes={catalogo.clientes}
       categorias={catalogo.categorias}
       tareas={catalogo.tareas.filter((t) => t.project_id === id)}
-      ediciones={catalogo.ediciones.filter((e) => e.project_id === id)}
+      ediciones={ediciones}
       entradas={entradas}
       resultados={(resultados.data ?? []) as Resultado[]}
+      clientesDelProyecto={(delProyecto.data ?? []).map((f) => f.client_id)}
+      clientesDeEdiciones={(deEdiciones.data ?? []) as {
+        edition_id: string
+        client_id: string
+      }[]}
       objetivoHora={espacio.target_hourly_rate}
       espacioId={espacio.id}
       puedeGestionar={gestor}

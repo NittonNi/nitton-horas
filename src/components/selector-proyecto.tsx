@@ -562,7 +562,7 @@ function FormularioProyecto({
         client_id: clienteId || null,
         color,
       })
-      .select("*, clients(id, name)")
+      .select("*, clients!projects_client_id_fkey(id, name)")
       .single()
 
     setGuardando(false)

@@ -22,7 +22,8 @@ import { cn } from "@/lib/utils"
 export function TarjetasEdicion({
   espacioId,
   proyectoId,
-  clienteProyecto,
+  clientesDelProyecto,
+  clientesDeEdiciones,
   ediciones,
   entradas,
   resultados,
@@ -34,8 +35,9 @@ export function TarjetasEdicion({
 }: {
   espacioId: string
   proyectoId: string
-  /** El cliente del proyecto: vale para lo que no tiene edición. */
-  clienteProyecto: string | null
+  /** Los clientes del proyecto: de ahi se eligen los de cada edicion. */
+  clientesDelProyecto: string[]
+  clientesDeEdiciones: { edition_id: string; client_id: string }[]
   ediciones: Edicion[]
   entradas: EntradaVista[]
   resultados: Resultado[]
@@ -115,7 +117,10 @@ export function TarjetasEdicion({
             entradas={entradas.filter((e) => e.edition_id === edicion.id)}
             resultado={resultados.find((r) => r.edition_id === edicion.id) ?? null}
             clientes={clientes}
-            clienteHeredado={clienteProyecto}
+            delProyecto={clientesDelProyecto}
+            suyos={clientesDeEdiciones
+              .filter((c) => c.edition_id === edicion.id)
+              .map((c) => c.client_id)}
             objetivoHora={objetivoHora}
             enCurso={predeterminada === edicion.id}
             puedeGestionar={puedeGestionar}
@@ -133,7 +138,8 @@ export function TarjetasEdicion({
             entradas={sueltas}
             resultado={resultados.find((r) => !r.edition_id) ?? null}
             clientes={clientes}
-            clienteHeredado={clienteProyecto}
+            delProyecto={clientesDelProyecto}
+            suyos={clientesDelProyecto}
             objetivoHora={objetivoHora}
             enCurso={false}
             puedeGestionar={puedeGestionar}
@@ -198,7 +204,8 @@ function Tarjeta({
   entradas,
   resultado,
   clientes,
-  clienteHeredado,
+  delProyecto,
+  suyos,
   objetivoHora,
   enCurso,
   puedeGestionar,
@@ -211,7 +218,10 @@ function Tarjeta({
   entradas: EntradaVista[]
   resultado: Resultado | null
   clientes: Cliente[]
-  clienteHeredado: string | null
+  /** Los clientes del proyecto: son los que se pueden marcar aqui. */
+  delProyecto: string[]
+  /** Los que participan en esta edicion. */
+  suyos: string[]
   objetivoHora: number | null
   enCurso: boolean
   puedeGestionar: boolean
@@ -301,43 +311,33 @@ function Tarjeta({
    * El cliente de la edicion; en la tarjeta sin edicion, el del proyecto. Los
    * dos se ponen desde aqui, que es donde se miran.
    */
-  async function cambiarCliente(clienteId: string) {
-    const antes = edicion ? edicion.client_id : clienteHeredado
+  /**
+   * En una edicion pueden participar varios clientes: se marcan los que sean y
+   * asi se sabe entre quienes se reparten esas horas. En la tarjeta sin
+   * edicion no hay nada que marcar: son los del proyecto.
+   */
+  async function alternarCliente(clienteId: string) {
+    if (!edicion) return
+    const estaba = suyos.includes(clienteId)
     setOcupado(true)
     const supabase = createClient()
-    const { error: err } = edicion
+    const { error: err } = estaba
       ? await supabase
-          .from("project_editions")
-          .update({ client_id: clienteId || null })
-          .eq("id", edicion.id)
-      : await supabase
-          .from("projects")
-          .update({ client_id: clienteId || null })
-          .eq("id", proyectoId)
+          .from("edition_clients")
+          .delete()
+          .eq("edition_id", edicion.id)
+          .eq("client_id", clienteId)
+      : await supabase.from("edition_clients").insert({
+          edition_id: edicion.id,
+          client_id: clienteId,
+          workspace_id: espacioId,
+        })
     setOcupado(false)
     if (err) {
       avisar(mensajeError(err), undefined, "mal")
       return
     }
     router.refresh()
-    avisar(
-      edicion ? "Cliente de la edición cambiado." : "Cliente del proyecto cambiado.",
-      async () => {
-        const cliente = createClient()
-        const { error: errVolver } = edicion
-          ? await cliente
-              .from("project_editions")
-              .update({ client_id: antes })
-              .eq("id", edicion.id)
-          : await cliente
-              .from("projects")
-              .update({ client_id: antes })
-              .eq("id", proyectoId)
-        if (errVolver) throw new Error(mensajeError(errVolver))
-        router.refresh()
-        return "Como estaba."
-      },
-    )
   }
 
   async function marcarEnCurso() {
@@ -368,10 +368,6 @@ function Tarjeta({
     }
     router.refresh()
   }
-
-  const clienteDeLaTarjeta = edicion
-    ? (edicion.client_id ?? "")
-    : (clienteHeredado ?? "")
 
   return (
     <article
@@ -459,24 +455,48 @@ function Tarjeta({
         )}
       </div>
 
-      {/* --------------------------------------------------------- cliente */}
+      {/* --------------------------------------------------------- clientes */}
       <div className="min-w-0">
         <span className="label">
-          Cliente{!edicion && <span className="text-muted"> del proyecto</span>}
+          {edicion ? "Clientes de la edición" : "Clientes del proyecto"}
         </span>
-        {puedeGestionar ? (
-          <SelectorCliente
-            id={`cliente-ed-${edicion?.id ?? "proyecto"}`}
-            espacioId={espacioId}
-            clientes={clientes}
-            valor={clienteDeLaTarjeta}
-            onChange={(id) => void cambiarCliente(id)}
-          />
-        ) : (
-          <p className="text-sm">
-            {clientes.find((c) => c.id === clienteDeLaTarjeta)?.name ??
-              "Sin cliente"}
+        {delProyecto.length === 0 ? (
+          <p className="text-sm text-muted">
+            Añade clientes al proyecto ahí arriba y aquí se eligen.
           </p>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {delProyecto.map((id) => {
+              const cliente = clientes.find((c) => c.id === id)
+              if (!cliente) return null
+              const puesto = suyos.includes(id)
+              // Sin edicion no hay nada que elegir: son los del proyecto
+              if (!edicion) {
+                return (
+                  <span key={id} className="chip">
+                    {cliente.name}
+                  </span>
+                )
+              }
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  disabled={!puedeGestionar || ocupado}
+                  onClick={() => void alternarCliente(id)}
+                  aria-pressed={puesto}
+                  className={cn(
+                    "chip transition",
+                    puesto
+                      ? "border-accent bg-accent-soft text-accent"
+                      : "text-muted hover:border-line-strong",
+                  )}
+                >
+                  {cliente.name}
+                </button>
+              )
+            })}
+          </div>
         )}
       </div>
 

@@ -259,6 +259,48 @@ export type Database = {
         }
         Relationships: []
       }
+      project_clients: {
+        Row: {
+          client_id: string
+          created_at: string
+          project_id: string
+          workspace_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          project_id: string
+          workspace_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          project_id?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
+      edition_clients: {
+        Row: {
+          client_id: string
+          created_at: string
+          edition_id: string
+          workspace_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          edition_id: string
+          workspace_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          edition_id?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
       project_editions: {
         Row: {
           archived: boolean

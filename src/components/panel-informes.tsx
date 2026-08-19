@@ -72,6 +72,9 @@ export function PanelInformes({
   const [elegidas, setElegidas] = useState<string[]>([])
   const [editando, setEditando] = useState<EntradaVista | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
+  // Lo ultimo que se hizo, por si hay que dar marcha atras
+  const [deshacer, setDeshacer] = useState<(() => Promise<string>) | null>(null)
+  const [deshaciendo, setDeshaciendo] = useState(false)
 
   function cambiarRango(nuevoDesde: string, nuevoHasta: string) {
     router.push(`/informes?desde=${nuevoDesde}&hasta=${nuevoHasta}`)
@@ -636,9 +639,44 @@ export function PanelInformes({
         </div>
 
         {aviso && (
-          <p className="no-print mb-3 rounded-[var(--radio-sm)] border border-line bg-surface-2 px-3 py-2 text-sm text-ink-soft">
-            {aviso}
-          </p>
+          <div className="no-print mb-3 flex flex-wrap items-center gap-3 rounded-[var(--radio-sm)] border border-line bg-surface-2 px-3 py-2 text-sm text-ink-soft">
+            <span>{aviso}</span>
+            {deshacer && (
+              <button
+                type="button"
+                disabled={deshaciendo}
+                onClick={async () => {
+                  setDeshaciendo(true)
+                  try {
+                    const hecho = await deshacer()
+                    setAviso(hecho)
+                    setDeshacer(null)
+                    router.refresh()
+                  } catch (err) {
+                    setAviso(
+                      "No se ha podido deshacer: " +
+                        (err instanceof Error ? err.message : "algo ha fallado"),
+                    )
+                  } finally {
+                    setDeshaciendo(false)
+                  }
+                }}
+                className="btn h-7 py-0 text-xs"
+              >
+                {deshaciendo ? "Deshaciendo..." : "Deshacer"}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setAviso(null)
+                setDeshacer(null)
+              }}
+              className="ml-auto text-xs text-muted transition hover:text-ink"
+            >
+              Cerrar
+            </button>
+          </div>
         )}
 
         {seleccionadas.length > 0 && (
@@ -646,7 +684,10 @@ export function PanelInformes({
             seleccionadas={seleccionadas}
             catalogo={catalogo}
             puedeBloquear={puedeEditarTodo}
-            onListo={setAviso}
+            onListo={(mensaje, volver) => {
+              setAviso(mensaje)
+              setDeshacer(() => volver ?? null)
+            }}
             onLimpiar={() => setElegidas([])}
           />
         )}

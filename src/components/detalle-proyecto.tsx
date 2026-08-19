@@ -37,10 +37,10 @@ import type {
   Tarea,
 } from "@/lib/tipos"
 import {
-  ResultadosProyecto,
   resumenDeResultados,
   type Resultado,
 } from "@/components/resultados-proyecto"
+import { ResumenProyecto } from "@/components/resumen-proyecto"
 import { TarjetasEdicion } from "@/components/tarjetas-edicion"
 import { cn } from "@/lib/utils"
 
@@ -135,11 +135,6 @@ export function DetalleProyecto({
       ),
     [cerradas],
   )
-  const porPersona = useMemo(
-    () => agrupar(cerradas, (e) => e.user_id, (e) => e.user_name),
-    [cerradas],
-  )
-
   const dinero = useMemo(
     () => resumenDeResultados(entradas, resultados),
     [entradas, resultados],
@@ -254,60 +249,14 @@ export function DetalleProyecto({
 
       {/* -------------------------------------------------------- resumen */}
       {activa === "resumen" && (
-        <div className="space-y-5">
-          {puedeVerImportes && (
-            <ResultadosProyecto
-              entradas={entradas}
-              resultados={resultados}
-              objetivoHora={objetivoHora}
-            />
-          )}
-
-          <div className="card grid grid-cols-2 divide-line sm:grid-cols-4 sm:divide-x">
-            <Dato etiqueta="Total" valor={formatDurationShort(suma.segundos)} />
-            <Dato
-              etiqueta="Facturable"
-              valor={formatDurationShort(suma.facturables)}
-              resaltado={suma.facturables > 0}
-              pie={
-                suma.segundos > 0
-                  ? `${Math.round(
-                      (suma.facturables / suma.segundos) * 100,
-                    )}% del total`
-                  : undefined
-              }
-            />
-            {puedeVerImportes ? (
-              <Dato etiqueta="Importe" valor={formatMoney(suma.importe)} />
-            ) : (
-              <Dato etiqueta="Entradas" valor={String(suma.entradas)} />
-            )}
-            <Dato
-              etiqueta="Ediciones"
-              valor={String(ediciones.filter((e) => !e.archived).length)}
-              pie={
-                ediciones.some((e) => e.archived)
-                  ? `${ediciones.filter((e) => e.archived).length} cerradas`
-                  : undefined
-              }
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-            <Desglose
-              titulo="Por tarea"
-              grupos={porTarea}
-              total={suma.segundos}
-              vacio="Las horas de este proyecto no estan repartidas en tareas."
-            />
-            <Desglose
-              titulo="Por persona"
-              grupos={porPersona}
-              total={suma.segundos}
-              vacio="Todavia no hay horas apuntadas."
-            />
-          </div>
-        </div>
+        <ResumenProyecto
+          entradas={cerradas}
+          resultados={resultados}
+          ediciones={ediciones}
+          objetivoHora={objetivoHora}
+          color={proyecto.color}
+          puedeVerImportes={puedeVerImportes}
+        />
       )}
 
       {/* ------------------------------------------------------ ediciones */}
@@ -391,76 +340,6 @@ function Cifra({
       </p>
       <p className="mt-1 whitespace-nowrap text-xs text-muted">{etiqueta}</p>
     </div>
-  )
-}
-
-function Dato({
-  etiqueta,
-  valor,
-  pie,
-  resaltado = false,
-}: {
-  etiqueta: string
-  valor: string
-  pie?: string
-  resaltado?: boolean
-}) {
-  return (
-    <div className="px-4 py-3">
-      <p className="rotulo">{etiqueta}</p>
-      <p
-        className={cn(
-          "cifra mt-1 text-xl font-semibold leading-none",
-          resaltado && "text-billable",
-        )}
-      >
-        {valor}
-      </p>
-      <p className="mt-1.5 h-4 text-xs text-muted">{pie}</p>
-    </div>
-  )
-}
-
-function Desglose({
-  titulo,
-  grupos,
-  total,
-  vacio,
-}: {
-  titulo: string
-  grupos: ReturnType<typeof agrupar>
-  total: number
-  vacio: string
-}) {
-  return (
-    <section className="card p-4">
-      <h2 className="mb-3 text-sm font-semibold">{titulo}</h2>
-      {grupos.length === 0 ? (
-        <p className="py-2 text-sm text-muted">{vacio}</p>
-      ) : (
-        <ul className="space-y-2.5">
-          {grupos.map((grupo) => {
-            const porcentaje = total > 0 ? (grupo.segundos / total) * 100 : 0
-            return (
-              <li key={grupo.clave}>
-                <div className="flex items-baseline justify-between gap-2 text-sm">
-                  <span className="min-w-0 truncate">{grupo.etiqueta}</span>
-                  <span className="cifra shrink-0 font-medium">
-                    {formatDurationShort(grupo.segundos)}
-                  </span>
-                </div>
-                <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">
-                  <div
-                    className="h-full rounded-full bg-ink"
-                    style={{ width: `${porcentaje}%` }}
-                  />
-                </div>
-              </li>
-            )
-          })}
-        </ul>
-      )}
-    </section>
   )
 }
 

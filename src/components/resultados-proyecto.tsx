@@ -1,10 +1,4 @@
-"use client"
-
-import { useMemo } from "react"
-
-import { formatDurationShort, formatMoney } from "@/lib/time"
 import type { EntradaVista } from "@/lib/tipos"
-import { cn } from "@/lib/utils"
 
 export type Resultado = {
   id: string
@@ -47,115 +41,13 @@ export function resumenDeResultados(
     gastos,
     neto: ingresos - gastos,
     segundos,
-    porHora: horas > 0 ? ingresos / horas : null,
+    /**
+     * Con menos de una hora marcada el reparto no dice nada: mil euros entre
+     * dieciocho segundos son doscientos mil euros la hora, y eso no es un dato,
+     * es una division. Por debajo de ahi no se ensena.
+     */
+    porHora: horas >= 1 ? ingresos / horas : null,
+    /** Hay dinero apuntado pero faltan horas con el euro para repartirlo. */
+    faltanHoras: ingresos > 0 && horas < 1,
   }
-}
-
-/**
- * Lo que ha dejado un trabajo y lo que ha costado en horas.
- *
- * Aquí no se presupuesta ni se cobra por tarifa: se apunta lo que entró y lo
- * que salió cuando ya se sabe -al cerrar un evento, al terminar una
- * oportunidad, cada mes en lo recurrente- y la app dice a cuánto ha salido la
- * hora. Ese es el número que se mira: la facturación por hora.
- */
-export function ResultadosProyecto({
-  entradas,
-  resultados,
-  objetivoHora,
-}: {
-  entradas: EntradaVista[]
-  resultados: Resultado[]
-  /** Facturación por hora a la que se aspira. En LEINN, 17 €/h. */
-  objetivoHora: number | null
-}) {
-  const total = useMemo(
-    () => resumenDeResultados(entradas, resultados),
-    [entradas, resultados],
-  )
-
-  if (resultados.length === 0) return null
-
-  return (
-    <section className="card min-w-0 p-4">
-      <h2 className="mb-3 text-sm font-semibold">Resultado del proyecto</h2>
-
-      <div className="flex flex-wrap items-center gap-4">
-        {total.porHora !== null && (
-          <Rueda valor={total.porHora} objetivo={objetivoHora} />
-        )}
-        <div className="min-w-0 space-y-0.5 text-sm">
-          <p>
-            <span className="cifra font-semibold">
-              {formatMoney(total.ingresos)}
-            </span>{" "}
-            <span className="text-muted">facturado</span>
-          </p>
-          <p className="text-muted">
-            en{" "}
-            <span className="cifra">{formatDurationShort(total.segundos)}</span>{" "}
-            de horas que se cobran
-          </p>
-          <p className={cn("text-muted", total.neto < 0 && "text-danger")}>
-            {formatMoney(total.neto)} después de gastos
-          </p>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-/**
- * La facturación por hora en un círculo: lo que llevas del objetivo. Se pasa
- * de vuelta si lo superas, que es justo lo que se quiere ver.
- */
-export function Rueda({ valor, objetivo }: { valor: number; objetivo: number | null }) {
-  const meta = objetivo && objetivo > 0 ? objetivo : null
-  const parte = meta ? Math.min(1, valor / meta) : 1
-  const radio = 34
-  const vuelta = 2 * Math.PI * radio
-  const llega = meta === null ? null : valor >= meta
-
-  return (
-    <div className="relative h-24 w-24 shrink-0">
-      <svg viewBox="0 0 80 80" className="h-full w-full -rotate-90">
-        <circle
-          cx="40"
-          cy="40"
-          r={radio}
-          fill="none"
-          strokeWidth="8"
-          className="stroke-surface-2"
-        />
-        <circle
-          cx="40"
-          cy="40"
-          r={radio}
-          fill="none"
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeDasharray={`${vuelta * parte} ${vuelta}`}
-          className={cn(
-            "transition-all",
-            llega === false ? "stroke-danger" : "stroke-billable",
-          )}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span
-          className={cn(
-            "cifra text-base font-semibold leading-none",
-            llega === false && "text-danger",
-            llega === true && "text-billable",
-          )}
-        >
-          {valor.toLocaleString("es-ES", { maximumFractionDigits: 0 })}
-        </span>
-        <span className="text-[10px] leading-tight text-muted">€/h</span>
-        {meta !== null && (
-          <span className="text-[10px] leading-tight text-muted">de {meta}</span>
-        )}
-      </div>
-    </div>
-  )
 }

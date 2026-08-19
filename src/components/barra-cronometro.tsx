@@ -279,7 +279,8 @@ export function BarraCronometro({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="w-full sm:w-56">
+          {/* Ancho para que quepa proyecto + edicion sin cortarlas */}
+          <div className="w-full sm:w-72">
             <SelectorProyecto
               catalogo={catalogo}
               valor={{

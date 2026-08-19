@@ -168,6 +168,8 @@ export function SelectorProyecto({
 
   const proyectoElegido = proyectos.find((p) => p.id === valor.project_id) ?? null
   const tareaElegida = tareas.find((t) => t.id === valor.task_id) ?? null
+  const edicionElegida =
+    catalogo.ediciones.find((e) => e.id === valor.edition_id) ?? null
 
   async function cargarFavoritos() {
     const { data } = await createClient()
@@ -280,6 +282,11 @@ export function SelectorProyecto({
               >
                 {proyectoElegido.name}
               </span>
+              {/* La edicion, aqui mismo: si no, poner una en curso parecia no
+                  hacer nada y habia que abrir el desplegable para verlo */}
+              {edicionElegida && (
+                <span className="text-muted"> · {edicionElegida.name}</span>
+              )}
               {tareaElegida && (
                 <span className="text-muted"> · {tareaElegida.name}</span>
               )}

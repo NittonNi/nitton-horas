@@ -1,6 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
+import * as Popover from "@radix-ui/react-popover"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Euro, ListPlus, Loader2, Play, Square, Timer, Trash2 } from "lucide-react"
@@ -19,8 +20,11 @@ import { SelectorPersonas } from "@/components/selector-personas"
 import { proponerHoras } from "@/lib/compartir"
 import {
   combineDateAndTime,
+  formatClock,
   formatDuration,
   parseDurationToSeconds,
+  toClockInput,
+  toDateKey,
   todayKey,
 } from "@/lib/time"
 import {
@@ -173,6 +177,38 @@ export function BarraCronometro({
     setCompartidos([])
   }
 
+  /**
+   * Mover la hora a la que empezo el rato que esta corriendo. Es lo que salva
+   * el "llevo hora y media con esto y se me olvido darle al play": se arranca
+   * ahora y se corrige la hora, sin tener que apuntar nada a mano.
+   */
+  async function ajustarInicio(nuevoInicio: string) {
+    if (!enMarcha) return
+    const antes = enMarcha.start_at
+
+    const { error: err } = await supabase.current
+      .from("time_entries")
+      .update({ start_at: nuevoInicio })
+      .eq("id", enMarcha.id)
+    if (err) {
+      avisar(mensajeError(err), undefined, "mal")
+      return
+    }
+
+    await recargar()
+    router.refresh()
+    avisar(`El cronómetro empieza a las ${formatClock(nuevoInicio)}.`, async () => {
+      const { error: errVolver } = await supabase.current
+        .from("time_entries")
+        .update({ start_at: antes })
+        .eq("id", enMarcha.id)
+      if (errVolver) throw new Error(mensajeError(errVolver))
+      await recargar()
+      router.refresh()
+      return "Como estaba."
+    })
+  }
+
   async function alPulsarPrincipal() {
     if (enMarcha) {
       // Nada de horas huérfanas: si el espacio lo exige, no se para sin proyecto
@@ -280,16 +316,17 @@ export function BarraCronometro({
 
           {modoActivo === "cronometro" ? (
             <>
-              <span
-                className={cn(
-                  "cifra text-right font-semibold tabular-nums",
-                  enMarcha
-                    ? "w-28 text-xl text-running"
-                    : "w-24 text-lg text-muted",
-                )}
-              >
-                {formatDuration(enMarcha ? segundos : 0)}
-              </span>
+              {enMarcha ? (
+                <EditorInicio
+                  inicio={enMarcha.start_at}
+                  segundos={segundos}
+                  onCambiar={ajustarInicio}
+                />
+              ) : (
+                <span className="cifra w-24 text-right text-lg font-semibold tabular-nums text-muted">
+                  {formatDuration(0)}
+                </span>
+              )}
               <button
                 type="button"
                 onClick={() => void alPulsarPrincipal()}
@@ -586,5 +623,101 @@ function EntradaManual({
         Añadir
       </button>
     </>
+  )
+}
+
+/* ------------------------------------------------------ hora de inicio */
+
+/**
+ * La cuenta del cronómetro se puede pulsar: debajo aparece a qué hora empezó
+ * y se cambia ahí mismo. La cuenta sigue corriendo desde la hora nueva.
+ *
+ * Si se escribe una hora que aún no ha llegado se entiende que fue ayer: a las
+ * 00:30 poner "23:00" solo puede significar la noche anterior, y así el rato
+ * que cruza la medianoche también se arregla desde aquí.
+ */
+function EditorInicio({
+  inicio,
+  segundos,
+  onCambiar,
+}: {
+  inicio: string
+  segundos: number
+  onCambiar: (nuevoInicio: string) => Promise<void>
+}) {
+  const [abierto, setAbierto] = useState(false)
+  const [hora, setHora] = useState(toClockInput(inicio))
+
+  async function aplicar() {
+    if (!hora || hora === toClockInput(inicio)) {
+      setAbierto(false)
+      return
+    }
+
+    let nuevo = new Date(combineDateAndTime(toDateKey(new Date(inicio)), hora))
+    if (nuevo.getTime() > Date.now()) {
+      nuevo = new Date(nuevo.getTime() - 86_400_000)
+    }
+
+    setAbierto(false)
+    await onCambiar(nuevo.toISOString())
+  }
+
+  return (
+    <Popover.Root
+      open={abierto}
+      onOpenChange={(v) => {
+        setHora(toClockInput(inicio))
+        setAbierto(v)
+      }}
+    >
+      <Popover.Trigger
+        title="Cambiar a qué hora empezó"
+        className="cifra w-28 rounded-[var(--radio-sm)] px-1 text-right text-xl font-semibold tabular-nums text-running transition hover:bg-live-soft"
+      >
+        {formatDuration(segundos)}
+      </Popover.Trigger>
+
+      <Popover.Portal>
+        <Popover.Content
+          align="end"
+          sideOffset={8}
+          className="card z-50 w-56 p-3"
+          style={{ boxShadow: "var(--shadow-lg)" }}
+        >
+          <label className="label" htmlFor="inicio-cronometro">
+            Empezó a las
+          </label>
+          <input
+            id="inicio-cronometro"
+            type="time"
+            autoFocus
+            value={hora}
+            onChange={(e) => setHora(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void aplicar()
+              if (e.key === "Escape") setAbierto(false)
+            }}
+            className="field tabular mt-1 h-9 w-full"
+          />
+          <p className="mt-2 text-xs text-muted">
+            La cuenta sigue desde esa hora. Si aún no ha llegado, se entiende
+            que fue ayer.
+          </p>
+          <div className="mt-3 flex justify-end gap-2">
+            <button type="button" onClick={() => setAbierto(false)} className="btn h-8 text-xs">
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={() => void aplicar()}
+              className="btn btn-primary h-8 text-xs"
+            >
+              Cambiar
+            </button>
+          </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   )
 }

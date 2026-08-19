@@ -2,7 +2,15 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Archive, Euro, Loader2, Plus, RotateCcw, Star } from "lucide-react"
+import {
+  AlertTriangle,
+  Archive,
+  Euro,
+  Loader2,
+  Plus,
+  RotateCcw,
+  Star,
+} from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
@@ -49,6 +57,19 @@ export function TarjetasEdicion({
   const visibles = ediciones.filter((e) => verArchivadas || !e.archived)
   const archivadas = ediciones.filter((e) => e.archived).length
   const sueltas = entradas.filter((e) => !e.edition_id)
+  const sinEdiciones = ediciones.length === 0
+
+  /* La vida del proyecto entero, no la de las horas que quedaron sueltas: si
+     manana una de esas horas se mete en una edicion, el periodo del cierre no
+     tiene por que moverse. */
+  const dias = entradas.map((e) => e.local_date).sort()
+  const vida = {
+    primera: dias[0] ?? null,
+    ultima: dias[dias.length - 1] ?? null,
+  }
+
+  /** El del proyecto entero: existe cuando no hay ediciones que cierren solas. */
+  const delProyecto = resultados.find((r) => !r.edition_id) ?? null
 
   async function crear() {
     const limpio = nombre.trim()
@@ -75,10 +96,13 @@ export function TarjetasEdicion({
     <section className="space-y-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
-          <h2 className="text-sm font-semibold">Ediciones</h2>
+          <h2 className="text-sm font-semibold">
+            {sinEdiciones ? "Este proyecto" : "Ediciones"}
+          </h2>
           <p className="text-sm text-muted">
-            Lo que se repite va en ediciones: TBCE 1 y TBCE 2 son el mismo
-            proyecto en dos años, cada una con sus horas y su resultado.
+            {sinEdiciones
+              ? "No se repite: el proyecto entero es la unidad, con sus fechas, sus horas y su resultado."
+              : "Lo que se repite va en ediciones: TBCE 1 y TBCE 2 son el mismo proyecto en dos años, cada una con sus horas y su resultado."}
           </p>
         </div>
         {archivadas > 0 && (
@@ -98,38 +122,68 @@ export function TarjetasEdicion({
         </p>
       )}
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        {visibles.map((edicion) => (
-          <Tarjeta
-            key={edicion.id}
-            espacioId={espacioId}
-            proyectoId={proyectoId}
-            edicion={edicion}
-            entradas={entradas.filter((e) => e.edition_id === edicion.id)}
-            resultado={resultados.find((r) => r.edition_id === edicion.id) ?? null}
-            objetivoHora={objetivoHora}
-            enCurso={predeterminada === edicion.id}
-            puedeGestionar={puedeGestionar}
-            puedeVerImportes={puedeVerImportes}
-          />
-        ))}
+      {/* Horas que no están en ninguna edición: un cabo suelto, no una
+          tarjeta. No se cierran cuentas de lo que nadie ha repartido. */}
+      {!sinEdiciones && sueltas.length > 0 && puedeGestionar && (
+        <HorasSueltas
+          entradas={sueltas}
+          ediciones={visibles.filter((e) => !e.archived)}
+        />
+      )}
 
-        {/* Lo apuntado sin edición: para los proyectos que no se repiten, esta
-            es la única tarjeta y hace de proyecto entero. */}
-        {(sueltas.length > 0 || ediciones.length === 0) && (
-          <Tarjeta
-            espacioId={espacioId}
-            proyectoId={proyectoId}
-            edicion={null}
-            entradas={sueltas}
-            resultado={resultados.find((r) => !r.edition_id) ?? null}
-            objetivoHora={objetivoHora}
-            enCurso={false}
-            puedeGestionar={puedeGestionar}
-            puedeVerImportes={puedeVerImportes}
-          />
-        )}
-      </div>
+      {sinEdiciones ? (
+        /* Sin ediciones el proyecto es la unidad: una sola tarjeta, a lo ancho,
+           y llamada por lo que es y no por lo que le falta. */
+        <Tarjeta
+          espacioId={espacioId}
+          proyectoId={proyectoId}
+          edicion={null}
+          titulo="Todo el proyecto"
+          entradas={entradas}
+          vida={vida}
+          resultado={delProyecto}
+          objetivoHora={objetivoHora}
+          enCurso={false}
+          puedeGestionar={puedeGestionar}
+          puedeVerImportes={puedeVerImportes}
+        />
+      ) : (
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          {visibles.map((edicion) => (
+            <Tarjeta
+              key={edicion.id}
+              espacioId={espacioId}
+              proyectoId={proyectoId}
+              edicion={edicion}
+              entradas={entradas.filter((e) => e.edition_id === edicion.id)}
+              vida={vida}
+              resultado={resultados.find((r) => r.edition_id === edicion.id) ?? null}
+              objetivoHora={objetivoHora}
+              enCurso={predeterminada === edicion.id}
+              puedeGestionar={puedeGestionar}
+              puedeVerImportes={puedeVerImportes}
+            />
+          ))}
+
+          {/* Un cierre del proyecto entero de cuando no había ediciones: se
+              sigue pudiendo tocar, que si no el dinero cuenta y no se ve. */}
+          {delProyecto && (
+            <Tarjeta
+              espacioId={espacioId}
+              proyectoId={proyectoId}
+              edicion={null}
+              titulo="Resultado del proyecto"
+              entradas={entradas}
+              vida={vida}
+              resultado={delProyecto}
+              objetivoHora={objetivoHora}
+              enCurso={false}
+              puedeGestionar={puedeGestionar}
+              puedeVerImportes={puedeVerImportes}
+            />
+          )}
+        </div>
+      )}
 
       {puedeGestionar &&
         (creando ? (
@@ -184,7 +238,9 @@ function Tarjeta({
   espacioId,
   proyectoId,
   edicion,
+  titulo,
   entradas,
+  vida,
   resultado,
   objetivoHora,
   enCurso,
@@ -193,9 +249,13 @@ function Tarjeta({
 }: {
   espacioId: string
   proyectoId: string
-  /** Null: lo que se apunto sin edicion, o el proyecto entero. */
+  /** Null: la tarjeta es el proyecto entero. */
   edicion: Edicion | null
+  /** Como se llama cuando no es una edicion. */
+  titulo?: string
   entradas: EntradaVista[]
+  /** De cuando a cuando vive el proyecto entero, para el cierre sin edicion. */
+  vida: { primera: string | null; ultima: string | null }
   resultado: Resultado | null
   objetivoHora: number | null
   enCurso: boolean
@@ -226,10 +286,13 @@ function Tarjeta({
     ? Number(resultado.income) - Number(resultado.expenses)
     : null
   const horasCobrables = cobrables / 3600
+  /* Con menos de una hora marcada esto no es un dato, es una division: mil
+     euros entre dieciocho segundos son doscientos mil euros la hora. */
   const porHora =
-    resultado && horasCobrables > 0
+    resultado && horasCobrables >= 1
       ? Number(resultado.income) / horasCobrables
       : null
+  const faltanHoras = Boolean(resultado) && horasCobrables < 1
   const llega = porHora !== null && objetivoHora ? porHora >= objetivoHora : null
 
   function aNumero(texto: string) {
@@ -254,28 +317,48 @@ function Tarjeta({
       return
     }
 
+    /* El periodo de una edicion son sus horas; el del proyecto entero, las
+       de todo el proyecto. Nunca las que quedaron sueltas: eso cambiaba solo
+       con mover una hora de sitio. */
+    const desde = (edicion ? primera : vida.primera) ?? todayKey()
+    const hasta = (edicion ? ultima : vida.ultima) ?? todayKey()
+
     setOcupado(true)
     setError(null)
     const supabase = createClient()
-    const { error: err } = resultado
+    const { data, error: err } = resultado
       ? await supabase
           .from("project_results")
-          .update({ income: entra, expenses: sale })
+          .update({
+            income: entra,
+            expenses: sale,
+            // Se reajusta al guardar: entretanto se habran apuntado mas horas
+            starts_on: desde,
+            ends_on: hasta,
+          })
           .eq("id", resultado.id)
-      : await supabase.from("project_results").insert({
-          workspace_id: espacioId,
-          project_id: proyectoId,
-          edition_id: edicion?.id ?? null,
-          label: edicion?.name ?? "Todo el proyecto",
-          starts_on: primera ?? todayKey(),
-          ends_on: ultima ?? todayKey(),
-          income: entra,
-          expenses: sale,
-        })
+          .select("id")
+      : await supabase
+          .from("project_results")
+          .insert({
+            workspace_id: espacioId,
+            project_id: proyectoId,
+            edition_id: edicion?.id ?? null,
+            label: edicion?.name ?? (titulo ?? "Todo el proyecto"),
+            starts_on: desde,
+            ends_on: hasta,
+            income: entra,
+            expenses: sale,
+          })
+          .select("id")
 
     setOcupado(false)
     if (err) {
       setError(mensajeError(err))
+      return
+    }
+    if (!data || data.length === 0) {
+      setError("No se ha podido guardar el resultado.")
       return
     }
     setEditando(false)
@@ -322,7 +405,7 @@ function Tarjeta({
         <div className="min-w-0">
           <h3 className="flex min-w-0 items-center gap-1.5">
             <span className="truncate text-sm font-semibold">
-              {edicion?.name ?? "Sin edición"}
+              {edicion?.name ?? titulo ?? "Todo el proyecto"}
             </span>
             {enCurso && (
               <span className="chip shrink-0 border-live-line bg-live-soft text-live">
@@ -343,7 +426,7 @@ function Tarjeta({
           </p>
         </div>
 
-        {puedeGestionar && (
+        {puedeGestionar && edicion && (
           <div className="flex shrink-0 items-center gap-1">
             <button
               type="button"
@@ -353,9 +436,7 @@ function Tarjeta({
               title={
                 enCurso
                   ? "Es lo que se pone al elegir el proyecto"
-                  : edicion
-                    ? "Marcarla como la edición en curso"
-                    : "Al elegir el proyecto, no se pondrá ninguna edición"
+                  : "Marcarla como la edición en curso"
               }
               className={cn(
                 "rounded-[3px] p-1 transition",
@@ -468,6 +549,11 @@ function Tarjeta({
                     {formatMoney(neto!)}
                   </span>
                 </p>
+                {porHora === null && faltanHoras && (
+                  <p className="text-xs text-muted">
+                    faltan horas con el euro para sacar el €/h
+                  </p>
+                )}
                 {porHora !== null && (
                   <p
                     className={cn(
@@ -500,5 +586,101 @@ function Tarjeta({
         </div>
       )}
     </article>
+  )
+}
+
+/* ---------------------------------------------------------- horas sueltas */
+
+/**
+ * Las horas que no están en ninguna edición.
+ *
+ * No son una edición ni un cierre: son un cabo suelto. Nadie apunta el
+ * resultado de «las horas sueltas», así que aquí no se pide dinero, se pide
+ * repartirlas. Mientras estén así se quedan fuera de todos los cierres.
+ */
+function HorasSueltas({
+  entradas,
+  ediciones,
+}: {
+  entradas: EntradaVista[]
+  ediciones: Edicion[]
+}) {
+  const router = useRouter()
+  const { avisar } = useAvisos()
+  const [destino, setDestino] = useState("")
+  const [ocupado, setOcupado] = useState(false)
+
+  const segundos = entradas.reduce((s, e) => s + (e.duration_seconds ?? 0), 0)
+
+  async function mover() {
+    if (!destino) return
+    setOcupado(true)
+    const ids = entradas.map((e) => e.id)
+    const { data, error } = await createClient()
+      .from("time_entries")
+      .update({ edition_id: destino })
+      .in("id", ids)
+      .select("id")
+    setOcupado(false)
+
+    if (error) {
+      avisar(mensajeError(error), undefined, "mal")
+      return
+    }
+    const movidas = data?.length ?? 0
+    if (movidas === 0) {
+      avisar("No se ha podido mover ninguna hora.", undefined, "mal")
+      return
+    }
+    /* Puede quedarse alguna fuera: las horas de otra persona no siempre se
+       pueden tocar, y callarse eso seria peor que no moverlas. */
+    avisar(
+      movidas < ids.length
+        ? `Se han movido ${movidas} de ${ids.length}: el resto son de otra persona.`
+        : movidas === 1
+          ? "Hora movida."
+          : `${movidas} horas movidas.`,
+    )
+    router.refresh()
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[var(--radio)] border border-live-line bg-live-soft p-3">
+      <AlertTriangle className="h-4 w-4 shrink-0 text-live" aria-hidden />
+      <p className="min-w-0 flex-1 text-sm text-live">
+        <span className="cifra font-semibold">
+          {formatDurationShort(segundos)}
+        </span>{" "}
+        en {entradas.length} {entradas.length === 1 ? "apunte" : "apuntes"} sin
+        edición: no entran en ningún cierre.
+      </p>
+
+      {ediciones.length > 0 && (
+        <div className="flex shrink-0 items-center gap-2">
+          <select
+            className="field h-8 w-auto py-0 text-sm"
+            value={destino}
+            onChange={(e) => setDestino(e.target.value)}
+            aria-label="Edición a la que moverlas"
+          >
+            <option value="">Moverlas a…</option>
+            {ediciones.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => void mover()}
+            disabled={ocupado || !destino}
+            className="btn h-8 shrink-0"
+          >
+            {ocupado && <Loader2 className="h-4 w-4 animate-spin" />}
+            Mover
+          </button>
+        </div>
+      )}
+    </div>
   )
 }

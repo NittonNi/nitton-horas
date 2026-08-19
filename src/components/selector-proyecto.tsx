@@ -280,7 +280,12 @@ export function SelectorProyecto({
               style={{ background: proyectoElegido.color }}
             />
             <span className="min-w-0 flex-1 truncate">
-              <span className="font-medium">{proyectoElegido.name}</span>
+              <span
+                className="font-medium"
+                style={{ color: proyectoElegido.color }}
+              >
+                {proyectoElegido.name}
+              </span>
               {tareaElegida && (
                 <span className="text-muted"> · {tareaElegida.name}</span>
               )}
@@ -399,7 +404,14 @@ export function SelectorProyecto({
                                 {proyecto.clients.name} ·{" "}
                               </span>
                             )}
-                            {proyecto.name}
+                            {/* Del color del proyecto, como en las tarjetas de
+                                horas: se reconoce sin leerlo */}
+                            <span
+                              className="font-medium"
+                              style={{ color: proyecto.color }}
+                            >
+                              {proyecto.name}
+                            </span>
                           </span>
                           {elegido && !valor.task_id && (
                             <Check className="h-4 w-4 shrink-0 text-accent" />

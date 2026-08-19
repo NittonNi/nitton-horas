@@ -11,7 +11,13 @@ import { formatDurationShort, formatMoney, formatDateShort } from "@/lib/time"
 
 export const metadata = { title: "Proyectos" }
 
-export default async function PaginaProyectos() {
+export default async function PaginaProyectos({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>
+}) {
+  const { q } = await searchParams
+  const busqueda = (q ?? "").trim().toLowerCase()
   const { espacio, rol } = await getSesion()
   const gestor = veTodo(rol)
 
@@ -25,8 +31,21 @@ export default async function PaginaProyectos() {
     (resumen.data ?? []).map((fila) => [fila.project_id, fila]),
   )
 
-  const activos = catalogo.proyectos.filter((p) => !p.archived)
-  const archivados = catalogo.proyectos.filter((p) => p.archived)
+  /* La busqueda mira nombre, cliente y rama: es como los busca la gente. */
+  const encaja = (p: (typeof catalogo.proyectos)[number]) => {
+    if (!busqueda) return true
+    const donde = [
+      p.name,
+      p.clients?.name ?? "",
+      caminoDe(catalogo.categorias, p.category_id) ?? "",
+    ]
+      .join(" ")
+      .toLowerCase()
+    return donde.includes(busqueda)
+  }
+
+  const activos = catalogo.proyectos.filter((p) => !p.archived && encaja(p))
+  const archivados = catalogo.proyectos.filter((p) => p.archived && encaja(p))
 
   return (
     <div className="space-y-5">
@@ -39,6 +58,20 @@ export default async function PaginaProyectos() {
               : "Tus horas en cada uno."}
           </p>
         </div>
+        <form action="/proyectos" className="no-print order-last w-full sm:order-none sm:w-64">
+          <label className="sr-only" htmlFor="buscar-proyecto">
+            Buscar un proyecto
+          </label>
+          <input
+            id="buscar-proyecto"
+            name="q"
+            defaultValue={q ?? ""}
+            className="field"
+            placeholder="Buscar por nombre, cliente o rama"
+            type="search"
+          />
+        </form>
+
         {gestor && (
           <NuevoProyecto
             espacioId={espacio.id}
@@ -50,12 +83,24 @@ export default async function PaginaProyectos() {
 
       {activos.length === 0 ? (
         <div className="card px-6 py-12 text-center">
-          <p className="text-sm font-medium">Aún no hay proyectos</p>
-          <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
-            {gestor
-              ? "Crea el primero y ya puedes empezar a apuntar horas contra el."
-              : "Pide a un administrador que cree los del equipo."}
-          </p>
+          {busqueda ? (
+            <>
+              <p className="text-sm font-medium">Nada encaja con esa búsqueda</p>
+              <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
+                Se busca por nombre, por cliente y por la rama de la
+                categorización.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-medium">Aún no hay proyectos</p>
+              <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
+                {gestor
+                  ? "Crea el primero y ya puedes empezar a apuntar horas contra el."
+                  : "Pide a un administrador que cree los del equipo."}
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <Lista

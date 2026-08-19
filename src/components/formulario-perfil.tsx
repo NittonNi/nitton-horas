@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { SelectorTema } from "@/components/selector-tema"
+import { BotonVerGuia } from "@/components/guia-inicial"
 import { NOMBRE_ROL, type Rol } from "@/lib/roles"
 import type { Perfil } from "@/lib/tipos"
 
@@ -113,6 +114,15 @@ export function FormularioPerfil({
       <div className="border-t border-line pt-4">
         <span className="label">Aspecto</span>
         <SelectorTema />
+      </div>
+
+      <div className="border-t border-line pt-4">
+        <span className="label">Guía rápida</span>
+        <p className="mb-2 text-xs text-muted">
+          Las pantallas de bienvenida, por si se te ha olvidado dónde estaba
+          algo.
+        </p>
+        <BotonVerGuia perfilId={perfil.id} />
       </div>
     </section>
   )

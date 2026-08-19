@@ -68,6 +68,12 @@ los disparadores a todo el mundo, y cabeceras puestas -nosniff, marcos
 denegados, HSTS y politica de contenido en produccion-. Icono propio en su
 sitio.
 
+Y el 19-ago por la noche: los informes dejan de ser de solo mirar -se corrige
+una hora pulsandola, o varias a la vez: moverlas de proyecto, marcarlas como
+facturables, ponerles etiqueta, cerrarlas o borrarlas-, la bienvenida pregunta
+por fin si se quiere la plantilla de LEINN, hay guia rapida la primera vez
+(y un boton en el perfil para volver a verla) y buscador en proyectos.
+
 **Pendiente**:
 
 1. **En el panel de Supabase, a mano**: activar la proteccion de contrasenas

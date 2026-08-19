@@ -157,13 +157,19 @@ export function PanelInformes({
     [filtradas],
   )
 
+  const seleccionadas = filtradas.filter((e) => elegidas.includes(e.id))
+
+  /* Si hay algo elegido, las descargas van de eso: es lo que espera cualquiera
+     despues de marcar seis filas. */
+  const paraDescargar = seleccionadas.length > 0 ? seleccionadas : filtradas
+
   const diasConHoras = serie.filter((d) => d.horas > 0).length
   const nombreFichero = `horas-${desde}-a-${hasta}`
 
   async function excel() {
     setGenerando("excel")
     try {
-      await exportarExcel(filtradas, {
+      await exportarExcel(paraDescargar, {
         nombre: nombreFichero,
         desde,
         hasta,
@@ -232,7 +238,7 @@ export function PanelInformes({
           "Horas",
           ...(puedeVerImportes ? ["Importe"] : []),
         ],
-        filas: filtradas.map((entrada) => [
+        filas: paraDescargar.map((entrada) => [
           formatDateShort(entrada.local_date),
           entrada.user_name,
           entrada.client_name ?? "",
@@ -262,7 +268,6 @@ export function PanelInformes({
   }
 
   const editables = visibles.filter(puedeEditar)
-  const seleccionadas = filtradas.filter((e) => elegidas.includes(e.id))
   const todasElegidas =
     editables.length > 0 && editables.every((e) => elegidas.includes(e.id))
 
@@ -420,7 +425,7 @@ export function PanelInformes({
           <button
             type="button"
             onClick={() => void excel()}
-            disabled={filtradas.length === 0 || generando !== null}
+            disabled={paraDescargar.length === 0 || generando !== null}
             className="btn btn-primary py-1.5"
           >
             <FileSpreadsheet className="h-4 w-4" />
@@ -428,8 +433,8 @@ export function PanelInformes({
           </button>
           <button
             type="button"
-            onClick={() => exportarCsv(filtradas, nombreFichero)}
-            disabled={filtradas.length === 0}
+            onClick={() => exportarCsv(paraDescargar, nombreFichero)}
+            disabled={paraDescargar.length === 0}
             className="btn py-1.5"
           >
             <Download className="h-4 w-4" />
@@ -438,12 +443,18 @@ export function PanelInformes({
           <button
             type="button"
             onClick={() => void pdf()}
-            disabled={filtradas.length === 0 || generando !== null}
+            disabled={paraDescargar.length === 0 || generando !== null}
             className="btn py-1.5"
           >
             <FileText className="h-4 w-4" />
             {generando === "pdf" ? "Generando..." : "PDF"}
           </button>
+          {seleccionadas.length > 0 && (
+            <span className="self-center text-xs text-muted">
+              Se descargan las {seleccionadas.length} elegidas
+            </span>
+          )}
+
           <button
             type="button"
             onClick={() => window.print()}

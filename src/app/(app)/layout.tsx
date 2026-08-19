@@ -4,6 +4,8 @@ import { aEntradaEnMarcha, SELECT_EN_MARCHA } from "@/lib/cronometro"
 import { ProveedorSesion } from "@/components/proveedor-sesion"
 import { ProveedorCronometro } from "@/components/proveedor-cronometro"
 import { Armazon } from "@/components/armazon"
+import { GuiaInicial } from "@/components/guia-inicial"
+import { veTodo } from "@/lib/roles"
 
 export default async function LayoutApp({
   children,
@@ -26,6 +28,7 @@ export default async function LayoutApp({
     <ProveedorSesion sesion={sesion}>
       <ProveedorCronometro espacioId={sesion.espacio.id} inicial={aEntradaEnMarcha(data)}>
         <Armazon>{children}</Armazon>
+        <GuiaInicial perfilId={sesion.perfil.id} esGestor={veTodo(sesion.rol)} />
       </ProveedorCronometro>
     </ProveedorSesion>
   )

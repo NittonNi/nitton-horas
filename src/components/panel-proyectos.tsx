@@ -77,7 +77,8 @@ export function PanelProyectos({
   const vista = useSyncExternalStore(suscribir, leerVista, () => "lista" as Vista)
   const [busqueda, setBusqueda] = useState("")
   const [cliente, setCliente] = useState("")
-  const [rama, setRama] = useState("")
+  const [categoria, setCategoria] = useState("")
+  const [subcategoria, setSubcategoria] = useState("")
   const [estado, setEstado] = useState<"activos" | "archivados" | "todos">(
     "activos",
   )
@@ -87,25 +88,23 @@ export function PanelProyectos({
     [resumen],
   )
 
-  /**
-   * La categorizacion tiene dos niveles, asi que el filtro tambien: primero la
-   * categoria y debajo, sangradas, sus subcategorias. Elegir la de arriba trae
-   * todo lo que cuelga de ella; elegir una de abajo, solo esa.
-   */
-  const ramas = useMemo(() => {
-    const vivas = categorias.filter((c) => !c.archived)
-    const padres = vivas
-      .filter((c) => !c.parent_id)
-      .sort((a, b) => a.position - b.position || a.name.localeCompare(b.name))
+  /* La categorizacion tiene dos niveles y el filtro tambien: primero de que
+     va -Backoffice, Proyectos- y luego, si hace falta, el detalle. */
+  const padres = useMemo(
+    () =>
+      categorias
+        .filter((c) => !c.archived && !c.parent_id)
+        .sort((a, b) => a.position - b.position || a.name.localeCompare(b.name)),
+    [categorias],
+  )
 
-    return padres.flatMap((padre) => [
-      { id: padre.id, etiqueta: padre.name, hija: false },
-      ...vivas
-        .filter((c) => c.parent_id === padre.id)
-        .sort((a, b) => a.position - b.position || a.name.localeCompare(b.name))
-        .map((hija) => ({ id: hija.id, etiqueta: hija.name, hija: true })),
-    ])
-  }, [categorias])
+  const hijas = useMemo(
+    () =>
+      categorias
+        .filter((c) => !c.archived && c.parent_id === categoria)
+        .sort((a, b) => a.position - b.position || a.name.localeCompare(b.name)),
+    [categorias, categoria],
+  )
 
   /** Una categoria y todo lo que cuelga de ella. */
   const conSusHijas = useMemo(() => {
@@ -132,14 +131,19 @@ export function PanelProyectos({
       if (cliente === SIN_CLIENTE && p.client_id) return false
       if (cliente && cliente !== SIN_CLIENTE && p.client_id !== cliente) return false
 
-      if (rama === SIN_RAMA && p.category_id) return false
-      if (rama && rama !== SIN_RAMA) {
-        const familia = conSusHijas.get(rama)
-        if (!p.category_id || !familia?.has(p.category_id)) return false
+      if (categoria === SIN_RAMA && p.category_id) return false
+      if (categoria && categoria !== SIN_RAMA) {
+        if (!p.category_id) return false
+        // Con subcategoria elegida, solo esa; sin ella, toda la categoria
+        if (subcategoria) {
+          if (p.category_id !== subcategoria) return false
+        } else if (!conSusHijas.get(categoria)?.has(p.category_id)) {
+          return false
+        }
       }
 
       if (!texto) return true
-      /* Se busca por nombre, cliente y rama: es como los busca la gente. */
+      /* Nombre, cliente y categoria: es como los busca la gente. */
       const donde = [
         p.name,
         p.clients?.name ?? "",
@@ -149,9 +153,20 @@ export function PanelProyectos({
         .toLowerCase()
       return donde.includes(texto)
     })
-  }, [proyectos, categorias, conSusHijas, busqueda, cliente, rama, estado])
+  }, [
+    proyectos,
+    categorias,
+    conSusHijas,
+    busqueda,
+    cliente,
+    categoria,
+    subcategoria,
+    estado,
+  ])
 
-  const hayFiltros = Boolean(busqueda || cliente || rama || estado !== "activos")
+  const hayFiltros = Boolean(
+    busqueda || cliente || categoria || estado !== "activos",
+  )
 
   return (
     <div className="space-y-5">
@@ -194,18 +209,39 @@ export function PanelProyectos({
           </select>
         )}
 
-        {ramas.length > 0 && (
+        {padres.length > 0 && (
           <select
-            value={rama}
-            onChange={(e) => setRama(e.target.value)}
+            value={categoria}
+            onChange={(e) => {
+              setCategoria(e.target.value)
+              setSubcategoria("")
+            }}
             className="field w-auto py-1.5"
             aria-label="Categoría"
           >
             <option value="">Todas las categorías</option>
             <option value={SIN_RAMA}>Sin categoría</option>
-            {ramas.map(({ id, etiqueta, hija }) => (
-              <option key={id} value={id}>
-                {hija ? `  — ${etiqueta}` : etiqueta}
+            {padres.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {/* La subcategoria solo aparece cuando hay donde elegir: si no, es un
+            desplegable vacio pidiendo que lo mires. */}
+        {hijas.length > 0 && (
+          <select
+            value={subcategoria}
+            onChange={(e) => setSubcategoria(e.target.value)}
+            className="field w-auto py-1.5"
+            aria-label="Subcategoría"
+          >
+            <option value="">Toda la categoría</option>
+            {hijas.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
               </option>
             ))}
           </select>
@@ -220,7 +256,7 @@ export function PanelProyectos({
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             className="field py-1.5 pl-8"
-            placeholder="Buscar por nombre, cliente o rama"
+            placeholder="Buscar por nombre, cliente o categoría"
             type="search"
             aria-label="Buscar un proyecto"
           />
@@ -245,7 +281,7 @@ export function PanelProyectos({
           </p>
           <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
             {hayFiltros
-              ? "Prueba a quitar algún filtro. Se busca por nombre, por cliente y por la rama de la categorización."
+              ? "Prueba a quitar algún filtro. Se busca por nombre, por cliente y por la categoría."
               : gestor
                 ? "Crea el primero y ya puedes empezar a apuntar horas contra él."
                 : "Pide a un administrador que cree los del equipo."}

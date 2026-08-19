@@ -19,6 +19,8 @@ import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { SelectorColor } from "@/components/selector-color"
 import { caminoDe, ramas, SIN_CATEGORIA } from "@/lib/categorias"
+import { esAdmin } from "@/lib/roles"
+import { useSesion } from "@/components/proveedor-sesion"
 import { agrupar, totales } from "@/lib/informes"
 import {
   formatDateShort,
@@ -40,6 +42,7 @@ import {
   resumenDeResultados,
   type Resultado,
 } from "@/components/resultados-proyecto"
+import { ObjetivoHora } from "@/components/objetivo-hora"
 import { ResumenProyecto } from "@/components/resumen-proyecto"
 import { TarjetasEdicion } from "@/components/tarjetas-edicion"
 import { cn } from "@/lib/utils"
@@ -297,7 +300,12 @@ export function DetalleProyecto({
 
       {/* -------------------------------------------------------- ajustes */}
       {activa === "ajustes" && puedeGestionar && (
-        <AjustesProyecto proyecto={proyecto} categorias={categorias} />
+        <AjustesProyecto
+          proyecto={proyecto}
+          categorias={categorias}
+          espacioId={espacioId}
+          objetivoHora={objetivoHora}
+        />
       )}
 
       {editando && (
@@ -687,11 +695,17 @@ function HorasDelProyecto({
 function AjustesProyecto({
   proyecto,
   categorias,
+  espacioId,
+  objetivoHora,
 }: {
   proyecto: Proyecto
   categorias: Categoria[]
+  espacioId: string
+  /** Del espacio, no del proyecto: se cambia aqui pero vale para todos. */
+  objetivoHora: number | null
 }) {
   const router = useRouter()
+  const { rol } = useSesion()
   const [nombre, setNombre] = useState(proyecto.name)
   const [categoriaId, setCategoriaId] = useState(proyecto.category_id ?? "")
   const [color, setColor] = useState(proyecto.color)
@@ -883,34 +897,44 @@ function AjustesProyecto({
         </form>
       </section>
 
-      <section className="card h-fit p-4">
-        <h2 className="mb-1 text-sm font-semibold">
-          {proyecto.archived ? "Proyecto archivado" : "Archivar el proyecto"}
-        </h2>
-        <p className="mb-3 text-sm text-muted">
-          {proyecto.archived
-            ? "No sale al apuntar horas. Sus horas siguen contando en los informes."
-            : "Deja de salir al apuntar horas, pero no se borra nada: las horas apuntadas siguen contando en los informes."}
-        </p>
-        <button
-          type="button"
-          onClick={() => void archivar()}
-          disabled={guardando}
-          className={proyecto.archived ? "btn" : "btn btn-danger"}
-        >
-          {proyecto.archived ? (
-            <>
-              <RotateCcw className="h-4 w-4" />
-              Reactivar
-            </>
-          ) : (
-            <>
-              <Archive className="h-4 w-4" />
-              Archivar
-            </>
-          )}
-        </button>
-      </section>
+      <div className="space-y-5">
+        {/* El objetivo es del espacio entero, pero se cambia desde aquí: es
+            donde se está mirando cuando uno se pregunta contra qué mide. */}
+        <ObjetivoHora
+          espacioId={espacioId}
+          valor={objetivoHora}
+          puedeCambiar={esAdmin(rol)}
+        />
+
+        <section className="card p-4">
+          <h2 className="mb-1 text-sm font-semibold">
+            {proyecto.archived ? "Proyecto archivado" : "Archivar el proyecto"}
+          </h2>
+          <p className="mb-3 text-sm text-muted">
+            {proyecto.archived
+              ? "No sale al apuntar horas. Sus horas siguen contando en los informes."
+              : "Deja de salir al apuntar horas, pero no se borra nada: las horas apuntadas siguen contando en los informes."}
+          </p>
+          <button
+            type="button"
+            onClick={() => void archivar()}
+            disabled={guardando}
+            className={proyecto.archived ? "btn" : "btn btn-danger"}
+          >
+            {proyecto.archived ? (
+              <>
+                <RotateCcw className="h-4 w-4" />
+                Reactivar
+              </>
+            ) : (
+              <>
+                <Archive className="h-4 w-4" />
+                Archivar
+              </>
+            )}
+          </button>
+        </section>
+      </div>
     </div>
   )
 }

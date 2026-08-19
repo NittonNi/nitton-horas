@@ -7,23 +7,14 @@ import { toDateKey, todayKey } from "@/lib/time"
 
 export const metadata = { title: "Estadísticas" }
 
-/** Los últimos doce meses, contando el que corre. */
-function ultimosMeses(cuantos = 12) {
-  const hoy = new Date()
-  const meses: string[] = []
-  for (let i = cuantos - 1; i >= 0; i--) {
-    const mes = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1)
-    meses.push(toDateKey(mes).slice(0, 7))
-  }
-  return meses
-}
-
 export default async function PaginaEstadisticas() {
   const { perfil, espacio, rol } = await getSesion()
   const gestor = veTodo(rol)
 
-  const meses = ultimosMeses()
-  const desde = meses[0] + "-01"
+  /* Dos años: uno para mirar y otro para poder compararlo con el anterior sin
+     que la comparación salga siempre vacía. */
+  const hoy = new Date()
+  const desde = toDateKey(new Date(hoy.getFullYear() - 2, hoy.getMonth(), 1))
 
   const [catalogo, entradas, miembros] = await Promise.all([
     cargarCatalogo(espacio.id, true),
@@ -31,7 +22,7 @@ export default async function PaginaEstadisticas() {
       espacioId: espacio.id,
       desde,
       hasta: todayKey(),
-      limite: 20000,
+      limite: 40000,
     }),
     cargarMiembros(espacio.id),
   ])
@@ -41,14 +32,13 @@ export default async function PaginaEstadisticas() {
       <div>
         <h1 className="text-lg font-semibold tracking-tight">Estadísticas</h1>
         <p className="mt-0.5 text-sm text-muted">
-          Cómo vais: mes a mes, en qué se va el tiempo y qué proyectos se comen
-          su presupuesto.
+          Cómo vais: el ritmo, en qué se va el tiempo y quién lo pone.
         </p>
       </div>
 
       <PistaPagina clave="estadisticas" perfilId={perfil.id}>
-        Aquí no se corrige nada: es solo para mirar. Para arreglar horas, ve a
-        Informes.
+        Acota el periodo arriba y compáralo con el anterior. Con «Presentar» se
+        pone a pantalla completa para enseñarlo en una reunión.
       </PistaPagina>
 
       <PanelEstadisticas
@@ -57,7 +47,7 @@ export default async function PaginaEstadisticas() {
         miembros={miembros.filter((m) => m.active)}
         perfilId={perfil.id}
         puedeVerImportes={gestor}
-        meses={meses}
+        objetivoHora={espacio.target_hourly_rate}
       />
     </div>
   )

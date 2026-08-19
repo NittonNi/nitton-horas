@@ -47,6 +47,7 @@ export function SelectorProyecto({
   compacto = false,
   autoFoco = false,
   autoAbrir = false,
+  invita = false,
 }: {
   catalogo: Catalogo
   valor: Seleccion
@@ -55,6 +56,11 @@ export function SelectorProyecto({
   autoFoco?: boolean
   /** Empieza desplegado: se usa al editar una fila en el sitio. */
   autoAbrir?: boolean
+  /**
+   * Arriba del todo, al apuntar algo nuevo, esto no es un dato que falte: es lo
+   * siguiente que hay que hacer. Se pide en vez de constatar que esta vacio.
+   */
+  invita?: boolean
 }) {
   const router = useRouter()
   const { espacio, rol } = useSesion()
@@ -200,8 +206,20 @@ export function SelectorProyecto({
           </>
         ) : (
           <>
-            <FolderOpen className="h-4 w-4 shrink-0 text-muted" />
-            <span className="flex-1 truncate text-muted">Sin proyecto</span>
+            <FolderOpen
+              className={cn(
+                "h-4 w-4 shrink-0",
+                invita ? "text-accent" : "text-muted",
+              )}
+            />
+            <span
+              className={cn(
+                "flex-1 truncate",
+                invita ? "font-medium text-accent" : "text-muted",
+              )}
+            >
+              {invita ? "Añadir proyecto" : "Sin proyecto"}
+            </span>
           </>
         )}
         <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted" />

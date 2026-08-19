@@ -218,6 +218,7 @@ export function BarraCronometro({
                 edition_id: activo.edition_id,
               }}
               onChange={elegirProyecto}
+              invita
             />
           </div>
 

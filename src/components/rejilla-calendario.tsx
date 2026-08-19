@@ -3,7 +3,16 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import * as Dialog from "@radix-ui/react-dialog"
-import { Check, ChevronLeft, ChevronRight, Euro, Loader2, Users, X } from "lucide-react"
+import {
+  CalendarDays,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Euro,
+  Loader2,
+  Users,
+  X,
+} from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
@@ -32,6 +41,7 @@ import {
   formatClock,
   formatDurationShort,
   fromDateKey,
+  startOfWeek,
   toDateKey,
   todayKey,
 } from "@/lib/time"
@@ -354,6 +364,35 @@ export function RejillaCalendario({
             year: "numeric",
           })}
         </p>
+
+        {/* Saltar a cualquier semana sin ir de una en una: se elige un dia
+            cualquiera y se abre la semana que lo contiene. */}
+        <label className="relative flex items-center" title="Ir a una semana">
+          <CalendarDays
+            className="pointer-events-none absolute left-2 h-4 w-4 text-muted"
+            aria-hidden
+          />
+          <input
+            type="date"
+            value={lunes}
+            onChange={(e) => {
+              if (!e.target.value) return
+              irA(toDateKey(startOfWeek(fromDateKey(e.target.value))))
+            }}
+            className="field tabular h-8 w-[9.5rem] pl-7 text-sm"
+            aria-label="Ir a la semana de este día"
+          />
+        </label>
+
+        {lunes !== toDateKey(startOfWeek(new Date())) && (
+          <button
+            type="button"
+            onClick={() => irA(toDateKey(startOfWeek(new Date())))}
+            className="btn h-8 text-sm"
+          >
+            Esta semana
+          </button>
+        )}
 
         <span className="chip">{formatDurationShort(totalSemana)}</span>
 

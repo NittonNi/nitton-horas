@@ -2,7 +2,14 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, ChevronRight, Loader2, Plus, X } from "lucide-react"
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Plus,
+  X,
+} from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
@@ -12,6 +19,7 @@ import {
   formatDurationShort,
   fromDateKey,
   parseDurationToSeconds,
+  startOfWeek,
   toDateKey,
   todayKey,
 } from "@/lib/time"
@@ -272,13 +280,34 @@ export function TablaSemana({
           })}
         </p>
 
-        <button
-          type="button"
-          onClick={() => irA(toDateKey(addDays(fromDateKey(hoy), -((fromDateKey(hoy).getDay() + 6) % 7))))}
-          className="btn py-1.5"
-        >
-          Esta semana
-        </button>
+        {/* Mismo salto rapido que en el calendario: se elige un dia y se abre
+            su semana, sin ir de una en una. */}
+        <label className="relative flex items-center" title="Ir a una semana">
+          <CalendarDays
+            className="pointer-events-none absolute left-2 h-4 w-4 text-muted"
+            aria-hidden
+          />
+          <input
+            type="date"
+            value={lunes}
+            onChange={(e) => {
+              if (!e.target.value) return
+              irA(toDateKey(startOfWeek(fromDateKey(e.target.value))))
+            }}
+            className="field tabular h-8 w-[9.5rem] pl-7 text-sm"
+            aria-label="Ir a la semana de este día"
+          />
+        </label>
+
+        {lunes !== toDateKey(startOfWeek(new Date())) && (
+          <button
+            type="button"
+            onClick={() => irA(toDateKey(startOfWeek(new Date())))}
+            className="btn h-8 text-sm"
+          >
+            Esta semana
+          </button>
+        )}
 
         {miembros.length > 0 && (
           <select

@@ -100,16 +100,15 @@ function useGrupos() {
 }
 
 /**
- * En movil no caben todas: van las de apuntar y revisar, y toda la gestion
- * detras de una sola entrada, que ya tiene sus pestanas dentro.
+ * En movil caben cinco y no mas: las tres de apuntar, proyectos e informes.
+ * Estadisticas y gestion viven en el menu de arriba a la derecha.
  */
+const EN_MOVIL = ["/calendario", "/semana", "/proyectos", "/informes"]
+
 function useEnlacesMovil(): Enlace[] {
-  const { rol } = useSesion()
-  const puedeGestionar = rol === "admin" || rol === "manager"
-  const base = GRUPOS.filter((g) => !g.soloGestores).flatMap((g) => g.enlaces)
-  return puedeGestionar
-    ? [...base, { href: "/gestion", etiqueta: "Gestión", icono: Settings2 }]
-    : base
+  return GRUPOS.flatMap((g) => g.enlaces).filter(
+    (e) => e.href === RUTA_APP || EN_MOVIL.includes(e.href),
+  )
 }
 
 function estaActivo(pathname: string, href: string, exacto?: boolean) {
@@ -399,6 +398,32 @@ function MenuUsuario() {
           </div>
 
           <DropdownMenu.Separator className="my-1 h-px bg-line" />
+
+          {/* En escritorio ya estan en la barra lateral */}
+          <div className="lg:hidden">
+            <DropdownMenu.Item asChild>
+              <Link
+                href="/estadisticas"
+                className="flex items-center gap-2 rounded-[var(--radio-sm)] px-2 py-1.5 text-sm outline-none transition hover:bg-surface-2 data-highlighted:bg-surface-2"
+              >
+                <TrendingUp className="h-4 w-4" />
+                Estadísticas
+              </Link>
+            </DropdownMenu.Item>
+            {(rol === "admin" || rol === "manager") && (
+              <DropdownMenu.Item asChild>
+                <Link
+                  href="/gestion"
+                  className="flex items-center gap-2 rounded-[var(--radio-sm)] px-2 py-1.5 text-sm outline-none transition hover:bg-surface-2 data-highlighted:bg-surface-2"
+                >
+                  <Settings2 className="h-4 w-4" />
+                  Gestión
+                </Link>
+              </DropdownMenu.Item>
+            )}
+            <DropdownMenu.Separator className="my-1 h-px bg-line" />
+          </div>
+
           <DropdownMenu.Item asChild>
             <Link
               href="/perfil"

@@ -375,20 +375,8 @@ export function SelectorProyecto({
                   return (
                     <div key={proyecto.id}>
                       <div
-                        /* Con pasar por encima ya se abren las ediciones y las
-                           tareas: buscar el triangulito para cada proyecto era
-                           un clic de mas en la operacion mas repetida. */
-                        onMouseEnter={() => {
-                          if (ediciones.length > 0 || suyas.length > 0) {
-                            setDesplegados((antes) =>
-                              antes.includes(proyecto.id)
-                                ? antes
-                                : [...antes, proyecto.id],
-                            )
-                          }
-                        }}
                         className={cn(
-                          "group/fila flex items-center gap-1 pr-1 transition hover:bg-surface-2",
+                          "flex items-center gap-1 pr-1.5 transition hover:bg-surface-2",
                           elegido && !valor.task_id && "bg-surface-2",
                         )}
                       >
@@ -434,10 +422,10 @@ export function SelectorProyecto({
                               : "Ponerlo arriba del todo"
                           }
                           className={cn(
-                            "shrink-0 rounded p-1.5 transition",
+                            "shrink-0 rounded-[4px] p-1.5 transition",
                             favoritos.includes(proyecto.id)
                               ? "text-live"
-                              : "text-muted opacity-0 hover:bg-surface-3 group-hover/fila:opacity-100",
+                              : "text-muted hover:bg-surface-3 hover:text-ink",
                           )}
                         >
                           <Star
@@ -458,7 +446,9 @@ export function SelectorProyecto({
                               : `Ver tareas de ${proyecto.name}`
                           }
                           aria-expanded={desplegado}
-                          className="shrink-0 rounded p-2 text-muted transition hover:bg-surface-3"
+                          /* Se ve que es un boton: sin marco no se sabia que
+                             ahi dentro habia ediciones y tareas. */
+                          className="shrink-0 rounded-[4px] border border-line bg-surface p-1.5 text-muted transition hover:border-line-strong hover:bg-surface-2 hover:text-ink"
                         >
                           {desplegado ? (
                             <ChevronDown className="h-4 w-4" />

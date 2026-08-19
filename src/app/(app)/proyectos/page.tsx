@@ -148,7 +148,7 @@ function Lista({
               <p className="truncate text-xs text-muted">
                 {proyecto.clients?.name ?? "Sin cliente"}
                 {suyas > 0 && ` · ${suyas} ${suyas === 1 ? "tarea" : "tareas"}`}
-                {datos?.ultima && ` · ultima el ${formatDateShort(datos.ultima)}`}
+                {datos?.ultima && ` · última el ${formatDateShort(datos.ultima)}`}
               </p>
             </div>
 

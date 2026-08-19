@@ -614,7 +614,9 @@ function FilaGrupo({
               tagIds: mismasEtiquetas ? etiquetasPuestas : [],
             })
           }
-          className="flex shrink-0 items-center gap-1 rounded-[6px] px-2 py-1.5 text-[0.8125rem] font-medium text-muted transition hover:bg-live-soft hover:text-live"
+          /* Naranja, que en esta casa es el color de lo que corre: el play es lo
+            unico de la fila que pone el cronometro en marcha */
+          className="flex shrink-0 items-center gap-1 rounded-[6px] px-2 py-1.5 text-[0.8125rem] font-medium text-live transition hover:bg-live-soft"
         >
           <Play className="h-3.5 w-3.5 fill-current" />
         </button>

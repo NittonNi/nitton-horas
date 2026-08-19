@@ -121,9 +121,11 @@ export function RejillaCalendario({
       0,
       Math.min(dias.length - 1, Math.floor((evento.clientX - caja.left) / anchoDia)),
     )
-    const minutos = limitar(
-      redondear(franja.desde + ((evento.clientY - caja.top) / ALTO_HORA) * 60),
-    )
+    /* Sin recortar a las 24:00: arrastrar por debajo del dia es como se
+       apunta un rato que termina de madrugada. Se para al mediodia siguiente,
+       que ya es pasarse. */
+    const crudo = redondear(franja.desde + ((evento.clientY - caja.top) / ALTO_HORA) * 60)
+    const minutos = Math.max(0, Math.min(36 * 60, crudo))
     return { dia: dias[indice], minutos }
   }
 
@@ -147,9 +149,10 @@ export function RejillaCalendario({
       } else if (previo.tipo === "redim") {
         siguiente = { ...previo, hasta: Math.max(previo.desde + Minimo, minutos) }
       } else {
-        // mover: se conserva la duracion y se respeta por donde se agarro
+        // mover: se conserva la duracion y se respeta por donde se agarro. El
+        // final puede caer en el dia siguiente, que es lo normal de noche.
         const duracion = previo.hasta - previo.desde
-        const inicio = limitar(Math.min(24 * 60 - duracion, minutos - previo.pinza))
+        const inicio = Math.max(0, Math.min(24 * 60 - Minimo, minutos - previo.pinza))
         siguiente = { ...previo, dia, desde: inicio, hasta: inicio + duracion }
       }
 
@@ -178,7 +181,7 @@ export function RejillaCalendario({
       const hasta = Math.max(final.ancla, final.hasta)
       // Un clic seco, sin arrastrar, crea una hora
       const fin = hasta - desde < Minimo ? desde + 60 : hasta
-      setNuevo({ dia: final.dia, desde, hasta: Math.min(24 * 60, fin) })
+      setNuevo({ dia: final.dia, desde, hasta: fin })
       return
     }
 
@@ -279,10 +282,11 @@ export function RejillaCalendario({
           {dias.map((dia) => {
             const fecha = fromDateKey(dia)
             const esHoy = dia === hoy
-            const segundos = (porDia.get(dia) ?? []).reduce(
-              (s, b) => s + (b.entrada.duration_seconds ?? 0),
-              0,
-            )
+            /* Cuenta en el dia en que empezo, aunque el dibujo siga en el
+               siguiente: si no, un rato de 21:00 a 02:00 sumaria dos veces. */
+            const segundos = entradas
+              .filter((e) => e.local_date === dia)
+              .reduce((s, e) => s + (e.duration_seconds ?? 0), 0)
             return (
               <div
                 key={dia}
@@ -447,7 +451,7 @@ function ColumnaDia({
     arrastre?.tipo === "crear" && arrastre.dia === dia
       ? {
           desde: Math.min(arrastre.ancla, arrastre.hasta),
-          hasta: Math.max(arrastre.ancla, arrastre.hasta),
+          hasta: Math.min(24 * 60, Math.max(arrastre.ancla, arrastre.hasta)),
         }
       : null
 
@@ -482,7 +486,21 @@ function ColumnaDia({
           (arrastre?.tipo === "mover" || arrastre?.tipo === "redim") &&
           arrastre.id === bloque.entrada.id
         const desde = arrastrandose ? arrastre.desde : bloque.desde
-        const hasta = arrastrandose ? arrastre.hasta : bloque.hasta
+        // El rato puede acabar de madrugada; el dibujo se para a medianoche y
+        // el resto se ve en la columna del dia siguiente
+        const hasta = Math.min(
+          24 * 60,
+          arrastrandose ? arrastre.hasta : bloque.hasta,
+        )
+        const finCrudo = arrastrandose ? arrastre.hasta : bloque.hasta
+        const cruzaMedianoche = finCrudo > 24 * 60
+        /* Lo que se lee es la hora de verdad -21:00-2:00-, no el corte de la
+           medianoche; el +1 es quien dice que esas dos son del dia siguiente. */
+        const finTexto = bloque.sigueManana
+          ? comoHora(minutosDe(bloque.entrada.end_at!))
+          : cruzaMedianoche
+            ? comoHora(finCrudo - 24 * 60)
+            : comoHora(hasta)
         const enOtroDia = arrastrandose && arrastre.dia !== dia
         if (enOtroDia) return null
 
@@ -532,7 +550,8 @@ function ColumnaDia({
               editable && !bloque.vieneDeAyer && "cursor-grab active:cursor-grabbing",
               arrastrandose && "opacity-80 shadow-lg",
               // El corte de medianoche se ve: el bloque no acaba ahi de verdad
-              bloque.sigueManana && "rounded-b-none border-b border-dashed border-b-live-line",
+              (bloque.sigueManana || cruzaMedianoche) &&
+                "rounded-b-none border-b border-dashed border-b-live-line",
               bloque.vieneDeAyer && "rounded-t-none border-t border-dashed border-t-live-line",
             )}
             style={{
@@ -552,11 +571,11 @@ function ColumnaDia({
               {bloque.entrada.description || bloque.entrada.project_name || "Sin descripción"}
             </p>
             <p className="cifra truncate text-[10px] leading-tight text-muted">
-              {comoHora(desde)}-{comoHora(hasta)}
+              {comoHora(desde)}-{finTexto}
               {/* El tiempo solo va hacia delante: el +1 avisa de que el rato
                   termina al dia siguiente. La continuacion no lleva marca; se
                   reconoce por el corte de puntos de arriba. */}
-              {bloque.sigueManana && (
+              {(bloque.sigueManana || cruzaMedianoche) && (
                 <sup className="ml-0.5 font-semibold text-live" title="Sigue al día siguiente">
                   +1
                 </sup>
@@ -631,7 +650,10 @@ function DialogoNuevaEntrada({
   /* El arrastre solo propone: aquí se puede afinar la fecha y las horas */
   const [fecha, setFecha] = useState(nuevo.dia)
   const [horaInicio, setHoraInicio] = useState(comoHoraInput(nuevo.desde))
-  const [horaFin, setHoraFin] = useState(comoHoraInput(nuevo.hasta))
+  // Si el arrastre paso de la medianoche, el fin es una hora del dia siguiente
+  const [horaFin, setHoraFin] = useState(
+    comoHoraInput(nuevo.hasta >= 24 * 60 ? nuevo.hasta - 24 * 60 : nuevo.hasta),
+  )
 
   const minutosInicio = minutosDeHora(horaInicio)
   const minutosFin = minutosDeHora(horaFin)

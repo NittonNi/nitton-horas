@@ -18,6 +18,7 @@ import {
   formatDurationShort,
   parseDurationToSeconds,
   toClockInput,
+  toDateKey,
 } from "@/lib/time"
 import type { TablesUpdate } from "@/lib/database.types"
 import type { Catalogo, EntradaVista } from "@/lib/tipos"
@@ -503,6 +504,10 @@ function PopoverHorario({
     void onGuardar({ start_at, end_at })
   }
 
+  const acabaOtroDia =
+    !!entrada.end_at &&
+    toDateKey(new Date(entrada.end_at)) !== toDateKey(new Date(entrada.start_at))
+
   return (
     <Popover.Root
       open={abierto}
@@ -520,6 +525,12 @@ function PopoverHorario({
         className="tabular rounded-[6px] px-1.5 py-1 text-right text-[0.8125rem] text-muted transition hover:bg-surface-3/70"
       >
         {formatClock(entrada.start_at)}–{formatClock(entrada.end_at)}
+        {/* El rato acabo ya en el dia siguiente; se apunta igual en el dia que empezo */}
+        {acabaOtroDia && (
+          <sup className="ml-0.5 font-semibold text-live" title="Termina al día siguiente">
+            +1
+          </sup>
+        )}
       </Popover.Trigger>
 
       <Popover.Portal>

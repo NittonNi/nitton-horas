@@ -8,14 +8,15 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Cronómetro, hojas de horas e informes para equipos",
     start_url: "/panel",
     display: "standalone",
-    background_color: "#f6f5f2",
-    theme_color: "#4338ca",
+    background_color: "#f5f5f7",
+    theme_color: "#0071e3",
     lang: "es",
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
       { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
       {
-        src: "/icons/icon-512.png",
+        // Android recorta el icono a su gusto: este lleva aire de sobra
+        src: "/icons/icon-512-recortable.png",
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",

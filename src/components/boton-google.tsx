@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
-import { RUTA_APP } from "@/lib/rutas"
+import { rutaSegura } from "@/lib/rutas"
 
 /** La G de Google, con sus colores. Va inline para no depender de nada. */
 function LogoGoogle() {
@@ -31,7 +31,8 @@ function LogoGoogle() {
   )
 }
 
-export function BotonGoogle({ volver = RUTA_APP }: { volver?: string }) {
+export function BotonGoogle({ volver }: { volver?: string }) {
+  const destino = rutaSegura(volver)
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -43,7 +44,7 @@ export function BotonGoogle({ volver = RUTA_APP }: { volver?: string }) {
     const { error: err } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(volver)}`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(destino)}`,
       },
     })
 

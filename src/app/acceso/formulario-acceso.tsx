@@ -6,7 +6,7 @@ import { AlertCircle, Loader2, MailCheck } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
-import { RUTA_APP } from "@/lib/rutas"
+import { rutaSegura } from "@/lib/rutas"
 import { BotonGoogle } from "@/components/boton-google"
 
 type Modo = "entrar" | "registrarse"
@@ -14,7 +14,7 @@ type Modo = "entrar" | "registrarse"
 export function FormularioAcceso() {
   const router = useRouter()
   const params = useSearchParams()
-  const volver = params.get("volver") || RUTA_APP
+  const volver = rutaSegura(params.get("volver"))
 
   // La portada enlaza directamente a crear cuenta con ?modo=registrarse
   const [modo, setModo] = useState<Modo>(

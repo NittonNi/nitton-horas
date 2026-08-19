@@ -208,9 +208,9 @@ export function FilaEntrada({
         ocupado && "opacity-50",
       )}
     >
-      <div className="flex items-center gap-2 py-1.5">
+      <div className="flex items-center gap-3 py-2.5">
         {/* -------------------------------------------------- descripcion */}
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 md:w-[30%] md:flex-none">
           {campo === "descripcion" ? (
             <input
               autoFocus
@@ -296,6 +296,8 @@ export function FilaEntrada({
         </div>
 
         {/* ---------------------------------------------------- etiquetas */}
+        <div className="hidden flex-1 md:block" aria-hidden />
+
         <div className="hidden w-36 shrink-0 lg:block">
           {campo === "etiquetas" ? (
             <SelectorEtiquetas

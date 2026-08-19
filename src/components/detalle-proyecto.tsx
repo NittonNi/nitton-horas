@@ -21,6 +21,7 @@ import { mensajeError } from "@/lib/errores"
 import { SelectorColor } from "@/components/selector-color"
 import { SelectorCliente } from "@/components/selector-cliente"
 import { EdicionesProyecto } from "@/components/ediciones-proyecto"
+import { useAvisos } from "@/components/avisos"
 import { caminoDe, ramas, SIN_CATEGORIA } from "@/lib/categorias"
 import { agrupar, totales } from "@/lib/informes"
 import {
@@ -42,6 +43,14 @@ import {
   type Resultado,
 } from "@/components/resultados-proyecto"
 import { cn } from "@/lib/utils"
+
+/** Los cuatro tipos de trabajo del equipo, cada uno se cierra a su ritmo. */
+const TIPOS = [
+  { clave: "evento", etiqueta: "Evento" },
+  { clave: "b2b", etiqueta: "B2B recurrente" },
+  { clave: "oportunidad", etiqueta: "Oportunidad" },
+  { clave: "b2c", etiqueta: "B2C recurrente" },
+] as const
 
 export function DetalleProyecto({
   proyecto,
@@ -114,16 +123,32 @@ export function DetalleProyecto({
               <span className="truncate text-lg font-semibold tracking-tight">
                 {proyecto.name}
               </span>
+              {proyecto.kind && (
+                <span className="chip shrink-0">
+                  {TIPOS.find((t) => t.clave === proyecto.kind)?.etiqueta}
+                </span>
+              )}
               {caminoDe(categorias, proyecto.category_id) && (
                 <span className="chip shrink-0">
                   {caminoDe(categorias, proyecto.category_id)}
                 </span>
               )}
             </h1>
-            <p className="truncate text-sm text-muted">
-              {proyecto.clients?.name ?? "Sin cliente"}
-              {proyecto.billable_default && " · facturable por defecto"}
-              {proyecto.archived && " · archivado"}
+            <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-sm text-muted">
+              {/* El cliente se pone aqui mismo, como una tarea: entrar a
+                  editar el proyecto para eso era dar tres vueltas. */}
+              {puedeGestionar ? (
+                <ClienteEnLinea
+                  proyecto={proyecto}
+                  clientes={clientes}
+                />
+              ) : (
+                <span className="truncate">
+                  {proyecto.clients?.name ?? "Sin cliente"}
+                </span>
+              )}
+              {proyecto.billable_default && <span>· facturable por defecto</span>}
+              {proyecto.archived && <span>· archivado</span>}
             </p>
           </div>
         </div>
@@ -138,7 +163,7 @@ export function DetalleProyecto({
       </div>
 
       {/* ---------------------------------------------------------- datos */}
-      <div className="card grid grid-cols-1 grid-cols-2 divide-line sm:grid-cols-4 sm:divide-x">
+      <div className="card grid grid-cols-2 divide-line sm:grid-cols-4 sm:divide-x">
         <Dato etiqueta="Total" valor={formatDurationShort(suma.segundos)} />
         <Dato
           etiqueta="Facturable"
@@ -212,6 +237,7 @@ export function DetalleProyecto({
       </div>
 
       <EdicionesProyecto
+        predeterminada={proyecto.default_edition_id}
         espacioId={espacioId}
         proyectoId={proyecto.id}
         ediciones={ediciones}
@@ -305,6 +331,84 @@ function Desglose({
 }
 
 /* ------------------------------------------------------------------ tareas */
+
+/**
+ * El cliente del proyecto, puesto donde se lee: un toque y se elige o se crea
+ * uno nuevo sin salir de aqui.
+ */
+function ClienteEnLinea({
+  proyecto,
+  clientes,
+}: {
+  proyecto: ProyectoConCliente
+  clientes: Cliente[]
+}) {
+  const router = useRouter()
+  const { avisar } = useAvisos()
+  const [abierto, setAbierto] = useState(false)
+  const [guardando, setGuardando] = useState(false)
+
+  async function poner(clienteId: string) {
+    const antes = proyecto.client_id
+    setGuardando(true)
+    const { error: err } = await createClient()
+      .from("projects")
+      .update({ client_id: clienteId || null })
+      .eq("id", proyecto.id)
+    setGuardando(false)
+    setAbierto(false)
+    if (err) {
+      avisar(mensajeError(err), undefined, "mal")
+      return
+    }
+    router.refresh()
+    avisar("Cliente cambiado.", async () => {
+      const { error: errVolver } = await createClient()
+        .from("projects")
+        .update({ client_id: antes })
+        .eq("id", proyecto.id)
+      if (errVolver) throw new Error(mensajeError(errVolver))
+      router.refresh()
+      return "Como estaba."
+    })
+  }
+
+  if (abierto) {
+    return (
+      <span className="inline-flex w-56 items-center gap-1">
+        <SelectorCliente
+          id={`cliente-${proyecto.id}`}
+          espacioId={proyecto.workspace_id}
+          clientes={clientes}
+          valor={proyecto.client_id ?? ""}
+          onChange={(id) => void poner(id)}
+        />
+        <button
+          type="button"
+          onClick={() => setAbierto(false)}
+          className="shrink-0 rounded-[3px] p-1 text-muted transition hover:bg-surface-2 hover:text-ink"
+          aria-label="Dejarlo como estaba"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </span>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      disabled={guardando}
+      onClick={() => setAbierto(true)}
+      className="truncate rounded-[3px] px-1 py-0.5 transition hover:bg-surface-2 hover:text-ink"
+      title="Cambiar el cliente"
+    >
+      {proyecto.clients?.name ?? (
+        <span className="text-accent">+ Añadir cliente</span>
+      )}
+    </button>
+  )
+}
 
 function Tareas({
   espacioId,
@@ -587,6 +691,7 @@ function EditarProyecto({
   const [categoriaId, setCategoriaId] = useState(proyecto.category_id ?? "")
   const [color, setColor] = useState(proyecto.color)
   const [facturable, setFacturable] = useState(proyecto.billable_default)
+  const [tipo, setTipo] = useState(proyecto.kind ?? "")
   const [presupuesto, setPresupuesto] = useState(
     proyecto.budget_hours != null ? String(proyecto.budget_hours) : "",
   )
@@ -616,6 +721,7 @@ function EditarProyecto({
         category_id: categoriaId || null,
         color,
         billable_default: facturable,
+        kind: (tipo || null) as ProyectoConCliente["kind"],
         budget_hours: horas ? Number(horas) : null,
       })
       .eq("id", proyecto.id)
@@ -712,6 +818,25 @@ function EditarProyecto({
                   inputMode="decimal"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="label" htmlFor="ep-tipo">
+                Tipo de trabajo
+              </label>
+              <select
+                id="ep-tipo"
+                className="field"
+                value={tipo}
+                onChange={(e) => setTipo(e.target.value as typeof tipo)}
+              >
+                <option value="">Sin decidir</option>
+                {TIPOS.map((t) => (
+                  <option key={t.clave} value={t.clave}>
+                    {t.etiqueta}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>

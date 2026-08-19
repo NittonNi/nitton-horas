@@ -2,7 +2,14 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Archive, CalendarRange, Loader2, Plus, RotateCcw } from "lucide-react"
+import {
+  Archive,
+  CalendarRange,
+  Loader2,
+  Plus,
+  RotateCcw,
+  Star,
+} from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
@@ -24,12 +31,15 @@ export function EdicionesProyecto({
   proyectoId,
   ediciones,
   entradas,
+  predeterminada,
   puedeGestionar,
 }: {
   espacioId: string
   proyectoId: string
   ediciones: Edicion[]
   entradas: EntradaVista[]
+  /** La edicion en curso: se preselecciona al elegir el proyecto. */
+  predeterminada: string | null
   puedeGestionar: boolean
 }) {
   const router = useRouter()
@@ -49,6 +59,38 @@ export function EdicionesProyecto({
     return entradas
       .filter((e) => e.edition_id === edicionId)
       .reduce((s, e) => s + (e.duration_seconds ?? 0), 0)
+  }
+
+  /**
+   * De cuando a cuando fue una edicion de verdad: la primera hora que se
+   * apunto y la ultima. No hace falta escribir fechas a mano -y no se olvidan
+   * ni se quedan desfasadas- porque el trabajo ya las dice.
+   */
+  function cuandoFue(edicionId: string) {
+    const dias = entradas
+      .filter((e) => e.edition_id === edicionId)
+      .map((e) => e.local_date)
+      .sort()
+    if (dias.length === 0) return null
+    return { primera: dias[0], ultima: dias[dias.length - 1] }
+  }
+
+  /** Marcar -o desmarcar- la edicion en la que se esta trabajando ahora. */
+  async function enCurso(edicion: Edicion) {
+    setOcupado(true)
+    setError(null)
+    const { error: err } = await createClient()
+      .from("projects")
+      .update({
+        default_edition_id: predeterminada === edicion.id ? null : edicion.id,
+      })
+      .eq("id", proyectoId)
+    setOcupado(false)
+    if (err) {
+      setError(mensajeError(err))
+      return
+    }
+    router.refresh()
   }
 
   async function crear() {
@@ -156,12 +198,28 @@ export function EdicionesProyecto({
                 >
                   <td className="py-2 pr-3 text-sm font-medium">{edicion.name}</td>
                   <td className="py-2 pr-3 text-sm text-muted">
-                    {edicion.starts_on
-                      ? formatDateShort(edicion.starts_on) +
-                        (edicion.ends_on
-                          ? " – " + formatDateShort(edicion.ends_on)
-                          : "")
-                      : "—"}
+                    {(() => {
+                      const real = cuandoFue(edicion.id)
+                      if (real) {
+                        return (
+                          <span title="De la primera hora apuntada a la última">
+                            {formatDateShort(real.primera)}
+                            {real.ultima !== real.primera &&
+                              " – " + formatDateShort(real.ultima)}
+                          </span>
+                        )
+                      }
+                      if (edicion.starts_on) {
+                        return (
+                          <span title="Previsto: todavía no hay horas apuntadas">
+                            {formatDateShort(edicion.starts_on)}
+                            {edicion.ends_on &&
+                              " – " + formatDateShort(edicion.ends_on)}
+                          </span>
+                        )
+                      }
+                      return "—"
+                    })()}
                   </td>
                   <td className="cifra py-2 pr-3 text-right text-sm">
                     {formatDurationShort(segundos)}
@@ -172,7 +230,31 @@ export function EdicionesProyecto({
                       : "—"}
                   </td>
                   {puedeGestionar && (
-                    <td className="py-2 pl-2 text-right">
+                    <td className="flex items-center justify-end gap-1 py-2 pl-2 text-right">
+                      <button
+                        type="button"
+                        onClick={() => void enCurso(edicion)}
+                        disabled={ocupado}
+                        className={cn(
+                          "rounded-[4px] p-1 transition disabled:opacity-40",
+                          edicion.id === predeterminada
+                            ? "text-live"
+                            : "text-muted hover:bg-surface-2 hover:text-ink",
+                        )}
+                        aria-pressed={edicion.id === predeterminada}
+                        title={
+                          edicion.id === predeterminada
+                            ? "Es la edición en curso: se pone sola al elegir el proyecto"
+                            : "Marcarla como la edición en curso"
+                        }
+                      >
+                        <Star
+                          className={cn(
+                            "h-3.5 w-3.5",
+                            edicion.id === predeterminada && "fill-current",
+                          )}
+                        />
+                      </button>
                       <button
                         type="button"
                         onClick={() => void archivar(edicion)}

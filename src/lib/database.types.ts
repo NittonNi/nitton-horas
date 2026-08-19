@@ -358,6 +358,7 @@ export type Database = {
           client_id: string | null
           color: string
           created_at: string
+          default_edition_id: string | null
           id: string
           kind: Database["public"]["Enums"]["project_kind"] | null
           name: string
@@ -372,6 +373,7 @@ export type Database = {
           client_id?: string | null
           color?: string
           created_at?: string
+          default_edition_id?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["project_kind"] | null
           name: string
@@ -386,6 +388,7 @@ export type Database = {
           client_id?: string | null
           color?: string
           created_at?: string
+          default_edition_id?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["project_kind"] | null
           name?: string

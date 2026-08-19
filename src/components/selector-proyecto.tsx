@@ -297,7 +297,11 @@ export function SelectorProyecto({
                       >
                         <button
                           type="button"
-                          onClick={() => elegir(proyecto.id, null)}
+                          /* Con edicion en curso puesta, elegir el proyecto
+                             ya la trae: un paso menos cada vez que se apunta */
+                          onClick={() =>
+                            elegir(proyecto.id, null, proyecto.default_edition_id)
+                          }
                           className="flex min-w-0 flex-1 items-center gap-2 py-1.5 pl-3 text-left text-sm"
                         >
                           <span

@@ -2,22 +2,22 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Archive, Check, Loader2, Pencil, Plus, RotateCcw, X } from "lucide-react"
+import { Archive, Check, Pencil, RotateCcw, X } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
-import type { Cliente } from "@/lib/tipos"
+import type { Cliente, ProyectoConCliente } from "@/lib/tipos"
 import { cn } from "@/lib/utils"
 
 export function GestionClientes({
-  espacioId,
   clientes,
+  proyectos,
 }: {
-  espacioId: string
   clientes: Cliente[]
+  /** Un cliente sin proyectos no sirve de nada: aqui se ve y se arregla. */
+  proyectos: ProyectoConCliente[]
 }) {
   const router = useRouter()
-  const [nombre, setNombre] = useState("")
   const [editando, setEditando] = useState<string | null>(null)
   const [borrador, setBorrador] = useState("")
   const [ocupado, setOcupado] = useState(false)
@@ -41,16 +41,6 @@ export function GestionClientes({
     return true
   }
 
-  async function crear() {
-    const limpio = nombre.trim()
-    if (!limpio) return
-    const supabase = createClient()
-    const ok = await ejecutar(() =>
-      supabase.from("clients").insert({ workspace_id: espacioId, name: limpio }),
-    )
-    if (ok) setNombre("")
-  }
-
   async function renombrar(id: string) {
     const limpio = borrador.trim()
     if (!limpio) return
@@ -59,6 +49,14 @@ export function GestionClientes({
       supabase.from("clients").update({ name: limpio }).eq("id", id),
     )
     if (ok) setEditando(null)
+  }
+
+  /** Colgar un proyecto de este cliente, que es para lo que sirve un cliente. */
+  async function asignar(proyectoId: string, clienteId: string | null) {
+    const supabase = createClient()
+    await ejecutar(() =>
+      supabase.from("projects").update({ client_id: clienteId }).eq("id", proyectoId),
+    )
   }
 
   async function archivar(cliente: Cliente) {
@@ -91,33 +89,11 @@ export function GestionClientes({
         )}
       </div>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          void crear()
-        }}
-        className="flex gap-2"
-      >
-        <input
-          className="field"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          placeholder="Nuevo cliente"
-          aria-label="Nombre del cliente"
-        />
-        <button
-          type="submit"
-          disabled={ocupado || !nombre.trim()}
-          className="btn btn-primary shrink-0"
-        >
-          {ocupado ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Plus className="h-4 w-4" />
-          )}
-          Añadir
-        </button>
-      </form>
+      <p className="mb-3 text-sm text-muted">
+        Quien paga. Los clientes se crean desde el propio proyecto, que es donde
+        se sabe de quién es; aquí se ven todos con lo que les cuelga, se
+        renombran y se cambian de proyecto.
+      </p>
 
       {error && (
         <p className="mt-2 rounded-lg bg-danger-soft p-2 text-sm text-danger">
@@ -127,16 +103,23 @@ export function GestionClientes({
 
       <ul className="mt-3 divide-y divide-line">
         {visibles.length === 0 && (
-          <li className="py-3 text-sm text-muted">Todavía no hay clientes.</li>
+          <li className="py-3 text-sm text-muted">
+            Todavía no hay clientes. Se crean al editar un proyecto, en el campo
+            «Cliente».
+          </li>
         )}
-        {visibles.map((cliente) => (
+        {visibles.map((cliente) => {
+          const suyos = proyectos.filter(
+            (p) => p.client_id === cliente.id && !p.archived,
+          )
+          const sueltos = proyectos.filter((p) => !p.client_id && !p.archived)
+
+          return (
           <li
             key={cliente.id}
-            className={cn(
-              "flex items-center gap-2 py-2",
-              cliente.archived && "opacity-55",
-            )}
+            className={cn("py-2", cliente.archived && "opacity-55")}
           >
+          <div className="flex items-center gap-2">
             {editando === cliente.id ? (
               <>
                 <input
@@ -200,8 +183,55 @@ export function GestionClientes({
                 </button>
               </>
             )}
+          </div>
+
+          {/* Los proyectos que le cuelgan, que es de lo que va esto */}
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 pl-1">
+            {suyos.length === 0 ? (
+              <span className="text-xs text-muted">Sin proyectos todavía.</span>
+            ) : (
+              suyos.map((p) => (
+                <span key={p.id} className="chip gap-1.5">
+                  <span
+                    aria-hidden
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{ background: p.color }}
+                  />
+                  {p.name}
+                  <button
+                    type="button"
+                    onClick={() => void asignar(p.id, null)}
+                    disabled={ocupado}
+                    aria-label={`Quitar ${p.name} de ${cliente.name}`}
+                    title="Quitárselo"
+                    className="text-muted transition hover:text-danger"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))
+            )}
+
+            {!cliente.archived && sueltos.length > 0 && (
+              <select
+                value=""
+                onChange={(e) => e.target.value && void asignar(e.target.value, cliente.id)}
+                disabled={ocupado}
+                aria-label={`Añadir un proyecto a ${cliente.name}`}
+                className="field h-6 w-auto py-0 text-xs"
+              >
+                <option value="">+ proyecto…</option>
+                {sueltos.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
           </li>
-        ))}
+          )
+        })}
       </ul>
     </section>
   )

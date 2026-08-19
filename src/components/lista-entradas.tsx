@@ -126,24 +126,16 @@ function Cifra({
   const cumplido = objetivo !== null && segundos >= objetivo * 60
 
   return (
-    <span
-      className={cn(
-        "caja-horas text-sm",
-        cumplido && "border-billable-line bg-billable-soft",
-      )}
-    >
+    <span className="tabular text-sm">
       <span
         className={cn(
-          "font-medium",
-          cumplido ? "text-billable" : discreto ? "text-ink-soft" : "text-ink",
+          cumplido ? "font-medium text-billable" : discreto ? "text-ink-soft" : "text-ink",
         )}
       >
         {formatDurationShort(segundos)}
       </span>
       {objetivo !== null && (
-        <span className="text-xs text-muted">
-          / {formatObjetivoCorto(objetivo)}
-        </span>
+        <span className="text-muted"> / {formatObjetivoCorto(objetivo)}</span>
       )}
     </span>
   )

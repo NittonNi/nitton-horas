@@ -8,6 +8,7 @@ import { Loader2, Plus, X } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { SelectorColor } from "@/components/selector-color"
+import { SelectorCliente } from "@/components/selector-cliente"
 import { ramas, SIN_CATEGORIA } from "@/lib/categorias"
 import { COLORES_PROYECTO, type Categoria, type Cliente } from "@/lib/tipos"
 
@@ -109,21 +110,13 @@ export function NuevoProyecto({
               <label className="label" htmlFor="np-cliente">
                 Cliente
               </label>
-              <select
+              <SelectorCliente
                 id="np-cliente"
-                className="field"
-                value={clienteId}
-                onChange={(e) => setClienteId(e.target.value)}
-              >
-                <option value="">Sin cliente</option>
-                {clientes
-                  .filter((c) => !c.archived)
-                  .map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-              </select>
+                espacioId={espacioId}
+                clientes={clientes}
+                valor={clienteId}
+                onChange={setClienteId}
+              />
             </div>
 
             <div>

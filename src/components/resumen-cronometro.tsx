@@ -203,15 +203,13 @@ export function ResumenCronometro({
               </DropdownMenu.Portal>
             </DropdownMenu.Root>
 
-            <p className="mt-1.5">
-              <span
-                className={cn(
-                  "caja-horas caja-horas-grande text-2xl font-semibold tracking-tight",
-                  dato.verde && "border-billable-line bg-billable-soft text-billable",
-                )}
-              >
-                {dato.valor}
-              </span>
+            <p
+              className={cn(
+                "cifra mt-1 text-2xl font-semibold leading-none tracking-tight",
+                dato.verde && "text-billable",
+              )}
+            >
+              {dato.valor}
             </p>
             <p className="mt-1.5 h-4 text-xs text-muted">{dato.pie}</p>
           </div>

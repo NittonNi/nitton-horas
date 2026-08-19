@@ -31,7 +31,13 @@ type Resultado = {
   insertadas: number
   duplicadas: number
   omitidas: number
-  creados: { clientes: number; proyectos: number; tareas: number; etiquetas: number }
+  creados: {
+    clientes: number
+    categorias: number
+    proyectos: number
+    tareas: number
+    etiquetas: number
+  }
 }
 
 const clave = (texto: string) => texto.trim().toLowerCase()
@@ -58,6 +64,11 @@ export function ImportadorClockify({
   const [analisis, setAnalisis] = useState<Analisis | null>(null)
   const [asignacion, setAsignacion] = useState<Record<string, string>>({})
   const [crearFaltantes, setCrearFaltantes] = useState(true)
+  /* En Clockify el campo "cliente" se usaba a menudo como filtro -TLT, Care
+     team...-, que aqui es la categorizacion. Se elige que es cada cosa. */
+  const [campoCliente, setCampoCliente] = useState<"cliente" | "categoria">(
+    "cliente",
+  )
   const [progreso, setProgreso] = useState<number | null>(null)
   const [resultado, setResultado] = useState<Resultado | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -166,7 +177,13 @@ export function ImportadorClockify({
     setProgreso(0)
 
     const supabase = createClient()
-    const creados = { clientes: 0, proyectos: 0, tareas: 0, etiquetas: 0 }
+    const creados = {
+      clientes: 0,
+      categorias: 0,
+      proyectos: 0,
+      tareas: 0,
+      etiquetas: 0,
+    }
 
     try {
       /* ------------------------------------------------ catalogo que falta */
@@ -178,7 +195,33 @@ export function ImportadorClockify({
       const etiquetas = new Map(catalogo.etiquetas.map((t) => [clave(t.name), t.id]))
 
       if (crearFaltantes) {
-        const faltanClientes = [
+        /* Si el campo cliente es en realidad la rama del equipo, se crea como
+           categoria de primer nivel y los proyectos cuelgan de ella. */
+        const categorias = new Map(
+          catalogo.categorias
+            .filter((c) => !c.parent_id)
+            .map((c) => [clave(c.name), c.id]),
+        )
+        if (campoCliente === "categoria") {
+          const faltanRamas = [
+            ...new Set(
+              seleccionadas
+                .map((f) => f.cliente.trim())
+                .filter((n) => n && !categorias.has(clave(n))),
+            ),
+          ]
+          if (faltanRamas.length > 0) {
+            const { data, error: err } = await supabase
+              .from("categories")
+              .insert(faltanRamas.map((name) => ({ workspace_id: espacioId, name })))
+              .select("id, name")
+            if (err) throw err
+            for (const fila of data ?? []) categorias.set(clave(fila.name), fila.id)
+            creados.categorias = data?.length ?? 0
+          }
+        }
+
+        const faltanClientes = campoCliente === "categoria" ? [] : [
           ...new Set(
             seleccionadas
               .map((f) => f.cliente.trim())
@@ -195,13 +238,24 @@ export function ImportadorClockify({
           creados.clientes = data?.length ?? 0
         }
 
-        const faltanProyectos = new Map<string, { name: string; client_id: string | null }>()
+        const faltanProyectos = new Map<
+          string,
+          { name: string; client_id: string | null; category_id: string | null }
+        >()
         for (const fila of seleccionadas) {
           const nombre = fila.proyecto.trim()
           if (!nombre || proyectos.has(clave(nombre))) continue
+          const suClave = fila.cliente ? clave(fila.cliente) : null
           faltanProyectos.set(clave(nombre), {
             name: nombre,
-            client_id: fila.cliente ? (clientes.get(clave(fila.cliente)) ?? null) : null,
+            client_id:
+              suClave && campoCliente === "cliente"
+                ? (clientes.get(suClave) ?? null)
+                : null,
+            category_id:
+              suClave && campoCliente === "categoria"
+                ? (categorias.get(suClave) ?? null)
+                : null,
           })
         }
         if (faltanProyectos.size > 0) {
@@ -453,9 +507,10 @@ export function ImportadorClockify({
 
             {resumen && crearFaltantes && (
               <p className="mt-3 text-xs text-muted">
-                Se crearan {resumen.nuevosClientes} clientes,{" "}
+                Se crearán {resumen.nuevosClientes}{" "}
+                {campoCliente === "categoria" ? "categorías" : "clientes"},{" "}
                 {resumen.nuevosProyectos} proyectos, {resumen.nuevasTareas} tareas
-                y {resumen.nuevasEtiquetas} etiquetas que no existen aun.
+                y {resumen.nuevasEtiquetas} etiquetas que no existen aún.
               </p>
             )}
 
@@ -478,6 +533,30 @@ export function ImportadorClockify({
               />
               Crear los clientes, proyectos, tareas y etiquetas que falten
             </label>
+
+            <div className="mt-3">
+              <label className="label" htmlFor="campo-cliente">
+                El campo «Cliente» del informe es…
+              </label>
+              <select
+                id="campo-cliente"
+                className="field w-auto"
+                value={campoCliente}
+                onChange={(e) =>
+                  setCampoCliente(e.target.value as "cliente" | "categoria")
+                }
+              >
+                <option value="cliente">Un cliente de verdad: quien paga</option>
+                <option value="categoria">
+                  La rama del equipo: Backoffice, TLT, Eventos…
+                </option>
+              </select>
+              <p className="mt-1.5 text-xs text-muted">
+                En Clockify muchos equipos usaban «cliente» para poder filtrar.
+                Si era vuestro caso, elige la segunda: cada nombre se crea como
+                categoría y los proyectos cuelgan de ella.
+              </p>
+            </div>
           </section>
 
           <section className="card p-4">
@@ -546,6 +625,7 @@ export function ImportadorClockify({
                     {resultado.omitidas > 0 &&
                       `, ${resultado.omitidas} omitidas por no tener persona asignada`}
                     . Se crearon {resultado.creados.clientes} clientes,{" "}
+                    {resultado.creados.categorias} categorías,{" "}
                     {resultado.creados.proyectos} proyectos,{" "}
                     {resultado.creados.tareas} tareas y{" "}
                     {resultado.creados.etiquetas} etiquetas.

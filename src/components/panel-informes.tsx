@@ -834,15 +834,13 @@ function Tarjeta({
   return (
     <div className="card px-4 py-3">
       <p className="text-xs font-medium text-muted">{etiqueta}</p>
-      <p className="mt-1">
-        <span
-          className={cn(
-            "caja-horas caja-horas-grande text-xl font-semibold",
-            acento && "border-billable-line bg-billable-soft text-billable",
-          )}
-        >
-          {valor}
-        </span>
+      <p
+        className={cn(
+          "tabular mt-0.5 text-xl font-semibold",
+          acento && "text-billable",
+        )}
+      >
+        {valor}
       </p>
       <p className="mt-0.5 text-xs text-muted">{pie}</p>
     </div>

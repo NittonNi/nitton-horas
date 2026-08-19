@@ -14,7 +14,10 @@ export default async function PaginaCatalogo() {
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)]">
       <div className="space-y-5">
-        <GestionClientes espacioId={espacio.id} clientes={catalogo.clientes} />
+        <GestionClientes
+          clientes={catalogo.clientes}
+          proyectos={catalogo.proyectos}
+        />
         <GestionEtiquetas espacioId={espacio.id} etiquetas={catalogo.etiquetas} />
       </div>
       <GestionProyectos

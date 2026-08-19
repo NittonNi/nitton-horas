@@ -339,7 +339,7 @@ export function FilaEntrada({
                 if (e.key === "Enter") e.currentTarget.blur()
                 if (e.key === "Escape") setCampo(null)
               }}
-              className="field tabular py-1 text-right text-[0.9375rem]"
+              className="field caja-horas w-full justify-end px-2 py-0.5 text-[0.9375rem] font-semibold"
             />
           ) : (
             <button

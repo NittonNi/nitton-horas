@@ -19,6 +19,7 @@ import {
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { SelectorColor } from "@/components/selector-color"
+import { SelectorCliente } from "@/components/selector-cliente"
 import { EdicionesProyecto } from "@/components/ediciones-proyecto"
 import { caminoDe, ramas, SIN_CATEGORIA } from "@/lib/categorias"
 import { agrupar, totales } from "@/lib/informes"
@@ -100,8 +101,15 @@ export function DetalleProyecto({
             style={{ background: proyecto.color }}
           />
           <div className="min-w-0">
-            <h1 className="truncate text-lg font-semibold tracking-tight">
-              {proyecto.name}
+            <h1 className="flex min-w-0 items-center gap-2">
+              <span className="truncate text-lg font-semibold tracking-tight">
+                {proyecto.name}
+              </span>
+              {caminoDe(categorias, proyecto.category_id) && (
+                <span className="chip shrink-0">
+                  {caminoDe(categorias, proyecto.category_id)}
+                </span>
+              )}
             </h1>
             <p className="truncate text-sm text-muted">
               {proyecto.clients?.name ?? "Sin cliente"}
@@ -662,21 +670,13 @@ function EditarProyecto({
                 <label className="label" htmlFor="ep-cliente">
                   Cliente
                 </label>
-                <select
+                <SelectorCliente
                   id="ep-cliente"
-                  className="field"
-                  value={clienteId}
-                  onChange={(e) => setClienteId(e.target.value)}
-                >
-                  <option value="">Sin cliente</option>
-                  {clientes
-                    .filter((c) => !c.archived || c.id === clienteId)
-                    .map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                </select>
+                  espacioId={proyecto.workspace_id}
+                  clientes={clientes}
+                  valor={clienteId}
+                  onChange={setClienteId}
+                />
               </div>
               <div>
                 <label className="label" htmlFor="ep-presupuesto">

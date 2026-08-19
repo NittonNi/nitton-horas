@@ -122,6 +122,7 @@ export default async function PaginaCronometro() {
       <ListaEntradas
         entradas={entradas}
         catalogo={catalogo}
+        miembros={miembros.filter((m) => m.active)}
         objetivoDia={espacio.goal_daily_minutes}
         objetivoSemana={espacio.goal_weekly_minutes}
       />

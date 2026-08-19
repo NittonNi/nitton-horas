@@ -20,7 +20,7 @@ import {
   weekLabel,
 } from "@/lib/time"
 import type { TablesUpdate } from "@/lib/database.types"
-import type { Catalogo, EntradaVista } from "@/lib/tipos"
+import type { Catalogo, EntradaVista, Miembro } from "@/lib/tipos"
 import { cn } from "@/lib/utils"
 
 /**
@@ -63,12 +63,15 @@ function agrupar(entradas: EntradaVista[]): Grupo[] {
 export function ListaEntradas({
   entradas,
   catalogo,
+  miembros = [],
   mostrarPersona = false,
   objetivoDia = null,
   objetivoSemana = null,
 }: {
   entradas: EntradaVista[]
   catalogo: Catalogo
+  /** El equipo, para compartir horas desde la propia fila. */
+  miembros?: Miembro[]
   mostrarPersona?: boolean
   /** Minutos al dia, del espacio. */
   objetivoDia?: number | null
@@ -142,6 +145,7 @@ export function ListaEntradas({
                           key={grupo.entradas[0].id}
                           entrada={grupo.entradas[0]}
                           catalogo={catalogo}
+                          miembros={miembros}
                           mostrarPersona={mostrarPersona}
                         />
                       ) : (
@@ -149,6 +153,7 @@ export function ListaEntradas({
                           key={grupo.clave}
                           grupo={grupo}
                           catalogo={catalogo}
+                          miembros={miembros}
                           mostrarPersona={mostrarPersona}
                         />
                       ),
@@ -177,10 +182,12 @@ function segundosDe(entradas: EntradaVista[]): number {
 function FilaGrupo({
   grupo,
   catalogo,
+  miembros,
   mostrarPersona,
 }: {
   grupo: Grupo
   catalogo: Catalogo
+  miembros: Miembro[]
   mostrarPersona: boolean
 }) {
   const router = useRouter()
@@ -637,6 +644,7 @@ function FilaGrupo({
               key={entrada.id}
               entrada={entrada}
               catalogo={catalogo}
+              miembros={miembros}
               mostrarPersona={mostrarPersona}
             />
           ))}

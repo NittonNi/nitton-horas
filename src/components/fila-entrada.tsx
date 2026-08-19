@@ -18,6 +18,7 @@ import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { useCronometro } from "@/components/proveedor-cronometro"
 import { useAvisos } from "@/components/avisos"
+import { CompartirCon } from "@/components/compartir-con"
 import { CampoHora } from "@/components/campo-hora"
 import { SelectorProyecto } from "@/components/selector-proyecto"
 import { SelectorEtiquetas } from "@/components/selector-etiquetas"
@@ -29,7 +30,7 @@ import {
   toClockInput,
 } from "@/lib/time"
 import type { TablesUpdate } from "@/lib/database.types"
-import type { Catalogo, EntradaVista } from "@/lib/tipos"
+import type { Catalogo, EntradaVista, Miembro } from "@/lib/tipos"
 import { cn } from "@/lib/utils"
 
 /** Que celda esta abierta para editar. Solo una a la vez. */
@@ -42,10 +43,13 @@ type Campo = "descripcion" | "proyecto" | "etiquetas" | "horario" | "duracion" |
 export function FilaEntrada({
   entrada,
   catalogo,
+  miembros,
   mostrarPersona,
 }: {
   entrada: EntradaVista
   catalogo: Catalogo
+  /** El equipo, para poder compartir estas horas con quien haga falta. */
+  miembros: Miembro[]
   mostrarPersona: boolean
 }) {
   const router = useRouter()
@@ -375,23 +379,7 @@ export function FilaEntrada({
             y no lo es -son personas, y algunas sin contestar todavia. El
             hueco se reserva siempre para que las columnas cuadren. */}
         <div className="hidden w-7 shrink-0 justify-center sm:flex">
-          {compartida.length > 0 && (
-            <span
-              className={cn(
-                "flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[0.6875rem] font-medium",
-                compartida.some((c) => c.estado === "pendiente")
-                  ? "border-live-line bg-live-soft text-live"
-                  : "border-line bg-surface-2 text-muted",
-              )}
-              title={
-                "Estas horas también cuentan para " +
-                compartida.map((c) => `${c.nombre} (${c.estado})`).join(", ")
-              }
-            >
-              <Users className="h-3 w-3" aria-hidden />
-              {compartida.length}
-            </span>
-          )}
+          <CompartirCon entrada={entrada} miembros={miembros} />
         </div>
 
         {/* --------------------------------------------------- facturable */}

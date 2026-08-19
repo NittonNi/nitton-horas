@@ -1,5 +1,10 @@
 import { getSesion } from "@/lib/sesion"
-import { cargarCatalogo, cargarEntradas, cargarMiembros } from "@/lib/datos"
+import {
+  cargarCatalogo,
+  cargarEntradas,
+  cargarMiembros,
+  cargarPropuestas,
+} from "@/lib/datos"
 import { RejillaCalendario } from "@/components/rejilla-calendario"
 import { addDays, fromDateKey, startOfWeek, toDateKey } from "@/lib/time"
 
@@ -21,7 +26,7 @@ export default async function PaginaCalendario({
   // Cualquiera puede mirar -y corregir- la semana de cualquiera del espacio
   const personaId = parametros.persona || perfil.id
 
-  const [catalogo, entradas, miembros] = await Promise.all([
+  const [catalogo, entradas, miembros, propuestas] = await Promise.all([
     cargarCatalogo(espacio.id),
     cargarEntradas({
       espacioId: espacio.id,
@@ -30,7 +35,18 @@ export default async function PaginaCalendario({
       userId: personaId,
     }),
     cargarMiembros(espacio.id),
+    cargarPropuestas(espacio.id),
   ])
+
+  /* Las propuestas son mias, asi que solo pintan cuando miro mi semana, y solo
+     las de esta semana: en otra no habria donde ponerlas. */
+  const propuestasDeLaSemana =
+    personaId === perfil.id
+      ? propuestas.filter((p) => {
+          const dia = toDateKey(new Date(p.start_at))
+          return dia >= lunes && dia <= domingo
+        })
+      : []
 
   return (
     <div className="space-y-4">
@@ -43,6 +59,7 @@ export default async function PaginaCalendario({
 
       <RejillaCalendario
         entradas={entradas}
+        propuestas={propuestasDeLaSemana}
         catalogo={catalogo}
         lunes={lunes}
         espacioId={espacio.id}

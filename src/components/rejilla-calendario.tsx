@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import * as Dialog from "@radix-ui/react-dialog"
-import { ChevronLeft, ChevronRight, Euro, Loader2, X } from "lucide-react"
+import { Check, ChevronLeft, ChevronRight, Euro, Loader2, Users, X } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
@@ -29,12 +29,14 @@ import {
 } from "@/lib/calendario"
 import {
   addDays,
+  formatClock,
   formatDurationShort,
   fromDateKey,
   toDateKey,
   todayKey,
 } from "@/lib/time"
 import type { Catalogo, EntradaVista, Miembro } from "@/lib/tipos"
+import type { Propuesta } from "@/components/propuestas-pendientes"
 import { cn } from "@/lib/utils"
 
 type Arrastre =
@@ -48,8 +50,54 @@ type Nuevo = { dia: string; desde: number; hasta: number }
 
 const Minimo = 15
 
+/** Las propuestas se pintan en la rejilla; se reconocen por el id. */
+const MARCA = "propuesta:"
+
+function esPropuesta(id: string) {
+  return id.startsWith(MARCA)
+}
+
+/**
+ * Una propuesta vestida de hora para poder colocarla en la rejilla. Lo unico
+ * que se usa de aqui es cuando empieza, cuando acaba y de que color es.
+ */
+function propuestaComoEntrada(p: Propuesta): EntradaVista {
+  return {
+    id: MARCA + p.id,
+    workspace_id: "",
+    user_id: "",
+    user_name: p.de,
+    updated_by: null,
+    updated_by_name: null,
+    project_id: null,
+    project_name: p.project_name,
+    project_color: p.project_color,
+    client_id: null,
+    client_name: null,
+    category_id: null,
+    category_name: null,
+    subcategory_name: null,
+    edition_id: null,
+    edition_name: null,
+    task_id: null,
+    task_name: null,
+    description: p.description,
+    start_at: p.start_at,
+    end_at: p.end_at,
+    local_date: "",
+    duration_seconds: null,
+    hours: null,
+    billable: p.billable,
+    locked: true,
+    tags: [],
+    compartida_con: [],
+    amount: null,
+  }
+}
+
 export function RejillaCalendario({
   entradas,
+  propuestas = [],
   catalogo,
   lunes,
   espacioId,
@@ -58,6 +106,8 @@ export function RejillaCalendario({
   miembros,
 }: {
   entradas: EntradaVista[]
+  /** Horas que alguien ha apuntado contando conmigo y no he contestado. */
+  propuestas?: Propuesta[]
   catalogo: Catalogo
   lunes: string
   espacioId: string
@@ -73,6 +123,7 @@ export function RejillaCalendario({
   const [arrastre, setArrastre] = useState<Arrastre | null>(null)
   const [nuevo, setNuevo] = useState<Nuevo | null>(null)
   const [editando, setEditando] = useState<EntradaVista | null>(null)
+  const [contestando, setContestando] = useState<Propuesta | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [ahora, setAhora] = useState(() => new Date())
 
@@ -86,15 +137,24 @@ export function RejillaCalendario({
     [lunes],
   )
 
+  /* Las propuestas se colocan en la rejilla igual que las horas -para que no
+     se pisen unas con otras- pero llevan el id marcado: ni se arrastran ni
+     suman en el total del dia, porque no son tuyas hasta que dices que si. */
+  const comoEntradas = useMemo(
+    () => propuestas.map(propuestaComoEntrada),
+    [propuestas],
+  )
+
   const porDia = useMemo(() => {
     const mapa = new Map<string, Bloque[]>()
+    const todo = [...entradas, ...comoEntradas]
     for (const dia of dias) {
       // Sin filtrar por local_date: un rato que cruza la medianoche le toca a
       // dos dias, y cada uno se queda con su trozo.
-      mapa.set(dia, repartir(entradas, dia))
+      mapa.set(dia, repartir(todo, dia))
     }
     return mapa
-  }, [entradas, dias])
+  }, [entradas, comoEntradas, dias])
 
   // El dia entero, siempre: apuntar a las 6 o a las 23 tiene que ser posible
   const franja = DIA_ENTERO
@@ -427,6 +487,11 @@ export function RejillaCalendario({
                     })
                   }
                   onAbrir={(entrada) => setEditando(entrada)}
+                  onContestar={(id) =>
+                    setContestando(
+                      propuestas.find((p) => MARCA + p.id === id) ?? null,
+                    )
+                  }
                 />
               ))}
             </div>
@@ -460,6 +525,139 @@ export function RejillaCalendario({
           onCerrar={() => setEditando(null)}
         />
       )}
+
+      {contestando && (
+        <DialogoInvitacion
+          propuesta={contestando}
+          onCerrar={() => setContestando(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+/* ---------------------------------------------------------- una invitacion */
+
+/**
+ * Contestar desde el propio calendario, que es donde se ve si encaja con el
+ * resto del dia. Aceptar crea una hora tuya; decir que no fuiste no le quita
+ * nada a quien la apunto: la suya sigue igual.
+ */
+function DialogoInvitacion({
+  propuesta,
+  onCerrar,
+}: {
+  propuesta: Propuesta
+  onCerrar: () => void
+}) {
+  const router = useRouter()
+  const { avisar } = useAvisos()
+  const [ocupado, setOcupado] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Escape cierra, como en el resto de tarjetas
+  useEffect(() => {
+    const alPulsar = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCerrar()
+    }
+    window.addEventListener("keydown", alPulsar)
+    return () => window.removeEventListener("keydown", alPulsar)
+  }, [onCerrar])
+
+  async function responder(aceptar: boolean) {
+    setOcupado(true)
+    setError(null)
+    const { error: err } = await createClient().rpc("responder_invitacion", {
+      p_invitacion: propuesta.id,
+      p_aceptar: aceptar,
+    })
+    setOcupado(false)
+    if (err) {
+      setError(mensajeError(err))
+      return
+    }
+    onCerrar()
+    router.refresh()
+    avisar(aceptar ? "Hora aceptada: ya es tuya." : "Rechazada.")
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
+      onMouseDown={(e) => e.target === e.currentTarget && onCerrar()}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Horas que han apuntado contigo"
+        className="card w-full max-w-sm rounded-b-none sm:rounded-xl"
+        style={{ boxShadow: "var(--shadow-lg)" }}
+      >
+        <div className="flex items-start gap-3 border-b border-line px-4 py-3">
+          <span
+            aria-hidden
+            className="mt-0.5 h-9 w-1 shrink-0 rounded-full"
+            style={{ background: propuesta.project_color ?? "var(--line-strong)" }}
+          />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold">
+              {propuesta.description || "Sin descripción"}
+            </p>
+            <p className="mt-0.5 text-xs text-muted">
+              {propuesta.de} ha apuntado estas horas contigo
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-1 px-4 py-3 text-sm">
+          <p className="tabular">
+            {formatClock(propuesta.start_at)}–{formatClock(propuesta.end_at)}
+            <span className="text-muted">
+              {" · "}
+              {formatDurationShort(
+                Math.round(
+                  (new Date(propuesta.end_at).getTime() -
+                    new Date(propuesta.start_at).getTime()) /
+                    1000,
+                ),
+              )}
+            </span>
+          </p>
+          {propuesta.project_name && (
+            <p className="text-muted">{propuesta.project_name}</p>
+          )}
+          <p className="pt-1 text-xs text-muted">
+            Hasta que no aceptes no se te apunta nada. Si aceptas se crea una
+            hora tuya; la de {propuesta.de} se queda como está.
+          </p>
+          {error && <p className="pt-1 text-xs text-danger">{error}</p>}
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-line px-4 py-3">
+          <button
+            type="button"
+            disabled={ocupado}
+            onClick={() => void responder(false)}
+            className="btn"
+          >
+            <X className="h-3.5 w-3.5" />
+            No fui
+          </button>
+          <button
+            type="button"
+            disabled={ocupado}
+            onClick={() => void responder(true)}
+            className="btn btn-primary"
+          >
+            {ocupado ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Check className="h-3.5 w-3.5" />
+            )}
+            Aceptar
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -478,6 +676,7 @@ function ColumnaDia({
   onMover,
   onRedimensionar,
   onAbrir,
+  onContestar,
 }: {
   dia: string
   esHoy: boolean
@@ -490,6 +689,7 @@ function ColumnaDia({
   onMover: (bloque: Bloque, minutos: number) => void
   onRedimensionar: (bloque: Bloque) => void
   onAbrir: (entrada: EntradaVista) => void
+  onContestar: (id: string) => void
 }) {
   const arriba = (minutos: number) => ((minutos - franja.desde) / 60) * ALTO_HORA
   const minutosDelEvento = (e: React.PointerEvent<HTMLElement>) => {
@@ -560,6 +760,8 @@ function ColumnaDia({
 
         const color = bloque.entrada.project_color ?? "var(--line-strong)"
         const anchura = 100 / bloque.columnas
+        // Propuesta sin contestar: se pinta como una invitacion, no como tuya
+        const invitacion = esPropuesta(bloque.entrada.id)
 
         return (
           <div
@@ -576,7 +778,7 @@ function ColumnaDia({
             onPointerDown={(e) => {
               // La continuacion del dia anterior no se arrastra: se toca la de
               // arriba, que es la que lleva la hora de inicio
-              if (!editable || bloque.vieneDeAyer || e.button !== 0) return
+              if (invitacion || !editable || bloque.vieneDeAyer || e.button !== 0) return
               e.stopPropagation()
               const caja = e.currentTarget.getBoundingClientRect()
               // los últimos 8 px de alto son el tirador para alargar
@@ -590,6 +792,10 @@ function ColumnaDia({
             }}
             onClick={(e) => {
               e.stopPropagation()
+              if (invitacion) {
+                onContestar(bloque.entrada.id)
+                return
+              }
               if (!arrastrandose) onAbrir(bloque.entrada)
             }}
             title={
@@ -598,10 +804,16 @@ function ColumnaDia({
                 : `${comoHora(desde)} - ${comoHora(hasta)}  ${bloque.entrada.description || ""}`
             }
             className={cn(
-              "absolute overflow-hidden rounded-[3px] border-l-[3px] bg-surface px-1.5 py-1 text-left shadow-sm ring-1 ring-inset transition-shadow",
-              // Lo que se cobra va enmarcado en verde; el resto, en linea neutra
-              bloque.entrada.billable ? "ring-billable-line" : "ring-line",
-              editable && !bloque.vieneDeAyer && "cursor-grab active:cursor-grabbing",
+              "absolute overflow-hidden rounded-[3px] px-1.5 py-1 text-left transition-shadow",
+              /* Una hora tuya va rellena, con su raya de color a la izquierda.
+                 Una propuesta sin contestar va sin rellenar y con todo el borde
+                 a rayas: la misma convencion que una invitacion de calendario
+                 sin responder, para reconocerla sin leer nada. */
+              invitacion
+                ? "cursor-pointer border-2 border-dashed bg-surface/60 hover:bg-surface"
+                : "border-l-[3px] bg-surface shadow-sm ring-1 ring-inset",
+              !invitacion && (bloque.entrada.billable ? "ring-billable-line" : "ring-line"),
+              editable && !invitacion && !bloque.vieneDeAyer && "cursor-grab active:cursor-grabbing",
               arrastrandose && "opacity-80 shadow-lg",
               // El corte de medianoche se ve: el bloque no acaba ahi de verdad
               (bloque.sigueManana || cruzaMedianoche) &&
@@ -613,6 +825,8 @@ function ColumnaDia({
               height: Math.max(16, ((hasta - desde) / 60) * ALTO_HORA - 2),
               left: `calc(${bloque.columna * anchura}% + 2px)`,
               width: `calc(${anchura}% - 4px)`,
+              // En la invitacion el color va en todo el borde, no solo a un lado
+              borderColor: invitacion ? color : undefined,
               borderLeftColor: color,
             }}
           >
@@ -625,6 +839,7 @@ function ColumnaDia({
               {bloque.entrada.description || bloque.entrada.project_name || "Sin descripción"}
             </p>
             <p className="cifra truncate text-[10px] leading-tight text-muted">
+              {invitacion && <span className="cifra-no">de {bloque.entrada.user_name} · </span>}
               {comoHora(desde)}-{finTexto}
               {/* El tiempo solo va hacia delante: el +1 avisa de que el rato
                   termina al dia siguiente. La continuacion no lleva marca; se
@@ -635,8 +850,16 @@ function ColumnaDia({
                 </sup>
               )}
             </p>
-            {bloque.entrada.billable && (
-              <Euro className="absolute right-1 top-1.5 h-3 w-3 text-billable" />
+            {invitacion ? (
+              <Users
+                className="absolute right-1 top-1.5 h-3 w-3"
+                style={{ color }}
+                aria-hidden
+              />
+            ) : (
+              bloque.entrada.billable && (
+                <Euro className="absolute right-1 top-1.5 h-3 w-3 text-billable" />
+              )
             )}
             {editable && !bloque.sigueManana && !bloque.vieneDeAyer && (
               <span

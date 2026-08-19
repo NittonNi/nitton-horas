@@ -127,9 +127,9 @@ export function GestionCategorias({
         )}
       </div>
       <p className="mb-4 max-w-xl text-sm text-muted">
-        Cómo se organiza el equipo, en dos niveles. Cada proyecto cuelga de una
-        rama y en los informes sale una columna por nivel. El objetivo son horas
-        por persona y semana en esa rama.
+        Cómo se organiza el equipo: áreas arriba y categorías dentro. Cada
+        proyecto cuelga de una de las dos, y en los informes sale una columna
+        por nivel. El objetivo son horas por persona y semana.
       </p>
 
       {error && (
@@ -180,7 +180,7 @@ export function GestionCategorias({
                 <li className="pl-4">
                   {anadiendoEn === padre.id ? (
                     <NuevoNombre
-                      placeholder="Nueva subcategoría"
+                      placeholder="Nueva categoría dentro de esta área"
                       onGuardar={(n) => void crear(n, padre.id)}
                       onCancelar={() => setAnadiendoEn(null)}
                     />
@@ -191,7 +191,7 @@ export function GestionCategorias({
                       className="flex items-center gap-1 py-1 text-xs font-medium text-muted transition hover:text-accent"
                     >
                       <Plus className="h-3 w-3" />
-                      Subcategoría
+                      Categoría
                     </button>
                   )}
                 </li>
@@ -212,8 +212,8 @@ export function GestionCategorias({
           className="field"
           value={nueva}
           onChange={(e) => setNueva(e.target.value)}
-          placeholder="Nueva categoría: Backoffice, Conocimiento, Proyectos..."
-          aria-label="Nombre de la categoría"
+          placeholder="Nueva área: Backoffice, Conocimiento, Proyectos..."
+          aria-label="Nombre del área"
         />
         <button
           type="submit"

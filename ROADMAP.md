@@ -68,6 +68,12 @@ los disparadores a todo el mundo, y cabeceras puestas -nosniff, marcos
 denegados, HSTS y politica de contenido en produccion-. Icono propio en su
 sitio.
 
+Y en la ultima tanda: deshacer lo ultimo que se hizo en bloque -incluido el
+borrado, que devuelve la fila entera con su origen-, apartado de
+**Estadisticas** (doce meses, reparto por rama, presupuestos), aviso de los
+dias laborables sin apuntar, filtro de abiertas y cerradas, guia de despliegue
+e icono propio.
+
 Y el 19-ago por la noche: los informes dejan de ser de solo mirar -se corrige
 una hora pulsandola, o varias a la vez: moverlas de proyecto, marcarlas como
 facturables, ponerles etiqueta, cerrarlas o borrarlas-, la bienvenida pregunta
@@ -76,16 +82,23 @@ por fin si se quiere la plantilla de LEINN, hay guia rapida la primera vez
 
 **Pendiente**:
 
-1. **En el panel de Supabase, a mano**: activar la proteccion de contrasenas
-   filtradas (Auth > Passwords > *leaked password protection*) y subir el
-   minimo a 8 caracteres, que es lo que ya pide el formulario. Son dos
-   interruptores y el aviso desaparece.
-2. **Horas compartidas, tercera vuelta**: proponerlas tambien desde la hoja
-   semanal, y avisar a quien ya acepto si luego cambia la hora o se borra.
-3. **Despliegue**: Vercel, dominio y las URLs de Google con el dominio real.
-   Sin esto no lo puede usar ningun otro equipo de LEINN.
-4. **Renombrar el repositorio**, que sigue siendo `nitton-horas`.
-5. **Ojo con las tildes**: rutas e identificadores SIN tilde -son URLs y
+1. **Desplegar**: `DESPLIEGUE.md` lleva los pasos en orden -Vercel, las URLs de
+   Supabase, las credenciales de Google, el dominio- con lo que hay que
+   comprobar despues de cada uno. Es lo unico que separa esto de que lo use
+   otro equipo de LEINN, y necesita las cuentas de Nicolas.
+2. **En el panel de Supabase, a mano**: activar la proteccion de contrasenas
+   filtradas y subir el minimo a 8 caracteres. Dos interruptores.
+3. **Aprobar horas**: cerrarlas ya se puede, y hay filtro de abiertas y
+   cerradas. Falta el paso previo: revisar la semana de alguien, devolversela
+   con un comentario y aprobarla.
+4. **La hoja semanal solo deja editar las tuyas**. Para un administrador
+   tendria sentido tambien ahi; en el calendario y en los informes ya se puede.
+5. **Horas compartidas, tercera vuelta**: proponerlas desde la hoja semanal, y
+   avisar a quien ya acepto si luego cambia la hora o se borra.
+6. **Rendimiento, cuando crezca**: casi todas las paginas cargan el catalogo
+   entero y los informes traen el rango completo. Con cien proyectos y dos anos
+   de horas habra que paginar.
+7. **Ojo con las tildes**: rutas e identificadores SIN tilde -son URLs y
    carpetas- y textos CON ella. Un `href="/gestión"` da 404; ya paso.
 
 ## Siguiente

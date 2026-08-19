@@ -62,6 +62,7 @@ export function PanelInformes({
   const [proyecto, setProyecto] = useState("")
   const [etiqueta, setEtiqueta] = useState("")
   const [facturable, setFacturable] = useState<Facturable>("todo")
+  const [cierre, setCierre] = useState<"todo" | "abiertas" | "cerradas">("todo")
   const [busqueda, setBusqueda] = useState("")
   const [verTodo, setVerTodo] = useState(false)
   const [generando, setGenerando] = useState<"excel" | "pdf" | "todo" | null>(
@@ -91,6 +92,8 @@ export function PanelInformes({
       if (etiqueta && !entrada.tags.includes(etiqueta)) return false
       if (facturable === "si" && !entrada.billable) return false
       if (facturable === "no" && entrada.billable) return false
+      if (cierre === "cerradas" && !entrada.locked) return false
+      if (cierre === "abiertas" && entrada.locked) return false
       if (texto) {
         const donde = `${entrada.description} ${entrada.project_name ?? ""} ${entrada.task_name ?? ""} ${entrada.client_name ?? ""}`
         if (!donde.toLowerCase().includes(texto)) return false
@@ -105,6 +108,7 @@ export function PanelInformes({
     proyecto,
     etiqueta,
     facturable,
+    cierre,
     busqueda,
   ])
 
@@ -413,6 +417,19 @@ export function PanelInformes({
             <option value="todo">Facturable y no</option>
             <option value="si">Solo facturable</option>
             <option value="no">Solo no facturable</option>
+          </select>
+
+          <select
+            className="field w-auto py-1"
+            value={cierre}
+            onChange={(e) =>
+              setCierre(e.target.value as "todo" | "abiertas" | "cerradas")
+            }
+            aria-label="Cerradas o abiertas"
+          >
+            <option value="todo">Cerradas y abiertas</option>
+            <option value="abiertas">Solo las abiertas</option>
+            <option value="cerradas">Solo las cerradas</option>
           </select>
 
           <input

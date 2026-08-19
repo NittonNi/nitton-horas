@@ -383,9 +383,9 @@ export function ImportadorClockify({
       <section className="card p-4">
         <h2 className="mb-1 text-sm font-semibold">Importar de Clockify</h2>
         <p className="mb-3 text-xs text-muted">
-          En Clockify: Informes &gt; Detallado, elige el rango de fechas y exporta
-          en CSV. Las entradas se reconocen por persona y hora exacta, así que
-          puedes reimportar el mismo fichero sin duplicar nada.
+          En Clockify: Informes &gt; Detallado, elige las fechas y exporta en
+          CSV. Cada hora se reconoce por persona y hora exacta, así que el mismo
+          fichero se puede reimportar sin duplicar nada.
         </p>
 
         <div
@@ -503,9 +503,8 @@ export function ImportadorClockify({
             </label>
 
             <p className="mt-3 text-xs text-muted">
-              La columna «Client» del informe entra como área: cada nombre
-              -Backoffice, TLT, Eventos…- se crea arriba del todo y los
-              proyectos cuelgan de ella.
+              La columna «Client» entra como área -Backoffice, TLT, Eventos…-
+              y los proyectos cuelgan de ella.
             </p>
           </section>
 

@@ -104,8 +104,8 @@ export function ListaEntradas({
       <div className="card px-6 py-12 text-center">
         <p className="text-sm font-medium">Aquí aparecerán tus horas</p>
         <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
-          Escribe arriba en qué estás trabajando y dale al play, o cambia al
-          modo manual para apuntar un rato que ya has echado.
+          Escribe arriba en qué estás trabajando y dale al play. En modo manual
+          apuntas un rato que ya has echado.
         </p>
       </div>
     )

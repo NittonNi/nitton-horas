@@ -65,9 +65,8 @@ export function ObjetivoHora({
     <section className="card p-4">
       <h2 className="mb-1 text-sm font-semibold">El objetivo del equipo</h2>
       <p className="mb-3 text-sm text-muted">
-        A cuánto tiene que salir la hora. No se cobra por esta tarifa: es el
-        número contra el que se mira la facturación por hora de cada proyecto.
-        Vale para todo el espacio.
+        A cuánto tiene que salir la hora en todo el espacio. No se cobra por
+        ella: es contra lo que se mide cada proyecto.
       </p>
 
       {puedeCambiar ? (
@@ -210,8 +209,8 @@ export function ObjetivoDelProyecto({
     <section className="card p-4">
       <h2 className="mb-1 text-sm font-semibold">Objetivo por hora</h2>
       <p className="mb-3 text-sm text-muted">
-        Contra qué se mide este proyecto. Normalmente el del equipo; ponle uno
-        propio solo si este trabajo no se mide con la misma vara.
+        Normalmente el del equipo. Ponle uno propio si este trabajo no se mide
+        con la misma vara.
       </p>
 
       <form

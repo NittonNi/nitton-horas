@@ -175,8 +175,8 @@ export function AjustesEspacio({ espacio }: { espacio: Espacio }) {
                 placeholder="miempresa.com, otra.com"
               />
               <p className="mt-1 text-xs text-muted">
-                Quien entre con un correo de estos dominios podrá unirse solo,
-                como miembro. Déjalo vacío para exigir invitación.
+                Con un correo de estos dominios se entra sin invitación, como
+                miembro. Vacío, hace falta invitación.
               </p>
             </div>
           </div>
@@ -186,8 +186,8 @@ export function AjustesEspacio({ espacio }: { espacio: Espacio }) {
         <section className="card p-4">
           <h2 className="text-sm font-semibold">A qué aspira el equipo</h2>
           <p className="mb-3 mt-0.5 text-sm text-muted">
-            Horas por persona, iguales para todos. Los objetivos de un área van
-            en Categorización, y los de un proyecto dentro del proyecto.
+            Horas por persona, iguales para todos. Los de un área van en
+            Categorización y los de un proyecto, dentro del proyecto.
           </p>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -231,8 +231,7 @@ export function AjustesEspacio({ espacio }: { espacio: Espacio }) {
         <section className="card p-4">
           <h2 className="text-sm font-semibold">Qué hay que rellenar</h2>
           <p className="mb-3 mt-0.5 text-sm text-muted">
-            Lo que se exige al apuntar. Cuanto menos se pueda dejar a medias,
-            menos hay que reconstruir después.
+            Lo que no se puede dejar a medias al apuntar.
           </p>
 
           <div className="space-y-2">
@@ -300,9 +299,9 @@ export function AjustesEspacio({ espacio }: { espacio: Espacio }) {
               <option value="mayusculas">Siempre en MAYÚSCULAS</option>
             </select>
             <p className="mt-1 text-xs text-muted">
-              Se aplica al guardar: descripciones y nombres de proyectos,
-              ediciones, tareas, áreas y etiquetas. Vale también para lo que
-              entra por el importador, así que nadie tiene que acordarse.
+              Se aplica al guardar, también a lo que entra por el importador:
+              descripciones y nombres de proyectos, ediciones, tareas, áreas y
+              etiquetas.
             </p>
           </div>
 
@@ -310,9 +309,8 @@ export function AjustesEspacio({ espacio }: { espacio: Espacio }) {
             <div className="mt-4 border-t border-line pt-4">
               <p className="text-sm font-medium">Lo que ya estaba escrito</p>
               <p className="mt-0.5 text-xs text-muted">
-                El cambio solo afecta a lo nuevo. Esto pasa a mayúsculas lo que
-                ya hay apuntado —incluidos los nombres del equipo— y no tiene
-                vuelta atrás.
+                El estilo solo afecta a lo nuevo. Esto pasa a mayúsculas lo que
+                ya hay, nombres del equipo incluidos, y no tiene vuelta atrás.
               </p>
               <button
                 type="button"

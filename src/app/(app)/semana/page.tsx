@@ -1,4 +1,5 @@
 import { getSesion } from "@/lib/sesion"
+import { PistaPagina } from "@/components/pista-pagina"
 import { cargarCatalogo, cargarEntradas, cargarMiembros } from "@/lib/datos"
 import { TablaSemana } from "@/components/tabla-semana"
 import { addDays, fromDateKey, startOfWeek, toDateKey } from "@/lib/time"
@@ -40,6 +41,11 @@ export default async function PaginaSemana({
           Rellena las horas por día. Acepta 2, 1:30, 90m o 1,5.
         </p>
       </div>
+
+      <PistaPagina clave="semana" perfilId={perfil.id}>
+        Escribe en la casilla del día: 2, 1:30, 90m o 1,5. Una fila por
+        proyecto y descripción.
+      </PistaPagina>
 
       <TablaSemana
         entradas={entradas}

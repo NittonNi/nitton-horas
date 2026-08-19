@@ -1,4 +1,5 @@
 import { getSesion } from "@/lib/sesion"
+import { PistaPagina } from "@/components/pista-pagina"
 import { esAdmin, veTodo } from "@/lib/roles"
 import { cargarCatalogo, cargarEntradas, cargarMiembros } from "@/lib/datos"
 import { PanelInformes } from "@/components/panel-informes"
@@ -44,6 +45,11 @@ export default async function PaginaInformes({
           cambiarla, o elige varias para arreglarlas de golpe.
         </p>
       </div>
+
+      <PistaPagina clave="informes" perfilId={perfil.id}>
+        Los filtros aceptan varios a la vez. Pulsa una hora para corregirla, o
+        marca unas cuantas y arréglalas de golpe.
+      </PistaPagina>
 
       <PanelInformes
         entradas={entradas}

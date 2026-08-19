@@ -1,4 +1,5 @@
 import { getSesion } from "@/lib/sesion"
+import { PistaPagina } from "@/components/pista-pagina"
 import { veTodo } from "@/lib/roles"
 import { cargarCatalogo, cargarEntradas, cargarMiembros } from "@/lib/datos"
 import { PanelEstadisticas } from "@/components/panel-estadisticas"
@@ -44,6 +45,11 @@ export default async function PaginaEstadisticas() {
           su presupuesto.
         </p>
       </div>
+
+      <PistaPagina clave="estadisticas" perfilId={perfil.id}>
+        Aquí no se corrige nada: es solo para mirar. Para arreglar horas, ve a
+        Informes.
+      </PistaPagina>
 
       <PanelEstadisticas
         entradas={entradas}

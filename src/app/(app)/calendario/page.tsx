@@ -1,4 +1,5 @@
 import { getSesion } from "@/lib/sesion"
+import { PistaPagina } from "@/components/pista-pagina"
 import {
   cargarCatalogo,
   cargarEntradas,
@@ -53,6 +54,11 @@ export default async function PaginaCalendario({
           Las horas de la semana colocadas donde de verdad ocurrieron.
         </p>
       </div>
+
+      <PistaPagina clave="calendario" perfilId={perfil.id}>
+        Arrastra sobre un hueco para apuntar un rato, y arrastra un bloque para
+        moverlo. En el móvil, mantén el dedo pulsado antes de arrastrar.
+      </PistaPagina>
 
       <RejillaCalendario
         entradas={entradas}

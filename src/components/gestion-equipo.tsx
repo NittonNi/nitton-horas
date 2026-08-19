@@ -328,8 +328,8 @@ function Invitaciones({
     <section className="card p-4">
       <h2 className="mb-1 text-sm font-semibold">Invitaciones</h2>
       <p className="mb-3 text-xs text-muted">
-        Autoriza una dirección y esa persona vera este espacio nada más entrar en
-        la app, sin que le mandes nada.
+        Autoriza una dirección y verá este espacio nada más entrar, sin que le
+        mandes nada.
       </p>
 
       {esAdmin && (

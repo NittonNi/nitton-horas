@@ -127,9 +127,9 @@ export function GestionCategorias({
         )}
       </div>
       <p className="mb-4 max-w-xl text-sm text-muted">
-        Cómo se organiza el equipo: áreas arriba y categorías dentro. Cada
-        proyecto cuelga de una de las dos, y en los informes sale una columna
-        por nivel. El objetivo son horas por persona y semana.
+        Áreas arriba, categorías dentro. Cada proyecto cuelga de una de las
+        dos y en los informes sale una columna por nivel. El objetivo son horas
+        por persona y semana.
       </p>
 
       {error && (

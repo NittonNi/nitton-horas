@@ -426,8 +426,8 @@ function Tareas({
         Tareas <span className="text-muted">({tareas.filter((t) => !t.archived).length})</span>
       </h2>
       <p className="mb-3 text-xs text-muted">
-        Las formas fijas de desglosar este proyecto. Salen al elegir proyecto, y
-        se pueden crear también desde ahi.
+        Las formas fijas de desglosar este proyecto. Salen al elegirlo, y desde
+        ahí también se crean.
       </p>
 
       {puedeGestionar && (

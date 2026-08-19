@@ -99,8 +99,8 @@ export function GestionTarifas({
       <section className="card p-4">
         <h2 className="mb-1 text-sm font-semibold">Nueva tarifa</h2>
         <p className="mb-3 text-xs text-muted">
-          Deja el ambito en blanco para que valga por defecto. Las tarifas no se
-          editan: se anade una nueva con la fecha desde la que entra en vigor.
+          El ámbito en blanco vale por defecto. Las tarifas no se editan: se
+          añade una nueva con la fecha desde la que rige.
         </p>
 
         <form

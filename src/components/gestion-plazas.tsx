@@ -99,8 +99,8 @@ export function GestionPlazas({
     <section className="card p-4">
       <h2 className="text-sm font-semibold">Quién es quién</h2>
       <p className="mb-3 mt-0.5 text-sm text-muted">
-        Escribe los nombres del equipo y reparte el enlace. Cada uno entra con
-        su correo o con Google y solo tiene que decir cuál es el suyo.
+        Escribe los nombres y reparte el enlace: cada uno entra con su correo o
+        con Google y dice cuál es el suyo.
       </p>
 
       {error && (

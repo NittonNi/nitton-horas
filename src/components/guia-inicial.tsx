@@ -4,9 +4,12 @@ import { useState, useSyncExternalStore } from "react"
 import { BarChart3, FolderTree, Settings2, Timer, Users } from "lucide-react"
 
 /**
- * La primera vez que entras, cuatro pantallas con lo justo: donde se apuntan
- * las horas, como se organizan, como se comparte una reunion y donde se
- * arreglan los fallos. Se puede omitir en cualquier momento, y no vuelve.
+ * La primera vez que entras, lo justo para empezar: donde se apuntan las horas,
+ * como se organizan, como se comparte una reunion y donde se arreglan los
+ * fallos. Se puede omitir en cualquier momento, y no vuelve.
+ *
+ * Lo de cada pantalla no esta aqui: sale como pista la primera vez que entras
+ * en ella -PistaPagina-, que es cuando sirve de algo.
  */
 
 type Paso = {
@@ -21,31 +24,31 @@ const PASOS: Paso[] = [
     icono: Timer,
     titulo: "Aquí se apuntan las horas",
     texto:
-      "Escribe en qué estás trabajando, elige el proyecto y dale al play. Si prefieres apuntarlas después, tienes el modo manual, el calendario -arrastrando sobre el hueco- y la hoja semanal.",
+      "Escribe en qué estás trabajando, elige el proyecto y dale al play. Si prefieres apuntarlas después: modo manual, calendario o la hoja de la semana.",
   },
   {
     icono: FolderTree,
     titulo: "Cada hora, en su sitio",
     texto:
-      "Cada proyecto cuelga de una rama -Backoffice, Conocimiento, Proyectos- y eso es lo que sale luego en los informes y en el Excel. Si el evento se repite, elige además la edición: TBCE 1 o TBCE 2.",
+      "Cada proyecto cuelga de un área -Backoffice, Conocimiento, Proyectos- y eso es lo que sale en los informes. Si el trabajo se repite, elige además la edición: TBCE 1 o TBCE 2.",
   },
   {
     icono: Users,
     titulo: "Las reuniones se apuntan una vez",
     texto:
-      "Debajo del cronómetro eliges a quién más le cuentan esas horas. A cada uno le llega como propuesta y decide si la acepta: nadie apunta horas en el calendario de otro.",
+      "Debajo del cronómetro eliges a quién más le cuentan esas horas. A cada uno le llega como propuesta: nadie apunta horas en el calendario de otro.",
   },
   {
     icono: BarChart3,
     titulo: "Los fallos se arreglan en Informes",
     texto:
-      "Filtra por persona, proyecto o categoría, pulsa una hora para corregirla o marca varias y arréglalas de golpe. Y te lo llevas en Excel cuando toque cerrar.",
+      "Filtra por persona, área o proyecto -varios a la vez-, pulsa una hora para corregirla o marca varias y arréglalas de golpe. Y te lo llevas en Excel.",
   },
   {
     icono: Settings2,
     titulo: "El espacio es vuestro",
     texto:
-      "En Gestión están la categorización del equipo, los objetivos de horas, las etiquetas, las tarifas y la importación de lo que ya tenéis en Clockify.",
+      "En Gestión están las áreas del equipo, los objetivos, las tarifas, los ajustes del espacio y la importación de lo que ya tenéis en Clockify.",
     soloGestores: true,
   },
 ]

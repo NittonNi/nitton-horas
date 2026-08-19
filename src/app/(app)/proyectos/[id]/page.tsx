@@ -2,7 +2,7 @@ import { notFound } from "next/navigation"
 
 import { getSesion } from "@/lib/sesion"
 import { veTodo } from "@/lib/roles"
-import { cargarCatalogo, cargarEntradas } from "@/lib/datos"
+import { cargarCatalogo, cargarEntradas, cargarMiembros } from "@/lib/datos"
 import { createClient } from "@/lib/supabase/server"
 import { DetalleProyecto } from "@/components/detalle-proyecto"
 import type { Resultado } from "@/components/resultados-proyecto"
@@ -33,7 +33,8 @@ export default async function PaginaProyecto({
   const gestor = veTodo(rol)
 
   const supabase = await createClient()
-  const [catalogo, entradas, resultados, delProyecto] = await Promise.all([
+  const [catalogo, entradas, resultados, delProyecto, miembros] =
+    await Promise.all([
     cargarCatalogo(espacio.id, true),
     cargarEntradas({
       espacioId: espacio.id,
@@ -48,6 +49,7 @@ export default async function PaginaProyecto({
       .eq("project_id", id)
       .order("starts_on", { ascending: false }),
     supabase.from("project_clients").select("client_id").eq("project_id", id),
+    cargarMiembros(espacio.id),
   ])
 
   const proyecto = catalogo.proyectos.find((p) => p.id === id)
@@ -74,6 +76,8 @@ export default async function PaginaProyecto({
       ediciones={ediciones}
       entradas={entradas}
       resultados={(resultados.data ?? []) as Resultado[]}
+      catalogo={catalogo}
+      miembros={miembros.filter((m) => m.active)}
       clientesDelProyecto={(delProyecto.data ?? []).map((f) => f.client_id)}
       clientesDeEdiciones={(deEdiciones.data ?? []) as {
         edition_id: string

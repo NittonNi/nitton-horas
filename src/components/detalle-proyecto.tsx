@@ -29,11 +29,14 @@ import {
   formatHoursDecimal,
   formatMoney,
 } from "@/lib/time"
+import { DialogoEntrada } from "@/components/dialogo-entrada"
 import type {
+  Catalogo,
   Categoria,
   Cliente,
   Edicion,
   EntradaVista,
+  Miembro,
   ProyectoConCliente,
   Tarea,
 } from "@/lib/tipos"
@@ -63,6 +66,8 @@ export function DetalleProyecto({
   resultados,
   clientesDelProyecto,
   clientesDeEdiciones,
+  catalogo,
+  miembros,
   objetivoHora,
   espacioId,
   puedeGestionar,
@@ -79,12 +84,17 @@ export function DetalleProyecto({
   clientesDelProyecto: string[]
   /** Que clientes participan en cada edicion. */
   clientesDeEdiciones: { edition_id: string; client_id: string }[]
+  /** Para poder corregir una hora sin salir del proyecto. */
+  catalogo: Catalogo
+  miembros: Miembro[]
   /** Facturacion por hora a la que aspira el equipo. */
   objetivoHora: number | null
   espacioId: string
   puedeGestionar: boolean
   puedeVerImportes: boolean
 }) {
+  // Las horas de abajo se corrigen aqui mismo, como en los informes
+  const [editando, setEditando] = useState<EntradaVista | null>(null)
   const cerradas = useMemo(() => entradas.filter((e) => e.end_at), [entradas])
   const suma = useMemo(() => totales(cerradas), [cerradas])
 
@@ -256,7 +266,20 @@ export function DetalleProyecto({
         puedeGestionar={puedeGestionar}
       />
 
-      <UltimasEntradas entradas={cerradas.slice(0, 12)} conImportes={puedeVerImportes} />
+      <UltimasEntradas
+        entradas={cerradas.slice(0, 12)}
+        conImportes={puedeVerImportes}
+        onAbrir={setEditando}
+      />
+
+      {editando && (
+        <DialogoEntrada
+          entrada={editando}
+          catalogo={catalogo}
+          miembros={miembros}
+          onCerrar={() => setEditando(null)}
+        />
+      )}
     </div>
   )
 }
@@ -543,15 +566,20 @@ function Tareas({
 function UltimasEntradas({
   entradas,
   conImportes,
+  onAbrir,
 }: {
   entradas: EntradaVista[]
   conImportes: boolean
+  onAbrir: (entrada: EntradaVista) => void
 }) {
   if (entradas.length === 0) return null
 
   return (
     <section className="card p-4">
-      <h2 className="mb-3 text-sm font-semibold">Últimas horas</h2>
+      <h2 className="mb-1 text-sm font-semibold">Últimas horas</h2>
+      <p className="mb-3 text-sm text-muted">
+        Pulsa una para corregirla, igual que en los informes.
+      </p>
       <div className="scroll-thin overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -565,7 +593,12 @@ function UltimasEntradas({
           </thead>
           <tbody className="divide-y divide-line">
             {entradas.map((entrada) => (
-              <tr key={entrada.id}>
+              <tr
+                key={entrada.id}
+                onClick={() => onAbrir(entrada)}
+                className="cursor-pointer transition hover:bg-surface-2"
+                title="Pulsa para corregirla"
+              >
                 <td className="cifra whitespace-nowrap py-2 pr-3 text-muted">
                   {formatDateShort(entrada.local_date)}
                 </td>

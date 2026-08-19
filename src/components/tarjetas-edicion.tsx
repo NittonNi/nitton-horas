@@ -232,6 +232,7 @@ function Tarjeta({
   const [editando, setEditando] = useState(false)
   const [ingresos, setIngresos] = useState("")
   const [gastos, setGastos] = useState("")
+  const [nuevoCliente, setNuevoCliente] = useState("")
   const [ocupado, setOcupado] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -340,6 +341,52 @@ function Tarjeta({
     router.refresh()
   }
 
+  /**
+   * Un cliente nuevo desde la propia edicion: se crea si hace falta, se mete en
+   * el proyecto y se marca aqui. Tener que subir a la lista del proyecto para
+   * poder elegirlo era el paso de mas.
+   */
+  async function anadirCliente(texto: string) {
+    const limpio = texto.trim()
+    if (!limpio) return
+    setOcupado(true)
+    setError(null)
+    const supabase = createClient()
+
+    let id = clientes.find(
+      (c) => c.name.toLowerCase() === limpio.toLowerCase(),
+    )?.id
+
+    if (!id) {
+      const { data, error: errCrear } = await supabase
+        .from("clients")
+        .insert({ workspace_id: espacioId, name: limpio })
+        .select("id")
+        .single()
+      if (errCrear || !data) {
+        setOcupado(false)
+        setError(mensajeError(errCrear))
+        return
+      }
+      id = data.id
+    }
+
+    if (!delProyecto.includes(id)) {
+      await supabase
+        .from("project_clients")
+        .insert({ project_id: proyectoId, client_id: id, workspace_id: espacioId })
+    }
+    if (edicion && !suyos.includes(id)) {
+      await supabase
+        .from("edition_clients")
+        .insert({ edition_id: edicion.id, client_id: id, workspace_id: espacioId })
+    }
+
+    setOcupado(false)
+    setNuevoCliente("")
+    router.refresh()
+  }
+
   async function marcarEnCurso() {
     setOcupado(true)
     const { error: err } = await createClient()
@@ -401,7 +448,7 @@ function Tarjeta({
           </p>
         </div>
 
-        {puedeGestionar && edicion && (
+        {puedeGestionar && (
           <div className="flex shrink-0 items-center gap-1">
             <button
               type="button"
@@ -410,8 +457,10 @@ function Tarjeta({
               aria-pressed={enCurso}
               title={
                 enCurso
-                  ? "Es la edición en curso: se pone sola al elegir el proyecto"
-                  : "Marcarla como la edición en curso"
+                  ? "Es lo que se pone al elegir el proyecto"
+                  : edicion
+                    ? "Marcarla como la edición en curso"
+                    : "Al elegir el proyecto, no se pondrá ninguna edición"
               }
               className={cn(
                 "rounded-[3px] p-1 transition",
@@ -420,20 +469,22 @@ function Tarjeta({
             >
               <Star className={cn("h-3.5 w-3.5", enCurso && "fill-current")} />
             </button>
-            <button
-              type="button"
-              onClick={() => void archivar()}
-              disabled={ocupado}
-              title={edicion.archived ? "Reabrir" : "Cerrar la edición"}
-              aria-label={edicion.archived ? "Reabrir" : "Cerrar la edición"}
-              className="rounded-[3px] p-1 text-muted transition hover:bg-surface-2 hover:text-ink"
-            >
-              {edicion.archived ? (
-                <RotateCcw className="h-3.5 w-3.5" />
-              ) : (
-                <Archive className="h-3.5 w-3.5" />
-              )}
-            </button>
+            {edicion && (
+              <button
+                type="button"
+                onClick={() => void archivar()}
+                disabled={ocupado}
+                title={edicion.archived ? "Reabrir" : "Cerrar la edición"}
+                aria-label={edicion.archived ? "Reabrir" : "Cerrar la edición"}
+                className="rounded-[3px] p-1 text-muted transition hover:bg-surface-2 hover:text-ink"
+              >
+                {edicion.archived ? (
+                  <RotateCcw className="h-3.5 w-3.5" />
+                ) : (
+                  <Archive className="h-3.5 w-3.5" />
+                )}
+              </button>
+            )}
           </div>
         )}
       </header>
@@ -460,43 +511,70 @@ function Tarjeta({
         <span className="label">
           {edicion ? "Clientes de la edición" : "Clientes del proyecto"}
         </span>
-        {delProyecto.length === 0 ? (
-          <p className="text-sm text-muted">
-            Añade clientes al proyecto ahí arriba y aquí se eligen.
-          </p>
-        ) : (
-          <div className="flex flex-wrap gap-1.5">
-            {delProyecto.map((id) => {
-              const cliente = clientes.find((c) => c.id === id)
-              if (!cliente) return null
-              const puesto = suyos.includes(id)
-              // Sin edicion no hay nada que elegir: son los del proyecto
-              if (!edicion) {
-                return (
-                  <span key={id} className="chip">
-                    {cliente.name}
-                  </span>
-                )
-              }
+        <div className="flex flex-wrap gap-1.5">
+          {delProyecto.map((id) => {
+            const cliente = clientes.find((c) => c.id === id)
+            if (!cliente) return null
+            const puesto = edicion ? suyos.includes(id) : true
+            if (!edicion) {
               return (
-                <button
-                  key={id}
-                  type="button"
-                  disabled={!puedeGestionar || ocupado}
-                  onClick={() => void alternarCliente(id)}
-                  aria-pressed={puesto}
-                  className={cn(
-                    "chip transition",
-                    puesto
-                      ? "border-accent bg-accent-soft text-accent"
-                      : "text-muted hover:border-line-strong",
-                  )}
-                >
+                <span key={id} className="chip">
                   {cliente.name}
-                </button>
+                </span>
               )
-            })}
-          </div>
+            }
+            return (
+              <button
+                key={id}
+                type="button"
+                disabled={!puedeGestionar || ocupado}
+                onClick={() => void alternarCliente(id)}
+                aria-pressed={puesto}
+                className={cn(
+                  "chip transition",
+                  puesto
+                    ? "border-accent bg-accent-soft text-accent"
+                    : "text-muted hover:border-line-strong",
+                )}
+              >
+                {cliente.name}
+              </button>
+            )
+          })}
+        </div>
+
+        {puedeGestionar && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              void anadirCliente(nuevoCliente)
+            }}
+            className="mt-1.5 flex gap-1.5"
+          >
+            <input
+              className="field h-8 py-0 text-sm"
+              value={nuevoCliente}
+              onChange={(e) => setNuevoCliente(e.target.value)}
+              placeholder={edicion ? "Añadir un cliente a esta edición" : "Añadir un cliente"}
+              aria-label="Añadir un cliente"
+              list={`clientes-libres-${edicion?.id ?? "proyecto"}`}
+            />
+            <datalist id={`clientes-libres-${edicion?.id ?? "proyecto"}`}>
+              {clientes
+                .filter((c) => !c.archived)
+                .map((c) => (
+                  <option key={c.id} value={c.name} />
+                ))}
+            </datalist>
+            <button
+              type="submit"
+              disabled={ocupado || !nuevoCliente.trim()}
+              className="btn h-8 shrink-0 px-2"
+              aria-label="Añadir"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          </form>
         )}
       </div>
 

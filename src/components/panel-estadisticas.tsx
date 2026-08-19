@@ -146,7 +146,7 @@ export function PanelEstadisticas({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-1 grid-cols-2 gap-3 lg:grid-cols-4">
         <Tarjeta
           etiqueta="En doce meses"
           valor={formatDurationShort(suma.segundos)}
@@ -241,7 +241,7 @@ export function PanelEstadisticas({
         </div>
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Reparto
           titulo="En qué se va el tiempo"
           vacio="Cuando los proyectos cuelguen de una rama, aquí se verá el reparto."

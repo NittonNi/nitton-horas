@@ -1128,7 +1128,7 @@ function DialogoNuevaEntrada({
           </div>
 
           <div className="space-y-3 p-4">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="grid grid-cols-1 grid-cols-2 gap-3 sm:grid-cols-4">
               <div className="col-span-2">
                 <label className="label" htmlFor="cal-fecha">
                   Fecha

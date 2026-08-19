@@ -270,6 +270,10 @@
 
   .field {
     width: 100%;
+    /* Un input no se encoge por debajo de su tamaño natural si no se le dice:
+       sin esto, en el movil cualquier campo dentro de una fila flex estira la
+       pagina y se sale por la derecha. */
+    min-width: 0;
     background: var(--surface);
     border: 1px solid var(--line-strong);
     border-radius: var(--radio-sm);

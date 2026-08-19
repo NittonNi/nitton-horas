@@ -213,7 +213,7 @@ export function EdicionesProyecto({
             e.preventDefault()
             void crear()
           }}
-          className="mt-3 grid gap-2 border-t border-line pt-3 sm:grid-cols-[1.4fr_1fr_1fr_0.8fr_auto]"
+          className="mt-3 grid grid-cols-1 gap-2 border-t border-line pt-3 sm:grid-cols-[1.4fr_1fr_1fr_0.8fr_auto]"
         >
           <input
             className="field"

@@ -347,7 +347,7 @@ function FormularioProyecto({
         !proyecto && "mb-3 rounded-lg border border-line bg-surface-2 p-3",
       )}
     >
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label className="label" htmlFor="proyecto-nombre">
             Nombre

@@ -129,7 +129,7 @@ export function DetalleProyecto({
       </div>
 
       {/* ---------------------------------------------------------- datos */}
-      <div className="card grid grid-cols-2 divide-line sm:grid-cols-4 sm:divide-x">
+      <div className="card grid grid-cols-1 grid-cols-2 divide-line sm:grid-cols-4 sm:divide-x">
         <Dato etiqueta="Total" valor={formatDurationShort(suma.segundos)} />
         <Dato
           etiqueta="Facturable"
@@ -175,7 +175,7 @@ export function DetalleProyecto({
         </div>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Desglose
           titulo="Por tarea"
           grupos={porTarea}
@@ -665,7 +665,7 @@ function EditarProyecto({
               />
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className="label" htmlFor="ep-cliente">
                   Cliente

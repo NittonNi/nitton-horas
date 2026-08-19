@@ -51,7 +51,9 @@ export function ProyectosPorCategoria({
         onChange={(e) => void mover(proyecto.id, e.target.value)}
         disabled={guardando === proyecto.id}
         aria-label={"Categoría de " + proyecto.name}
-        className="field h-7 w-52 shrink-0 py-0 text-xs"
+        /* En movil no cabe un desplegable de 208 px al lado del nombre: ahi
+           se pone debajo, a lo ancho */
+        className="field h-7 w-full py-0 text-xs sm:w-52 sm:shrink-0"
       >
         <option value="">{SIN_CATEGORIA}</option>
         {lista.map(({ categoria, camino }) => (
@@ -65,7 +67,7 @@ export function ProyectosPorCategoria({
 
   function Proyecto({ proyecto }: { proyecto: ProyectoConCliente }) {
     return (
-      <li className="flex items-center gap-2 py-1.5">
+      <li className="flex flex-wrap items-center gap-x-2 gap-y-1 py-1.5">
         <span
           aria-hidden
           className="h-2.5 w-2.5 shrink-0 rounded-full"

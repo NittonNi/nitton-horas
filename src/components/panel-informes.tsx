@@ -505,7 +505,7 @@ export function PanelInformes({
       </section>
 
       {/* ------------------------------------------------------------ resumen */}
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section className="grid grid-cols-1 grid-cols-2 gap-3 lg:grid-cols-4">
         <Tarjeta etiqueta="Total" valor={formatDurationShort(suma.segundos)} pie={`${suma.entradas} entradas`} />
         <Tarjeta
           etiqueta="Facturable"
@@ -588,7 +588,7 @@ export function PanelInformes({
       </section>
 
       {/* ---------------------------------------------------------- desgloses */}
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Desglose
           titulo="Por proyecto"
           grupos={porProyecto}

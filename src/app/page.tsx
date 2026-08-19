@@ -296,7 +296,7 @@ export default async function Portada() {
 
       <main className="mx-auto w-full max-w-5xl px-5">
         {/* -------------------------------------------------------- portada */}
-        <section className="grid items-center gap-10 py-14 lg:grid-cols-[1fr_26rem] lg:gap-14 lg:py-20">
+        <section className="grid grid-cols-1 items-center gap-10 py-14 lg:grid-cols-[1fr_26rem] lg:gap-14 lg:py-20">
           <div>
             <p className="rotulo">Para equipos LEINN</p>
             <h1 className="mt-3 text-[2.5rem] font-semibold leading-[1.05] tracking-[-0.03em] sm:text-[3.25rem]">
@@ -349,7 +349,7 @@ export default async function Portada() {
             texto="Tres pantallas para lo mismo, según cómo trabaje cada uno: el cronómetro para el día a día, el calendario para arrastrar el rato donde toca y la hoja semanal para rellenar a mano el viernes."
           />
 
-          <div className="mt-8 grid gap-6 sm:grid-cols-3">
+          <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
             {[
               {
                 icono: Timer,
@@ -387,7 +387,7 @@ export default async function Portada() {
             texto="En LEINN el tiempo no se reparte por clientes: se reparte entre backoffice, conocimiento y empresa, y dentro por equipos y por tipo de trabajo. Aquí eso es de primera clase, y no un campo apañado para poder filtrar."
           />
 
-          <div className="mt-8 grid items-start gap-8 lg:grid-cols-2 lg:gap-12">
+          <div className="mt-8 grid grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-12">
             <MaquetaArbol />
             <div className="space-y-5">
               <div>
@@ -455,7 +455,7 @@ export default async function Portada() {
         <section id="empezar" className="scroll-mt-16 border-t border-line py-14 lg:py-20">
           <Seccion rotulo="Cómo se empieza" titulo="Tres pasos y a apuntar" />
 
-          <ol className="mt-8 grid gap-6 sm:grid-cols-3">
+          <ol className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
             {PASOS.map(({ titulo, texto }, i) => (
               <li key={titulo}>
                 <span className="cifra text-sm font-semibold text-accent">
@@ -475,7 +475,7 @@ export default async function Portada() {
             titulo="Está hecho desde dentro de un equipo"
           />
 
-          <div className="mt-8 grid gap-x-10 gap-y-8 sm:grid-cols-2">
+          <div className="mt-8 grid grid-cols-1 gap-x-10 gap-y-8 sm:grid-cols-2">
             {PARA_LEINN.map(({ icono: Icono, titulo, texto }) => (
               <div key={titulo} className="flex gap-4">
                 <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radio-sm)] bg-surface-2 text-ink-soft">

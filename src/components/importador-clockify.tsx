@@ -490,7 +490,7 @@ export function ImportadorClockify({
             </div>
 
             {resumen ? (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="grid grid-cols-1 grid-cols-2 gap-3 sm:grid-cols-4">
                 <Dato etiqueta="Entradas" valor={String(resumen.filas)} />
                 <Dato
                   etiqueta="Horas"

@@ -95,7 +95,7 @@ export function GestionTarifas({
   const general = tarifas.find((t) => !t.user_id && !t.project_id)
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
       <section className="card p-4">
         <h2 className="mb-1 text-sm font-semibold">Nueva tarifa</h2>
         <p className="mb-3 text-xs text-muted">

@@ -8,9 +8,8 @@ import {
   useRef,
   useState,
 } from "react"
-import { X } from "lucide-react"
+import { TriangleAlert, X } from "lucide-react"
 
-import { cn } from "@/lib/utils"
 
 /**
  * Los avisos de abajo a la derecha: lo que acaba de pasar y, si se puede, como
@@ -114,21 +113,16 @@ function Ventanita({
       onMouseLeave={() => setParado(false)}
       onFocusCapture={() => setParado(true)}
       onBlurCapture={() => setParado(false)}
-      className={cn(
-        "card pointer-events-auto flex max-w-[22rem] items-center gap-3 border-l-[3px] px-4 py-2.5 text-sm",
-        // Lo que se puede deshacer se distingue de un vistazo; lo que ha
-        // fallado, tambien. El resto solo cuenta lo que ha pasado.
-        aviso.tono === "mal"
-          ? "border-l-danger"
-          : aviso.deshacer
-            ? "border-l-accent"
-            : "border-l-line-strong",
-      )}
+      /* Al reves que la pagina: si fuera otra tarjeta blanca sobre gris no se
+         notaria que ha aparecido nada. */
+      className="pointer-events-auto flex max-w-[22rem] items-center gap-3 rounded-[var(--radio)] bg-aviso px-4 py-2.5 text-sm text-aviso-ink"
       style={{ boxShadow: "var(--shadow-lg)" }}
     >
-      <span className={cn("min-w-0 flex-1", aviso.tono === "mal" ? "text-danger" : "text-ink-soft")}>
-        {aviso.texto}
-      </span>
+      {aviso.tono === "mal" && (
+        <TriangleAlert className="h-4 w-4 shrink-0 text-aviso-mal" aria-hidden />
+      )}
+
+      <span className="min-w-0 flex-1">{aviso.texto}</span>
 
       {aviso.deshacer && (
         <button
@@ -150,7 +144,7 @@ function Ventanita({
               setOcupado(false)
             }
           }}
-          className="btn h-7 shrink-0 py-0 text-xs"
+          className="h-7 shrink-0 rounded-[var(--radio-sm)] border border-aviso-ink/30 px-2.5 text-xs font-medium text-aviso-ink transition hover:bg-aviso-ink/15 disabled:opacity-50"
         >
           {ocupado ? "Deshaciendo…" : "Deshacer"}
         </button>
@@ -160,7 +154,7 @@ function Ventanita({
         type="button"
         onClick={onCerrar}
         aria-label="Cerrar el aviso"
-        className="shrink-0 rounded p-1 text-muted transition hover:bg-surface-2 hover:text-ink"
+        className="shrink-0 rounded p-1 text-aviso-ink/60 transition hover:bg-aviso-ink/15 hover:text-aviso-ink"
       >
         <X className="h-3.5 w-3.5" />
       </button>

@@ -267,12 +267,17 @@ function useTituloCronometro() {
   }, [enMarcha, segundos])
 }
 
-/** En escritorio el cronómetro vive abajo del todo, siempre a la vista. */
+/**
+ * En escritorio el cronómetro vive abajo del todo, siempre a la vista... menos
+ * en la propia pantalla del cronómetro, donde la tarjeta de arriba ya es él:
+ * verlo dos veces en la misma pantalla solo confunde.
+ */
 function CronometroLateral() {
   const { enMarcha, segundos, parar, cargando } = useCronometro()
+  const pathname = usePathname()
   useTituloCronometro()
 
-  if (!enMarcha) return null
+  if (!enMarcha || pathname === RUTA_APP) return null
 
   return (
     <div className="rounded-[var(--radio-sm)] border border-live-line bg-live-soft p-2">
@@ -300,12 +305,13 @@ function CronometroLateral() {
   )
 }
 
-/** En movil, una pastilla en la cabecera. */
+/** En movil, una pastilla en la cabecera. Misma regla: en el cronómetro, no. */
 function CronometroPastilla() {
   const { enMarcha, segundos, parar, cargando } = useCronometro()
+  const pathname = usePathname()
   useTituloCronometro()
 
-  if (!enMarcha) return null
+  if (!enMarcha || pathname === RUTA_APP) return null
 
   return (
     <div className="flex items-center gap-1.5 rounded-[var(--radio-sm)] border border-live-line bg-live-soft py-1 pl-2 pr-1">

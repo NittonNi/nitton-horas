@@ -474,7 +474,10 @@ function FilaGrupo({
                       background: primera.project_color ?? "var(--line-strong)",
                     }}
                   />
-                  <span className="min-w-0 truncate text-[0.8125rem]">
+                  <span
+                    className="min-w-0 truncate text-[0.8125rem] font-medium"
+                    style={{ color: primera.project_color ?? undefined }}
+                  >
                     {primera.project_name}
                     {primera.edition_name && (
                       <span className="text-muted">

@@ -308,7 +308,12 @@ export function FilaEntrada({
                     )}
                     style={{ background: entrada.project_color ?? "var(--line-strong)" }}
                   />
-                  <span className="min-w-0 truncate text-[0.8125rem]">
+                  {/* El nombre va del color del proyecto: se reconoce de un
+                      vistazo sin leerlo, como el punto de al lado */}
+                  <span
+                    className="min-w-0 truncate text-[0.8125rem] font-medium"
+                    style={{ color: entrada.project_color ?? undefined }}
+                  >
                     {entrada.project_name}
                     {entrada.edition_name && (
                       <span className="text-muted"> · {entrada.edition_name}</span>

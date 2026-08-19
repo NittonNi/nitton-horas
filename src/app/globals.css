@@ -48,6 +48,12 @@
   --danger: #d70015;
   --danger-soft: #fdeeee;
 
+  /* El aviso va al reves que la pagina: sobre gris claro, casi negro. Si fuera
+     blanco como todo lo demas no se veria que ha aparecido algo. */
+  --aviso: #1d1d1f;
+  --aviso-ink: #f5f5f7;
+  --aviso-mal: #ff8a80;
+
   --running: var(--live);
   --running-soft: var(--live-soft);
 
@@ -88,6 +94,11 @@
     --danger: #ff453a;
     --danger-soft: #2c1414;
 
+    /* Tambien al reves: sobre negro, claro */
+    --aviso: #f0f0f3;
+    --aviso-ink: #1d1d1f;
+    --aviso-mal: #b3000f;
+
     --shadow: none;
     --shadow-lg: 0 12px 40px -8px rgb(0 0 0 / 0.7), 0 0 0 0.5px rgb(255 255 255 / 0.1);
   }
@@ -123,6 +134,11 @@
   --danger: #ff453a;
   --danger-soft: #2c1414;
 
+  /* Tambien al reves: sobre negro, claro */
+  --aviso: #f0f0f3;
+  --aviso-ink: #1d1d1f;
+  --aviso-mal: #b3000f;
+
   --shadow: none;
   --shadow-lg: 0 12px 40px -8px rgb(0 0 0 / 0.7), 0 0 0 0.5px rgb(255 255 255 / 0.1);
 }
@@ -149,6 +165,9 @@
   --color-running-soft: var(--running-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --color-aviso: var(--aviso);
+  --color-aviso-ink: var(--aviso-ink);
+  --color-aviso-mal: var(--aviso-mal);
   --color-billable: var(--billable);
   --color-billable-fill: var(--billable-fill);
   --color-billable-soft: var(--billable-soft);

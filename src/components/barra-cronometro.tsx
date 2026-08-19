@@ -48,6 +48,10 @@ export function BarraCronometro({
     useCronometro()
 
   const [modo, setModo] = useState<Modo>("cronometro")
+  /* Si arranca un cronometro -por ejemplo al pulsar Continuar en una hora de
+     abajo- la barra vuelve sola al modo cronometro: si no, el tiempo correria
+     escondido detras del formulario de apuntar a mano. */
+  const modoActivo: Modo = enMarcha ? "cronometro" : modo
   const [borrador, setBorrador] = useState<BorradorEntrada>(BORRADOR_VACIO)
   const [guardando, setGuardando] = useState(false)
   // Cuando el espacio no deja parar sin proyecto, hay que decirlo aquí mismo
@@ -200,8 +204,23 @@ export function BarraCronometro({
   }
 
   return (
-    <div className="card overflow-visible p-3">
+    /* Cuando el cronometro corre, la tarjeta de arriba ES el cronometro: se
+       tiñe, late a la izquierda y la cuenta manda. No hace falta buscarlo en
+       ningun otro sitio de la pantalla. */
+    <div
+      className={cn(
+        "card overflow-visible p-3 transition-colors",
+        enMarcha && "border-live-line bg-live-soft",
+      )}
+    >
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+        {enMarcha && (
+          <span
+            aria-hidden
+            className="latido h-6 w-[3px] shrink-0 rounded-full bg-live-fill"
+          />
+        )}
         <input
           value={descripcionLocal}
           onChange={(e) => setDescripcionLocal(e.target.value)}
@@ -214,12 +233,13 @@ export function BarraCronometro({
             if (e.key === "Enter") {
               e.preventDefault()
               e.currentTarget.blur()
-              if (modo === "cronometro") void alPulsarPrincipal()
+              if (modoActivo === "cronometro") void alPulsarPrincipal()
             }
           }}
           placeholder="¿En qué estás trabajando?"
           className="min-w-0 flex-1 bg-transparent px-1 text-[0.95rem] outline-none placeholder:text-muted"
         />
+        </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="w-full sm:w-56">
@@ -258,12 +278,14 @@ export function BarraCronometro({
 
           <div className="hidden h-6 w-px bg-line sm:block" />
 
-          {modo === "cronometro" ? (
+          {modoActivo === "cronometro" ? (
             <>
               <span
                 className={cn(
-                  "tabular w-24 text-right text-lg font-semibold",
-                  enMarcha ? "text-running" : "text-muted",
+                  "cifra text-right font-semibold tabular-nums",
+                  enMarcha
+                    ? "w-28 text-xl text-running"
+                    : "w-24 text-lg text-muted",
                 )}
               >
                 {formatDuration(enMarcha ? segundos : 0)}

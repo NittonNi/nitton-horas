@@ -55,14 +55,24 @@ export function FilaEntrada({
   async function guardar(cambios: TablesUpdate<"time_entries">) {
     setOcupado(true)
     setError(null)
-    const { error: err } = await createClient()
+    /* `select` para saber si de verdad ha cambiado algo: sin el, una hora
+       cerrada o una sesion caducada no dan error, no guardan nada y el dato
+       vuelve solo al valor viejo sin explicar por que. */
+    const { data, error: err } = await createClient()
       .from("time_entries")
       .update(cambios)
       .eq("id", entrada.id)
+      .select("id")
     setOcupado(false)
     setCampo(null)
     if (err) {
       setError(mensajeError(err))
+      return
+    }
+    if (!data || data.length === 0) {
+      const aviso = "No se ha guardado. Puede estar cerrada o haberse acabado tu sesión: recarga la página."
+      setError(aviso)
+      avisar(aviso)
       return
     }
     router.refresh()
@@ -354,7 +364,8 @@ export function FilaEntrada({
         </button>
 
         {/* ------------------------------------------ fecha, inicio y fin */}
-        <div className="hidden shrink-0 sm:block">
+        {/* Ancho fijo: asi las columnas cuadran con la fila de un grupo */}
+        <div className="hidden w-28 shrink-0 sm:block">
           <PopoverHorario
             entrada={entrada}
             abierto={campo === "horario"}
@@ -526,7 +537,7 @@ function PopoverHorario({
     >
       <Popover.Trigger
         disabled={bloqueada}
-        className="tabular rounded-[6px] px-1.5 py-1 text-right text-[0.8125rem] text-muted transition hover:bg-surface-3/70"
+        className="tabular w-full rounded-[6px] px-1.5 py-1 text-right text-[0.8125rem] text-muted transition hover:bg-surface-3/70"
       >
         {formatClock(entrada.start_at)}–{formatClock(entrada.end_at)}
         {/* El rato acabo ya en el dia siguiente; se apunta igual en el dia que empezo */}

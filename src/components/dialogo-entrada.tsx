@@ -154,7 +154,7 @@ export function DialogoEntrada({
     const end_at = new Date(new Date(start_at).getTime() + segs * 1000).toISOString()
 
     try {
-      const { error: errUpdate } = await supabase
+      const { data: filas, error: errUpdate } = await supabase
         .from("time_entries")
         .update({
           description: descripcion,
@@ -166,7 +166,15 @@ export function DialogoEntrada({
           end_at,
         })
         .eq("id", entrada.id)
+        .select("id")
       if (errUpdate) throw errUpdate
+      /* Cero filas y ningun error: RLS ha dicho que no -hora cerrada o sesion
+         caducada- y sin esto la tarjeta se cerraria como si hubiera guardado. */
+      if (!filas || filas.length === 0) {
+        throw new Error(
+          "No se ha guardado. Puede estar cerrada o haberse acabado tu sesión: recarga la página.",
+        )
+      }
 
       await supabase.from("time_entry_tags").delete().eq("entry_id", entrada.id)
       if (tagIds.length > 0) {

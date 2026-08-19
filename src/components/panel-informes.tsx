@@ -16,6 +16,7 @@ import { Download, FileSpreadsheet, FileText, Printer } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { useSesion } from "@/components/proveedor-sesion"
+import { FiltroMultiple } from "@/components/filtro-multiple"
 import { categoriasRaiz, SIN_CATEGORIA } from "@/lib/categorias"
 import { exportarCsv, exportarExcel, exportarPdf } from "@/lib/exportar"
 import { AccionesInforme } from "@/components/acciones-informe"
@@ -32,6 +33,9 @@ import type { Catalogo, EntradaVista, Miembro } from "@/lib/tipos"
 import { cn } from "@/lib/utils"
 
 type Facturable = "todo" | "si" | "no"
+
+/** Para poder marcar «sin proyecto» o «sin área» como una opción más. */
+const SIN_NADA = "__sin__"
 
 export function PanelInformes({
   entradas,
@@ -53,10 +57,12 @@ export function PanelInformes({
 }) {
   const router = useRouter()
   const { espacio } = useSesion()
-  const [persona, setPersona] = useState("")
-  const [categoria, setCategoria] = useState("")
-  const [proyecto, setProyecto] = useState("")
-  const [etiqueta, setEtiqueta] = useState("")
+  /* Varios a la vez: casi nunca se mira una sola persona o un solo proyecto,
+     se mira un equipo o un puñado de cosas. Vacio es "todos". */
+  const [personas, setPersonas] = useState<string[]>([])
+  const [categorias, setCategorias] = useState<string[]>([])
+  const [proyectos, setProyectos] = useState<string[]>([])
+  const [etiquetas, setEtiquetas] = useState<string[]>([])
   const [facturable, setFacturable] = useState<Facturable>("todo")
   const [cierre, setCierre] = useState<"todo" | "abiertas" | "cerradas">("todo")
   const [busqueda, setBusqueda] = useState("")
@@ -81,10 +87,23 @@ export function PanelInformes({
     const texto = busqueda.trim().toLowerCase()
     return entradas.filter((entrada) => {
       if (!entrada.end_at) return false
-      if (persona && entrada.user_id !== persona) return false
-      if (categoria && entrada.category_id !== categoria) return false
-      if (proyecto && entrada.project_id !== proyecto) return false
-      if (etiqueta && !entrada.tags.includes(etiqueta)) return false
+      if (personas.length > 0 && !personas.includes(entrada.user_id)) return false
+      if (
+        categorias.length > 0 &&
+        !categorias.includes(entrada.category_id ?? SIN_NADA)
+      ) {
+        return false
+      }
+      if (
+        proyectos.length > 0 &&
+        !proyectos.includes(entrada.project_id ?? SIN_NADA)
+      ) {
+        return false
+      }
+      // Con varias etiquetas marcadas vale con llevar cualquiera de ellas
+      if (etiquetas.length > 0 && !etiquetas.some((t) => entrada.tags.includes(t))) {
+        return false
+      }
       if (facturable === "si" && !entrada.billable) return false
       if (facturable === "no" && entrada.billable) return false
       if (cierre === "cerradas" && !entrada.locked) return false
@@ -97,10 +116,10 @@ export function PanelInformes({
     })
   }, [
     entradas,
-    persona,
-    categoria,
-    proyecto,
-    etiqueta,
+    personas,
+    categorias,
+    proyectos,
+    etiquetas,
     facturable,
     cierre,
     busqueda,
@@ -320,65 +339,53 @@ export function PanelInformes({
             media pantalla de filtros antes de ver un solo dato. */}
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           {miembros.length > 0 && (
-            <select
-              className="field w-full py-1 sm:w-auto"
-              value={persona}
-              onChange={(e) => setPersona(e.target.value)}
-              aria-label="Persona"
-            >
-              <option value="">Todo el equipo</option>
-              {miembros.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.full_name}
-                </option>
-              ))}
-            </select>
+            <FiltroMultiple
+              etiqueta="Personas"
+              todos="Todo el equipo"
+              opciones={miembros.map((m) => ({ id: m.id, nombre: m.full_name }))}
+              elegidas={personas}
+              onChange={setPersonas}
+            />
           )}
 
-          <select
-            className="field w-full py-1 sm:w-auto"
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value)}
-            aria-label="Categoría"
-          >
-            <option value="">Todas las categorías</option>
-            {categoriasRaiz(catalogo.categorias).map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <FiltroMultiple
+            etiqueta="Áreas"
+            todos="Todas las áreas"
+            opciones={[
+              ...categoriasRaiz(catalogo.categorias).map((c) => ({
+                id: c.id,
+                nombre: c.name,
+              })),
+              { id: SIN_NADA, nombre: "Sin área" },
+            ]}
+            elegidas={categorias}
+            onChange={setCategorias}
+          />
+
+          <FiltroMultiple
+            etiqueta="Proyectos"
+            todos="Todos los proyectos"
+            opciones={[
+              ...catalogo.proyectos.map((p) => ({ id: p.id, nombre: p.name })),
+              { id: SIN_NADA, nombre: "Sin proyecto" },
+            ]}
+            elegidas={proyectos}
+            onChange={setProyectos}
+          />
+
+          <FiltroMultiple
+            etiqueta="Etiquetas"
+            todos="Todas las etiquetas"
+            opciones={catalogo.etiquetas.map((t) => ({
+              id: t.name,
+              nombre: t.name,
+            }))}
+            elegidas={etiquetas}
+            onChange={setEtiquetas}
+          />
 
           <select
-            className="field w-full py-1 sm:w-auto"
-            value={proyecto}
-            onChange={(e) => setProyecto(e.target.value)}
-            aria-label="Proyecto"
-          >
-            <option value="">Todos los proyectos</option>
-            {catalogo.proyectos.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-
-          <select
-            className="field w-full py-1 sm:w-auto"
-            value={etiqueta}
-            onChange={(e) => setEtiqueta(e.target.value)}
-            aria-label="Etiqueta"
-          >
-            <option value="">Todas las etiquetas</option>
-            {catalogo.etiquetas.map((t) => (
-              <option key={t.id} value={t.name}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-
-          <select
-            className="field w-full py-1 sm:w-auto"
+            className="field h-[2.125rem] w-full rounded-[3px] py-0 sm:w-auto"
             value={facturable}
             onChange={(e) => setFacturable(e.target.value as Facturable)}
             aria-label="Facturable"
@@ -389,7 +396,7 @@ export function PanelInformes({
           </select>
 
           <select
-            className="field w-full py-1 sm:w-auto"
+            className="field h-[2.125rem] w-full rounded-[3px] py-0 sm:w-auto"
             value={cierre}
             onChange={(e) =>
               setCierre(e.target.value as "todo" | "abiertas" | "cerradas")
@@ -402,7 +409,7 @@ export function PanelInformes({
           </select>
 
           <input
-            className="field w-auto flex-1 py-1"
+            className="field h-[2.125rem] w-auto flex-1 rounded-[3px] py-0"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar en la descripción"

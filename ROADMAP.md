@@ -80,6 +80,14 @@ facturables, ponerles etiqueta, cerrarlas o borrarlas-, la bienvenida pregunta
 por fin si se quiere la plantilla de LEINN, hay guia rapida la primera vez
 (y un boton en el perfil para volver a verla) y buscador en proyectos.
 
+Y la tanda del 20-ago: **cualquiera del espacio corrige las horas de
+cualquiera** -el dinero sigue siendo de quien gestiona, y lo cerrado sigue
+cerrado-, con rastro de quien toco cada hora; **proyecto y edicion se eligen a
+la vez** en el mismo desplegable; las duraciones se leen en `hh:mm:ss` y las
+descargas llevan la duracion legible y el decimal para sumar; los **clientes**
+se crean desde el proyecto y el catalogo pasa a ser su resumen; y el importador
+pregunta si el campo *Cliente* del CSV es un cliente o la rama del equipo.
+
 **Pendiente**:
 
 1. **Desplegar**: `DESPLIEGUE.md` lleva los pasos en orden -Vercel, las URLs de

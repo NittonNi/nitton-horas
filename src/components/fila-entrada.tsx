@@ -4,7 +4,15 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import * as Popover from "@radix-ui/react-popover"
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu"
-import { Copy, Euro, MoreHorizontal, Play, Trash2, Users } from "lucide-react"
+import {
+  Copy,
+  Euro,
+  MoreHorizontal,
+  Play,
+  Tag,
+  Trash2,
+  Users,
+} from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
@@ -52,7 +60,10 @@ export function FilaEntrada({
      contestado todavia. */
   const compartida = entrada.compartida_con ?? []
 
-  async function guardar(cambios: TablesUpdate<"time_entries">) {
+  async function guardar(
+    cambios: TablesUpdate<"time_entries">,
+    aviso = "Hora actualizada.",
+  ) {
     setOcupado(true)
     setError(null)
     /* `select` para saber si de verdad ha cambiado algo: sin el, una hora
@@ -72,10 +83,29 @@ export function FilaEntrada({
     if (!data || data.length === 0) {
       const aviso = "No se ha guardado. Puede estar cerrada o haberse acabado tu sesión: recarga la página."
       setError(aviso)
-      avisar(aviso)
+      avisar(aviso, undefined, "mal")
       return
     }
     router.refresh()
+
+    /* Lo que habia antes en esos mismos campos: cualquier retoque se puede
+       deshacer sin tener que acordarse de que ponia. */
+    const antes = Object.fromEntries(
+      Object.keys(cambios).map((campo) => [
+        campo,
+        (entrada as unknown as Record<string, unknown>)[campo],
+      ]),
+    ) as TablesUpdate<"time_entries">
+
+    avisar(aviso, async () => {
+      const { error: errVolver } = await createClient()
+        .from("time_entries")
+        .update(antes)
+        .eq("id", entrada.id)
+      if (errVolver) throw new Error(mensajeError(errVolver))
+      router.refresh()
+      return "Como estaba."
+    })
   }
 
   async function guardarEtiquetas(ids: string[]) {
@@ -317,10 +347,10 @@ export function FilaEntrada({
               {mostrarPersona && (
                 <span className="chip min-w-0 truncate">{entrada.user_name}</span>
               )}
+              {/* Vacio: el simbolo de etiqueta, que ocupa lo justo y se
+                  entiende sin leer. La palabra en cada fila era ruido. */}
               {entrada.tags.length === 0 && !mostrarPersona && (
-                <span className="text-[0.8125rem] text-muted opacity-0 transition group-hover:opacity-100">
-                  Etiquetas
-                </span>
+                <Tag className="h-3.5 w-3.5 shrink-0 text-muted" aria-label="Etiquetas" />
               )}
               {entrada.tags.slice(0, 1).map((t) => (
                 <span key={t} className="chip min-w-0 truncate">
@@ -359,7 +389,7 @@ export function FilaEntrada({
             "shrink-0 rounded-[6px] p-1 transition",
             entrada.billable
               ? "text-billable hover:bg-billable-soft"
-              : "text-muted opacity-0 hover:bg-surface-3/70 group-focus-within:opacity-100 group-hover:opacity-100",
+              : "text-muted hover:bg-surface-3/70",
           )}
         >
           <Euro className="h-3.5 w-3.5" />
@@ -438,7 +468,7 @@ export function FilaEntrada({
 
         {/* Duplicar y borrar juntos y pequeños se confunden: van detrás de los
             tres puntos, que es donde los busca todo el mundo. */}
-        <div className="flex w-8 shrink-0 items-center justify-end opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">
+        <div className="flex w-8 shrink-0 items-center justify-end">
           <DropdownMenu.Root>
             <DropdownMenu.Trigger
               disabled={ocupado}

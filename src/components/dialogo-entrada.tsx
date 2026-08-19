@@ -208,6 +208,7 @@ export function DialogoEntrada({
 
       router.refresh()
       onCerrar()
+      avisar("Hora actualizada.")
     } catch (err) {
       setError(mensajeError(err))
     } finally {

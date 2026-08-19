@@ -27,12 +27,14 @@ export default async function LayoutApp({
 
   return (
     <ProveedorSesion sesion={sesion}>
-      <ProveedorCronometro espacioId={sesion.espacio.id} inicial={aEntradaEnMarcha(data)}>
-        <ProveedorAvisos>
+      {/* Los avisos van por fuera del cronómetro: así el propio cronómetro
+          puede avisar cuando algo le sale mal, en vez de sacar un alert */}
+      <ProveedorAvisos>
+        <ProveedorCronometro espacioId={sesion.espacio.id} inicial={aEntradaEnMarcha(data)}>
           <Armazon>{children}</Armazon>
-        </ProveedorAvisos>
-        <GuiaInicial perfilId={sesion.perfil.id} esGestor={veTodo(sesion.rol)} />
-      </ProveedorCronometro>
+          <GuiaInicial perfilId={sesion.perfil.id} esGestor={veTodo(sesion.rol)} />
+        </ProveedorCronometro>
+      </ProveedorAvisos>
     </ProveedorSesion>
   )
 }

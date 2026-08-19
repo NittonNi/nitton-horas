@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { useCronometro } from "@/components/proveedor-cronometro"
 import { useSesion } from "@/components/proveedor-sesion"
+import { useAvisos } from "@/components/avisos"
 import {
   SelectorProyecto,
   type Seleccion,
@@ -41,6 +42,7 @@ export function BarraCronometro({
   miembros?: Miembro[]
 }) {
   const router = useRouter()
+  const { avisar } = useAvisos()
   const { perfil, espacio } = useSesion()
   const { enMarcha, segundos, arrancar, parar, descartar, cargando, recargar } =
     useCronometro()
@@ -105,7 +107,7 @@ export function BarraCronometro({
       }
       await recargar()
     } catch (err) {
-      alert(mensajeError(err))
+      avisar(mensajeError(err), undefined, "mal")
     }
   }
 
@@ -176,7 +178,18 @@ export function BarraCronometro({
       }
       setAvisoCompartir(null)
       const cerrada = await parar()
-      if (cerrada) await compartirSiHaceFalta(cerrada)
+      if (cerrada) {
+        await compartirSiHaceFalta(cerrada)
+        avisar(
+          `Hora apuntada: ${formatDuration(
+            Math.round(
+              (new Date(cerrada.end_at!).getTime() -
+                new Date(cerrada.start_at).getTime()) /
+                1000,
+            ),
+          )}.`,
+        )
+      }
       return
     }
 
@@ -278,11 +291,7 @@ export function BarraCronometro({
               {enMarcha && (
                 <button
                   type="button"
-                  onClick={() => {
-                    if (confirm("¿Descartar el tiempo de este cronómetro?")) {
-                      void descartar()
-                    }
-                  }}
+                  onClick={() => void descartar()}
                   title="Descartar sin guardar"
                   className="btn btn-ghost h-9 w-9 p-0 text-muted hover:text-danger"
                 >
@@ -419,6 +428,9 @@ function EntradaManual({
     end_at: string
   }) => void | Promise<void>
 }) {
+  const router = useRouter()
+  const { avisar } = useAvisos()
+
   // Se apunta a mano cuando ya ha pasado: casi siempre hoy, a veces ayer
   const [fecha, setFecha] = useState(todayKey())
   const [inicio, setInicio] = useState("09:00")
@@ -446,11 +458,15 @@ function EntradaManual({
   async function guardar() {
     const segs = parseDurationToSeconds(duracion)
     if (!segs || segs <= 0) {
-      alert("Pon una duración válida, por ejemplo 1:30 o 90m.")
+      avisar("Pon una duración válida, por ejemplo 1:30 o 90m.", undefined, "mal")
       return
     }
     if (exigeProyecto && !borrador.project_id) {
-      alert("Elige un proyecto: este espacio no guarda horas sueltas.")
+      avisar(
+        "Elige un proyecto: este espacio no guarda horas sueltas.",
+        undefined,
+        "mal",
+      )
       return
     }
 
@@ -483,8 +499,17 @@ function EntradaManual({
           .insert(borrador.tagIds.map((tag_id) => ({ entry_id: data.id, tag_id })))
       }
       await alGuardar({ id: data.id, start_at, end_at })
+      avisar("Hora añadida.", async () => {
+        const { error: errQuitar } = await supabase
+          .from("time_entries")
+          .delete()
+          .eq("id", data.id)
+        if (errQuitar) throw new Error(mensajeError(errQuitar))
+        router.refresh()
+        return "Quitada."
+      })
     } catch (err) {
-      alert(mensajeError(err))
+      avisar(mensajeError(err), undefined, "mal")
     } finally {
       setGuardando(false)
     }

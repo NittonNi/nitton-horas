@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronRight, Euro, Play } from "lucide-react"
+import { ChevronRight, Euro, Play, Tag } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
@@ -530,9 +530,7 @@ function FilaGrupo({
               ) : (
                 <>
                   {primera.tags.length === 0 && !mostrarPersona && (
-                    <span className="text-[0.8125rem] text-muted opacity-0 transition group-hover:opacity-100">
-                      Etiquetas
-                    </span>
+                    <Tag className="h-3.5 w-3.5 shrink-0 text-muted" aria-label="Etiquetas" />
                   )}
                   {primera.tags.slice(0, 1).map((t) => (
                     <span key={t} className="chip min-w-0 truncate">
@@ -572,9 +570,6 @@ function FilaGrupo({
             facturable
               ? "text-billable hover:bg-billable-soft"
               : "text-muted hover:bg-surface-3/70",
-            // Mezcla: se ve siempre, que es un dato. Ninguna: solo al pasar
-            facturable === false &&
-              "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100",
           )}
         >
           <Euro className="h-3.5 w-3.5" />

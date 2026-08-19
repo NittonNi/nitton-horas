@@ -205,6 +205,8 @@ export function RejillaCalendario({
 
     setError(null)
     const supabase = createClient()
+    // Donde estaba antes, para poder devolverlo de un toque
+    const antes = entradas.find((e) => e.id === final.id)
     /* Con `select` se ve si de verdad ha cambiado una fila: sin el, una hora
        bloqueada o una sesion caducada devuelven "todo bien" sin guardar nada y
        el bloque se vuelve a su sitio sin decir por que. */
@@ -219,7 +221,7 @@ export function RejillaCalendario({
 
     if (err) {
       setError(mensajeError(err))
-      avisar("No se ha podido guardar: " + mensajeError(err))
+      avisar("No se ha podido guardar: " + mensajeError(err), undefined, "mal")
       return
     }
 
@@ -227,10 +229,25 @@ export function RejillaCalendario({
       const aviso =
         "Esa hora no se ha guardado. Puede estar cerrada o haberse acabado tu sesión: recarga la página."
       setError(aviso)
-      avisar(aviso)
+      avisar(aviso, undefined, "mal")
       return
     }
     router.refresh()
+
+    avisar(
+      final.tipo === "mover" ? "Hora movida." : "Hora actualizada.",
+      antes
+        ? async () => {
+            const { error: errVolver } = await createClient()
+              .from("time_entries")
+              .update({ start_at: antes.start_at, end_at: antes.end_at })
+              .eq("id", final.id)
+            if (errVolver) throw new Error(mensajeError(errVolver))
+            router.refresh()
+            return "Como estaba."
+          }
+        : undefined,
+    )
   }
 
   function irA(nuevoLunes: string) {
@@ -670,6 +687,7 @@ function DialogoNuevaEntrada({
   onCerrar: () => void
 }) {
   const router = useRouter()
+  const { avisar } = useAvisos()
   const { espacio } = useSesion()
   const [descripcion, setDescripcion] = useState("")
   const [edicionId, setEdicionId] = useState<string | null>(null)
@@ -785,6 +803,15 @@ function DialogoNuevaEntrada({
     setGuardando(false)
     router.refresh()
     onCerrar()
+    avisar("Hora añadida.", async () => {
+      const { error: errQuitar } = await createClient()
+        .from("time_entries")
+        .delete()
+        .eq("id", data.id)
+      if (errQuitar) throw new Error(mensajeError(errQuitar))
+      router.refresh()
+      return "Quitada."
+    })
   }
 
   return (

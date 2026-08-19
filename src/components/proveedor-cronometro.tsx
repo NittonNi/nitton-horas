@@ -13,6 +13,8 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { aEntradaEnMarcha, SELECT_EN_MARCHA } from "@/lib/cronometro"
+import { useAvisos } from "@/components/avisos"
+import { useSesion } from "@/components/proveedor-sesion"
 import type { BorradorEntrada, Entrada, EntradaEnMarcha } from "@/lib/tipos"
 
 type Contexto = {
@@ -41,6 +43,8 @@ export function ProveedorCronometro({
   children: React.ReactNode
 }) {
   const router = useRouter()
+  const { avisar } = useAvisos()
+  const { perfil } = useSesion()
   const [enMarcha, setEnMarcha] = useState<EntradaEnMarcha | null>(inicial)
   const [ahora, setAhora] = useState(() => Date.now())
   const [cargando, setCargando] = useState(false)
@@ -116,12 +120,12 @@ export function ProveedorCronometro({
         await recargar()
         router.refresh()
       } catch (err) {
-        alert(mensajeError(err))
+        avisar(mensajeError(err), undefined, "mal")
       } finally {
         setCargando(false)
       }
     },
-    [espacioId, recargar, router],
+    [espacioId, recargar, router, avisar],
   )
 
   const parar = useCallback(async () => {
@@ -133,30 +137,58 @@ export function ProveedorCronometro({
       router.refresh()
       return (data as Entrada | null) ?? null
     } catch (err) {
-      alert(mensajeError(err))
+      avisar(mensajeError(err), undefined, "mal")
       return null
     } finally {
       setCargando(false)
     }
-  }, [router])
+  }, [router, avisar])
 
+  /* Nada de preguntar antes: se descarta y se avisa con un Deshacer, que es
+     mas rapido de usar y ademas perdona el error de verdad. */
   const descartar = useCallback(async () => {
     if (!enMarcha) return
+    const tirado = enMarcha
     setCargando(true)
     try {
       const { error } = await supabaseRef.current
         .from("time_entries")
         .delete()
-        .eq("id", enMarcha.id)
+        .eq("id", tirado.id)
       if (error) throw error
       setEnMarcha(null)
       router.refresh()
+
+      avisar("Cronómetro descartado.", async () => {
+        const { error: errVolver } = await supabaseRef.current
+          .from("time_entries")
+          .insert({
+            id: tirado.id,
+            workspace_id: tirado.workspace_id,
+            user_id: perfil.id,
+            project_id: tirado.project_id,
+            edition_id: tirado.edition_id,
+            task_id: tirado.task_id,
+            description: tirado.description,
+            billable: tirado.billable,
+            start_at: tirado.start_at,
+          })
+        if (errVolver) throw new Error(mensajeError(errVolver))
+        if (tirado.tagIds.length > 0) {
+          await supabaseRef.current
+            .from("time_entry_tags")
+            .insert(tirado.tagIds.map((tag_id) => ({ entry_id: tirado.id, tag_id })))
+        }
+        await recargar()
+        router.refresh()
+        return "Sigue corriendo."
+      })
     } catch (err) {
-      alert(mensajeError(err))
+      avisar(mensajeError(err), undefined, "mal")
     } finally {
       setCargando(false)
     }
-  }, [enMarcha, router])
+  }, [enMarcha, router, avisar, recargar, perfil.id])
 
   return (
     <ContextoCronometro.Provider

@@ -88,7 +88,18 @@ descargas llevan la duracion legible y el decimal para sumar; los **clientes**
 se crean desde el proyecto y el catalogo pasa a ser su resumen; y el importador
 pregunta si el campo *Cliente* del CSV es un cliente o la rama del equipo.
 
+Repaso de UX del 20-ago: apuntar a mano ya deja elegir el dia, el calendario
+abre por donde se trabaja, deshacer sale abajo al borrar una hora -y duplicar y
+borrar viven detras de los tres puntos-, y el alta del equipo se hace **al
+estilo Tricount**: quien administra escribe los nombres, reparte un enlace y
+cada uno dice cual es el suyo.
+
 **Pendiente**:
+
+0. **Mirar la aplicacion en el movil**. Lo dejo pendiente Nicolas para hacerlo
+   el mismo desde su telefono: la barra de abajo, la tabla de informes con las
+   casillas y el calendario son lo que hay que mirar.
+
 
 1. **Desplegar**: `DESPLIEGUE.md` lleva los pasos en orden -Vercel, las URLs de
    Supabase, las credenciales de Google, el dominio- con lo que hay que

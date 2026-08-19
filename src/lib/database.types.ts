@@ -717,6 +717,48 @@ export type Database = {
           },
         ]
       }
+      workspace_seats: {
+        Row: {
+          claimed_at: string | null
+          claimed_by: string | null
+          created_at: string
+          id: string
+          name: string
+          workspace_id: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          claimed_by?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          workspace_id: string
+        }
+        Update: {
+          claimed_at?: string | null
+          claimed_by?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_seats_claimed_by_fkey"
+            columns: ["claimed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_seats_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspaces: {
         Row: {
           allowed_domains: string[]
@@ -725,6 +767,7 @@ export type Database = {
           goal_daily_minutes: number | null
           goal_weekly_minutes: number | null
           id: string
+          join_code: string | null
           name: string
           require_project: boolean
           slug: string
@@ -740,6 +783,7 @@ export type Database = {
           goal_daily_minutes?: number | null
           goal_weekly_minutes?: number | null
           id?: string
+          join_code?: string | null
           name: string
           require_project?: boolean
           slug: string
@@ -755,6 +799,7 @@ export type Database = {
           goal_daily_minutes?: number | null
           goal_weekly_minutes?: number | null
           id?: string
+          join_code?: string | null
           name?: string
           require_project?: boolean
           slug?: string
@@ -915,6 +960,26 @@ export type Database = {
           project_color: string | null
           created_at: string
         }[]
+      }
+      espacio_por_codigo: {
+        Args: { p_codigo: string }
+        Returns: { id: string; name: string; plazas: Json }[]
+      }
+      unirse_con_codigo: {
+        Args: { p_codigo: string; p_plaza?: string }
+        Returns: {
+          active: boolean
+          created_at: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "workspace_members"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       my_email: { Args: never; Returns: string }
       normalizar_texto_existente: {

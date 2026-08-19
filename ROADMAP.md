@@ -248,33 +248,23 @@ Queda:
 - **Aceptar o rechazar en bloque** cuando lleguen varias propuestas del mismo
   dia; ahora se contestan de una en una.
 
-## Onboarding (apuntado 19-ago-2026)
+## Onboarding (hecho 19-ago-2026)
 
-Hoy entrar en la aplicacion por primera vez esta repartido en sitios que no se
-conocen entre si: se crea el espacio en `/bienvenida`, las plazas del equipo
-estan en Gestion > Equipo, el enlace para unirse tambien, y el acceso vive en
-`/acceso`. Funciona, pero no se parece a lo que se espera al abrir algo nuevo.
+`/empezar` monta el espacio de una sentada, en cuatro pasos: el espacio -nombre,
+zona y plantilla de LEINN-, el equipo -los nombres, que se pueden pegar de una
+lista-, repartirlo -enlace y codigo QR- y por donde empezar -importar de
+Clockify o al cronometro-. `/bienvenida` se queda solo para elegir entre los
+espacios que ya tienes y llevar aqui.
 
-La idea es **un formulario de onboarding de varios pasos** que lo cosa todo:
+El QR se dibuja en el navegador con `qrcode`, cargado solo al usarlo, a partir
+del enlace de siempre: no se guarda nada nuevo. El codigo de union se genera al
+llegar al paso 3, no antes: quien no pasa por ahi no deja una puerta abierta.
 
-1. **Entrar o crear cuenta** en el mismo sitio, con correo o con Google. Que no
-   haya que decidir antes de ver nada.
-2. **Crear el espacio**: nombre, zona horaria y poco mas. Lo demas trae valores
-   por defecto y se cambia luego en Gestion > Ajustes.
-3. **Meter al equipo**: escribir los nombres de una tacada -las plazas de
-   `workspace_seats`, que ya existen- para que cada uno reclame el suyo.
-4. **Repartir la invitacion**: el enlace de siempre y, ademas, un **codigo QR**
-   para enseñarlo en una reunion y que cada uno lo escanee con el movil. Es la
-   situacion real de LEINN: la gente esta junta en una sala.
-5. **Elegir por donde empezar**: importar de Clockify o empezar de cero.
+Queda por si se quiere:
 
-Notas para cuando se haga:
-
-- Los pasos 2 a 5 pueden saltarse: quien se une a un espacio que ya existe solo
-  pasa por el 1 y por elegir su plaza.
-- El QR se genera en el cliente a partir del enlace que ya se reparte hoy;
-  no hace falta guardar nada nuevo.
-- La guia inicial (`guia-inicial.tsx`) empieza cuando esto acaba, y las pistas
-  de cada pantalla (`pista-pagina.tsx`) van saliendo solas despues.
-- Conviene que el paso 3 avise de que un nombre se puede corregir despues:
-  un administrador ya puede renombrar a cualquiera desde Equipo.
+- **Reclamar la plaza en el mismo QR**: hoy quien escanea entra y elige su
+  nombre en `/unirse/[codigo]`, que ya funciona; se podria llevar directo a su
+  plaza si el enlace la nombrara.
+- **Un paso de proyectos** al final, para no llegar al cronometro sin nada
+  contra lo que apuntar. Se decidio no meterlo: el aviso de "aun no hay
+  proyectos" del panel ya lo resuelve sin alargar el alta.

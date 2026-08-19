@@ -1,14 +1,14 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { ArrowRight, Building2, Loader2, LogOut, Mail, Timer } from "lucide-react"
+import Link from "next/link"
+import { ArrowRight, Building2, LogOut, Mail, Plus, Timer } from "lucide-react"
 
 import { cambiarEspacio } from "@/app/acciones"
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { NOMBRE_ROL } from "@/lib/roles"
 import type { Pertenencia, Perfil } from "@/lib/tipos"
-import { ZONAS_HORARIAS } from "@/lib/tipos"
 import type { Enums } from "@/lib/database.types"
 
 type Disponible = {
@@ -17,18 +17,6 @@ type Disponible = {
   slug: string
   motivo: string
   role: Enums<"user_role">
-}
-
-/** Zona del navegador, si es una de las que ofrecemos. */
-function zonaPorDefecto(): string {
-  try {
-    const propuesta = Intl.DateTimeFormat().resolvedOptions().timeZone
-    return (ZONAS_HORARIAS as readonly string[]).includes(propuesta)
-      ? propuesta
-      : "Europe/Madrid"
-  } catch {
-    return "Europe/Madrid"
-  }
 }
 
 export function Bienvenida({
@@ -40,10 +28,6 @@ export function Bienvenida({
   pertenencias: Pertenencia[]
   disponibles: Disponible[]
 }) {
-  const [nombre, setNombre] = useState("")
-  const [zona, setZona] = useState(zonaPorDefecto)
-  // Casi todos los equipos quieren la estructura de siempre; el que no, la quita
-  const [conPlantilla, setConPlantilla] = useState(true)
   const [ocupado, setOcupado] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [, empezarTransicion] = useTransition()
@@ -52,30 +36,6 @@ export function Bienvenida({
     empezarTransicion(() => {
       void cambiarEspacio(id)
     })
-  }
-
-  async function crear() {
-    const limpio = nombre.trim()
-    if (!limpio) {
-      setError("Ponle un nombre al espacio.")
-      return
-    }
-    setOcupado(true)
-    setError(null)
-
-    const supabase = createClient()
-    const { data, error: err } = await supabase.rpc("create_workspace", {
-      p_name: limpio,
-      p_timezone: zona,
-      p_plantilla: conPlantilla,
-    })
-
-    if (err || !data) {
-      setOcupado(false)
-      setError(mensajeError(err))
-      return
-    }
-    entrar(data.id)
   }
 
   async function unirse(id: string) {
@@ -102,8 +62,8 @@ export function Bienvenida({
         </h1>
         <p className="mt-1 text-sm text-muted">
           {pertenencias.length > 0
-            ? "Elige donde quieres trabajar."
-            : "Crea el espacio de tu equipo para empezar a contar horas."}
+            ? "Elige dónde quieres trabajar."
+            : "Monta el espacio de tu equipo para empezar a contar horas."}
         </p>
       </div>
 
@@ -171,89 +131,29 @@ export function Bienvenida({
         </section>
       )}
 
-      <section className="card p-4">
-        <h2 className="mb-3 text-sm font-semibold">
-          {pertenencias.length > 0 ? "Crear otro espacio" : "Crear un espacio"}
-        </h2>
+      {error && (
+        <p className="mb-4 rounded-[var(--radio-sm)] bg-danger-soft p-2.5 text-sm text-danger">
+          {error}
+        </p>
+      )}
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            void crear()
-          }}
-          className="space-y-3"
-        >
-          <div>
-            <label className="label" htmlFor="espacio-nombre">
-              Nombre del equipo o la empresa
-            </label>
-            <input
-              id="espacio-nombre"
-              className="field"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              placeholder="Mi estudio"
-              autoFocus={pertenencias.length === 0}
-            />
-          </div>
-
-          <div>
-            <label className="label" htmlFor="espacio-zona">
-              Zona horaria
-            </label>
-            <select
-              id="espacio-zona"
-              className="field"
-              value={zona}
-              onChange={(e) => setZona(e.target.value)}
-            >
-              {ZONAS_HORARIAS.map((z) => (
-                <option key={z} value={z}>
-                  {z.replace(/_/g, " ")}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-muted">
-              Decide a que dia cuenta cada hora. Se puede cambiar después.
-            </p>
-          </div>
-
-          <label className="flex items-start gap-2.5 rounded-[var(--radio-sm)] border border-line bg-surface-2/60 p-3">
-            <input
-              type="checkbox"
-              checked={conPlantilla}
-              onChange={(e) => setConPlantilla(e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-[color:var(--accent)]"
-            />
-            <span>
-              <span className="block text-sm font-medium">
-                Empezar con la estructura de LEINN
-              </span>
-              <span className="mt-0.5 block text-xs text-muted">
-                Backoffice —con TLT, Care, Financial y Legal—, Conocimiento y
-                Proyectos —con Eventos, Proyectos y Oportunidades—. Se cambia,
-                se borra y se añade lo que queráis; sin marcar, empiezas en
-                blanco.
-              </span>
-            </span>
-          </label>
-
-          {error && (
-            <p className="rounded-lg bg-danger-soft p-2.5 text-sm text-danger">
-              {error}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={ocupado || !nombre.trim()}
-            className="btn btn-primary w-full"
-          >
-            {ocupado && <Loader2 className="h-4 w-4 animate-spin" />}
-            Crear espacio
-          </button>
-        </form>
-      </section>
+      <Link
+        href="/empezar"
+        className="card flex items-center gap-3 p-4 transition hover:bg-surface-2"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent">
+          <Plus className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-medium">
+            {pertenencias.length > 0 ? "Crear otro espacio" : "Crear un espacio"}
+          </span>
+          <span className="mt-0.5 block text-xs text-muted">
+            Le pones nombre, escribes quiénes sois y repartes la invitación.
+          </span>
+        </span>
+        <ArrowRight className="h-4 w-4 shrink-0 text-muted" />
+      </Link>
 
       <form action="/auth/salir" method="post" className="mt-4 text-center">
         <button

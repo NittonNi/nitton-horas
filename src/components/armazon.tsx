@@ -19,6 +19,7 @@ import {
   Settings2,
   Square,
   Timer,
+  TrendingUp,
   Upload,
   User,
   Users,
@@ -68,6 +69,7 @@ const GRUPOS: {
     enlaces: [
       { href: "/proyectos", etiqueta: "Proyectos", icono: FolderKanban },
       { href: "/informes", etiqueta: "Informes", icono: BarChart3 },
+      { href: "/estadisticas", etiqueta: "Estadísticas", icono: TrendingUp },
     ],
   },
   {

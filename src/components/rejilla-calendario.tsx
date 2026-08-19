@@ -19,6 +19,7 @@ import {
   DIA_ENTERO,
   horaParaEmpezar,
   limitar,
+  minutosDe,
   minutosDeHora,
   redondear,
   repartir,
@@ -83,10 +84,9 @@ export function RejillaCalendario({
   const porDia = useMemo(() => {
     const mapa = new Map<string, Bloque[]>()
     for (const dia of dias) {
-      mapa.set(
-        dia,
-        repartir(entradas.filter((e) => e.local_date === dia)),
-      )
+      // Sin filtrar por local_date: un rato que cruza la medianoche le toca a
+      // dos dias, y cada uno se queda con su trozo.
+      mapa.set(dia, repartir(entradas, dia))
     }
     return mapa
   }, [entradas, dias])
@@ -490,7 +490,7 @@ function ColumnaDia({
 
         return (
           <div
-            key={bloque.entrada.id}
+            key={bloque.entrada.id + (bloque.vieneDeAyer ? "-sigue" : "")}
             data-bloque
             role="button"
             tabIndex={0}
@@ -501,7 +501,9 @@ function ColumnaDia({
               }
             }}
             onPointerDown={(e) => {
-              if (!editable || e.button !== 0) return
+              // La continuacion del dia anterior no se arrastra: se toca la de
+              // arriba, que es la que lleva la hora de inicio
+              if (!editable || bloque.vieneDeAyer || e.button !== 0) return
               e.stopPropagation()
               const caja = e.currentTarget.getBoundingClientRect()
               // los últimos 8 px de alto son el tirador para alargar
@@ -517,13 +519,20 @@ function ColumnaDia({
               e.stopPropagation()
               if (!arrastrandose) onAbrir(bloque.entrada)
             }}
-            title={`${comoHora(desde)} - ${comoHora(hasta)}  ${bloque.entrada.description || ""}`}
+            title={
+              bloque.vieneDeAyer || bloque.sigueManana
+                ? `${comoHora(minutosDe(bloque.entrada.start_at))} del día anterior a ${comoHora(minutosDe(bloque.entrada.end_at!))}  ${bloque.entrada.description || ""}`
+                : `${comoHora(desde)} - ${comoHora(hasta)}  ${bloque.entrada.description || ""}`
+            }
             className={cn(
               "absolute overflow-hidden rounded-[3px] border-l-[3px] bg-surface px-1.5 py-1 text-left shadow-sm ring-1 ring-inset transition-shadow",
               // Lo que se cobra va enmarcado en verde; el resto, en linea neutra
               bloque.entrada.billable ? "ring-billable-line" : "ring-line",
-              editable && "cursor-grab active:cursor-grabbing",
+              editable && !bloque.vieneDeAyer && "cursor-grab active:cursor-grabbing",
               arrastrandose && "opacity-80 shadow-lg",
+              // El corte de medianoche se ve: el bloque no acaba ahi de verdad
+              bloque.sigueManana && "rounded-b-none border-b border-dashed border-b-live-line",
+              bloque.vieneDeAyer && "rounded-t-none border-t border-dashed border-t-live-line",
             )}
             style={{
               top: arriba(desde),
@@ -543,11 +552,22 @@ function ColumnaDia({
             </p>
             <p className="cifra truncate text-[10px] leading-tight text-muted">
               {comoHora(desde)}-{comoHora(hasta)}
+              {/* Como en Clockify: el +1 pequeño avisa de que cambia el día */}
+              {bloque.sigueManana && (
+                <sup className="ml-0.5 font-semibold text-live" title="Sigue al día siguiente">
+                  +1
+                </sup>
+              )}
+              {bloque.vieneDeAyer && (
+                <sup className="ml-0.5 font-semibold text-live" title="Viene del día anterior">
+                  ‑1
+                </sup>
+              )}
             </p>
             {bloque.entrada.billable && (
               <Euro className="absolute right-1 top-1.5 h-3 w-3 text-billable" />
             )}
-            {editable && (
+            {editable && !bloque.sigueManana && !bloque.vieneDeAyer && (
               <span
                 aria-hidden
                 className="absolute inset-x-0 bottom-0 h-2 cursor-ns-resize"

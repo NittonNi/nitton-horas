@@ -55,7 +55,6 @@ export function TablaSemana({
   lunes,
   espacioId,
   yoId,
-  personaId,
   miembros,
 }: {
   entradas: EntradaVista[]
@@ -63,7 +62,6 @@ export function TablaSemana({
   lunes: string
   espacioId: string
   yoId: string
-  personaId: string
   miembros: Miembro[]
 }) {
   const router = useRouter()
@@ -216,7 +214,7 @@ export function TablaSemana({
         const inicio = inicioSugerido(dia)
         const { error: err } = await supabase.from("time_entries").insert({
           workspace_id: espacioId,
-          user_id: personaId,
+          user_id: yoId,
           project_id: fila.project_id,
           edition_id: fila.edition_id,
           task_id: fila.task_id,
@@ -239,8 +237,7 @@ export function TablaSemana({
   }
 
   function irA(nuevoLunes: string) {
-    const persona = personaId !== yoId ? `&persona=${personaId}` : ""
-    router.push(`/semana?semana=${nuevoLunes}${persona}`)
+    router.push(`/semana?semana=${nuevoLunes}`)
   }
 
   const hoy = todayKey()
@@ -280,54 +277,37 @@ export function TablaSemana({
           })}
         </p>
 
-        {/* Mismo salto rapido que en el calendario: se elige un dia y se abre
-            su semana, sin ir de una en una. */}
-        <label className="relative flex items-center" title="Ir a una semana">
-          <CalendarDays
-            className="pointer-events-none absolute left-2 h-4 w-4 text-muted"
-            aria-hidden
-          />
-          <input
-            type="date"
-            value={lunes}
-            onChange={(e) => {
-              if (!e.target.value) return
-              irA(toDateKey(startOfWeek(fromDateKey(e.target.value))))
-            }}
-            className="field tabular h-8 w-[9.5rem] pl-7 text-sm"
-            aria-label="Ir a la semana de este día"
-          />
-        </label>
+        {/* A la derecha lo de moverse por el tiempo, igual que en el
+            calendario; a la izquierda, donde estas. */}
+        <div className="ml-auto flex items-center gap-2">
+          {lunes !== toDateKey(startOfWeek(new Date())) && (
+            <button
+              type="button"
+              onClick={() => irA(toDateKey(startOfWeek(new Date())))}
+              className="btn h-8 text-sm"
+            >
+              Esta semana
+            </button>
+          )}
 
-        {lunes !== toDateKey(startOfWeek(new Date())) && (
-          <button
-            type="button"
-            onClick={() => irA(toDateKey(startOfWeek(new Date())))}
-            className="btn h-8 text-sm"
-          >
-            Esta semana
-          </button>
-        )}
-
-        {miembros.length > 0 && (
-          <select
-            className="field ml-auto w-52 py-1.5"
-            value={personaId}
-            onChange={(e) => {
-              const destino = e.target.value
-              router.push(
-                `/semana?semana=${lunes}${destino !== yoId ? `&persona=${destino}` : ""}`,
-              )
-            }}
-            aria-label="Persona"
-          >
-            {miembros.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.id === yoId ? `${m.full_name} (tu)` : m.full_name}
-              </option>
-            ))}
-          </select>
-        )}
+          {/* Se elige un dia y se abre su semana, sin ir de una en una */}
+          <label className="relative flex items-center" title="Ir a una semana">
+            <CalendarDays
+              className="pointer-events-none absolute left-2 h-4 w-4 text-muted"
+              aria-hidden
+            />
+            <input
+              type="date"
+              value={lunes}
+              onChange={(e) => {
+                if (!e.target.value) return
+                irA(toDateKey(startOfWeek(fromDateKey(e.target.value))))
+              }}
+              className="field tabular h-8 w-[9.5rem] pl-7 text-sm"
+              aria-label="Ir a la semana de este día"
+            />
+          </label>
+        </div>
       </div>
 
       {error && (

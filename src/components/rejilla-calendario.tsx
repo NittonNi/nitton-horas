@@ -362,36 +362,40 @@ export function RejillaCalendario({
           })}
         </p>
 
-        {/* Saltar a cualquier semana sin ir de una en una: se elige un dia
-            cualquiera y se abre la semana que lo contiene. */}
-        <label className="relative flex items-center" title="Ir a una semana">
-          <CalendarDays
-            className="pointer-events-none absolute left-2 h-4 w-4 text-muted"
-            aria-hidden
-          />
-          <input
-            type="date"
-            value={lunes}
-            onChange={(e) => {
-              if (!e.target.value) return
-              irA(toDateKey(startOfWeek(fromDateKey(e.target.value))))
-            }}
-            className="field tabular h-8 w-[9.5rem] pl-7 text-sm"
-            aria-label="Ir a la semana de este día"
-          />
-        </label>
-
-        {lunes !== toDateKey(startOfWeek(new Date())) && (
-          <button
-            type="button"
-            onClick={() => irA(toDateKey(startOfWeek(new Date())))}
-            className="btn h-8 text-sm"
-          >
-            Esta semana
-          </button>
-        )}
-
         <span className="chip">{formatDurationShort(totalSemana)}</span>
+
+        {/* A la derecha lo de moverse por el tiempo; a la izquierda, donde
+            estas. Asi la cabecera no es una fila de cosas sueltas. */}
+        <div className="ml-auto flex items-center gap-2">
+          {lunes !== toDateKey(startOfWeek(new Date())) && (
+            <button
+              type="button"
+              onClick={() => irA(toDateKey(startOfWeek(new Date())))}
+              className="btn h-8 text-sm"
+            >
+              Esta semana
+            </button>
+          )}
+
+          {/* Saltar a cualquier semana sin ir de una en una: se elige un dia
+              cualquiera y se abre la semana que lo contiene. */}
+          <label className="relative flex items-center" title="Ir a una semana">
+            <CalendarDays
+              className="pointer-events-none absolute left-2 h-4 w-4 text-muted"
+              aria-hidden
+            />
+            <input
+              type="date"
+              value={lunes}
+              onChange={(e) => {
+                if (!e.target.value) return
+                irA(toDateKey(startOfWeek(fromDateKey(e.target.value))))
+              }}
+              className="field tabular h-8 w-[9.5rem] pl-7 text-sm"
+              aria-label="Ir a la semana de este día"
+            />
+          </label>
+        </div>
 
       </div>
 

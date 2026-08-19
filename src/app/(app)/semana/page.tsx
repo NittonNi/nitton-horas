@@ -8,7 +8,7 @@ export const metadata = { title: "Semana" }
 export default async function PaginaSemana({
   searchParams,
 }: {
-  searchParams: Promise<{ semana?: string; persona?: string }>
+  searchParams: Promise<{ semana?: string }>
 }) {
   const parametros = await searchParams
   const { perfil, espacio } = await getSesion()
@@ -18,9 +18,8 @@ export default async function PaginaSemana({
     : toDateKey(startOfWeek(new Date()))
   const domingo = toDateKey(addDays(fromDateKey(lunes), 6))
 
-  // Solo quien ve las horas de todos puede mirar la semana de otra persona
-  // Cualquiera puede mirar -y corregir- la semana de cualquiera del espacio
-  const personaId = parametros.persona || perfil.id
+  /* La hoja es para rellenar lo tuyo, igual que el calendario: las horas de
+     otra gente se miran en informes. */
 
   const [catalogo, entradas, miembros] = await Promise.all([
     cargarCatalogo(espacio.id),
@@ -28,7 +27,7 @@ export default async function PaginaSemana({
       espacioId: espacio.id,
       desde: lunes,
       hasta: domingo,
-      userId: personaId,
+      userId: perfil.id,
     }),
     cargarMiembros(espacio.id),
   ])
@@ -48,7 +47,6 @@ export default async function PaginaSemana({
         lunes={lunes}
         espacioId={espacio.id}
         yoId={perfil.id}
-        personaId={personaId}
         miembros={miembros.filter((m) => m.active)}
       />
     </div>

@@ -13,6 +13,7 @@ import {
   Loader2,
   Plus,
   Search,
+  Star,
 } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
@@ -63,7 +64,7 @@ export function SelectorProyecto({
   invita?: boolean
 }) {
   const router = useRouter()
-  const { espacio, rol } = useSesion()
+  const { espacio, perfil, rol } = useSesion()
   const puedeCrear = rol === "admin" || rol === "manager"
 
   const [abierto, setAbierto] = useState(autoAbrir)
@@ -72,6 +73,9 @@ export function SelectorProyecto({
   const [desplegados, setDesplegados] = useState<string[]>([])
   const [anadiendoEn, setAnadiendoEn] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  /* Los proyectos de cada uno, arriba del todo. Se piden al abrir: es una
+     consulta minima y asi no viajan en cada pagina que use el selector. */
+  const [favoritos, setFavoritos] = useState<string[]>([])
 
   const campoBusqueda = useRef<HTMLInputElement>(null)
 
@@ -126,8 +130,79 @@ export function SelectorProyecto({
       .filter((fila) => fila.coincide)
   }, [proyectos, tareas, q])
 
+  /**
+   * Los proyectos, por areas: primero los favoritos de quien mira -lo que
+   * tiene entre manos- y despues cada area con los suyos. El area es el primer
+   * escalon de la categorizacion; lo que no tiene, al final.
+   */
+  const grupos = useMemo(() => {
+    const areaDe = (proyecto: ProyectoConCliente) => {
+      const suya = catalogo.categorias.find((c) => c.id === proyecto.category_id)
+      if (!suya) return null
+      return suya.parent_id
+        ? (catalogo.categorias.find((c) => c.id === suya.parent_id) ?? suya)
+        : suya
+    }
+
+    const mios = visibles.filter((v) => favoritos.includes(v.proyecto.id))
+    const resto = visibles.filter((v) => !favoritos.includes(v.proyecto.id))
+
+    const porArea = new Map<string, { titulo: string; filas: typeof visibles }>()
+    for (const fila of resto) {
+      const area = areaDe(fila.proyecto)
+      const clave = area?.id ?? "sin-area"
+      const grupo = porArea.get(clave) ?? {
+        titulo: area?.name ?? "Sin área",
+        filas: [],
+      }
+      grupo.filas.push(fila)
+      porArea.set(clave, grupo)
+    }
+
+    const ordenados = [...porArea.entries()]
+      .sort((a, b) => {
+        if (a[0] === "sin-area") return 1
+        if (b[0] === "sin-area") return -1
+        return a[1].titulo.localeCompare(b[1].titulo, "es")
+      })
+      .map(([clave, grupo]) => ({ clave, ...grupo }))
+
+    return mios.length > 0
+      ? [{ clave: "favoritos", titulo: "Tuyos", filas: mios }, ...ordenados]
+      : ordenados
+  }, [visibles, favoritos, catalogo.categorias])
+
   const proyectoElegido = proyectos.find((p) => p.id === valor.project_id) ?? null
   const tareaElegida = tareas.find((t) => t.id === valor.task_id) ?? null
+
+  async function cargarFavoritos() {
+    const { data } = await createClient()
+      .from("project_favorites")
+      .select("project_id")
+      .eq("workspace_id", espacio.id)
+    setFavoritos((data ?? []).map((f) => f.project_id))
+  }
+
+  async function alternarFavorito(proyectoId: string) {
+    const esta = favoritos.includes(proyectoId)
+    setFavoritos((antes) =>
+      esta ? antes.filter((id) => id !== proyectoId) : [...antes, proyectoId],
+    )
+    const supabase = createClient()
+    if (esta) {
+      await supabase
+        .from("project_favorites")
+        .delete()
+        .eq("project_id", proyectoId)
+        .eq("user_id", perfil.id)
+    } else {
+      await supabase.from("project_favorites").insert({
+        user_id: perfil.id,
+        project_id: proyectoId,
+        workspace_id: espacio.id,
+      })
+    }
+  }
 
   function cerrar() {
     setAbierto(false)
@@ -181,7 +256,14 @@ export function SelectorProyecto({
     /* En un portal: dentro de una fila con overflow oculto se recortaria */
     <Popover.Root
       open={abierto}
-      onOpenChange={(v) => (v ? setAbierto(true) : cerrar())}
+      onOpenChange={(v) => {
+        if (v) {
+          setAbierto(true)
+          void cargarFavoritos()
+        } else {
+          cerrar()
+        }
+      }}
     >
       <Popover.Trigger
         autoFocus={autoFoco}
@@ -280,7 +362,10 @@ export function SelectorProyecto({
                   {!valor.project_id && <Check className="h-4 w-4 text-accent" />}
                 </button>
 
-                {visibles.map(({ proyecto, tareas: suyas }) => {
+                {grupos.map((grupo) => (
+                  <div key={grupo.clave}>
+                    <p className="rotulo px-3 pb-0.5 pt-2">{grupo.titulo}</p>
+                    {grupo.filas.map(({ proyecto, tareas: suyas }) => {
                   const desplegado = desplegados.includes(proyecto.id) || q.length > 0
                   const elegido = valor.project_id === proyecto.id
                   const ediciones = catalogo.ediciones.filter(
@@ -290,8 +375,20 @@ export function SelectorProyecto({
                   return (
                     <div key={proyecto.id}>
                       <div
+                        /* Con pasar por encima ya se abren las ediciones y las
+                           tareas: buscar el triangulito para cada proyecto era
+                           un clic de mas en la operacion mas repetida. */
+                        onMouseEnter={() => {
+                          if (ediciones.length > 0 || suyas.length > 0) {
+                            setDesplegados((antes) =>
+                              antes.includes(proyecto.id)
+                                ? antes
+                                : [...antes, proyecto.id],
+                            )
+                          }
+                        }}
                         className={cn(
-                          "flex items-center gap-1 pr-2 transition hover:bg-surface-2",
+                          "group/fila flex items-center gap-1 pr-1 transition hover:bg-surface-2",
                           elegido && !valor.task_id && "bg-surface-2",
                         )}
                       >
@@ -321,6 +418,36 @@ export function SelectorProyecto({
                           )}
                         </button>
 
+                        {/* Lo que se usa a diario, arriba del todo */}
+                        <button
+                          type="button"
+                          onClick={() => void alternarFavorito(proyecto.id)}
+                          aria-pressed={favoritos.includes(proyecto.id)}
+                          aria-label={
+                            favoritos.includes(proyecto.id)
+                              ? `Quitar ${proyecto.name} de los tuyos`
+                              : `Poner ${proyecto.name} arriba del todo`
+                          }
+                          title={
+                            favoritos.includes(proyecto.id)
+                              ? "Quitarlo de los tuyos"
+                              : "Ponerlo arriba del todo"
+                          }
+                          className={cn(
+                            "shrink-0 rounded p-1.5 transition",
+                            favoritos.includes(proyecto.id)
+                              ? "text-live"
+                              : "text-muted opacity-0 hover:bg-surface-3 group-hover/fila:opacity-100",
+                          )}
+                        >
+                          <Star
+                            className={cn(
+                              "h-3.5 w-3.5",
+                              favoritos.includes(proyecto.id) && "fill-current",
+                            )}
+                          />
+                        </button>
+
                         {/* Desplegar no es elegir: por eso va aparte */}
                         <button
                           type="button"
@@ -331,12 +458,12 @@ export function SelectorProyecto({
                               : `Ver tareas de ${proyecto.name}`
                           }
                           aria-expanded={desplegado}
-                          className="shrink-0 rounded p-1 text-muted transition hover:bg-surface-3"
+                          className="shrink-0 rounded p-2 text-muted transition hover:bg-surface-3"
                         >
                           {desplegado ? (
-                            <ChevronDown className="h-3.5 w-3.5" />
+                            <ChevronDown className="h-4 w-4" />
                           ) : (
-                            <ChevronRight className="h-3.5 w-3.5" />
+                            <ChevronRight className="h-4 w-4" />
                           )}
                         </button>
                       </div>
@@ -430,6 +557,8 @@ export function SelectorProyecto({
                     </div>
                   )
                 })}
+                  </div>
+                ))}
 
                 {visibles.length === 0 && (
                   <p className="px-3 py-6 text-center text-sm text-muted">

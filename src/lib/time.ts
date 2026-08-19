@@ -18,13 +18,16 @@ export function formatDuration(seconds: number | null | undefined): string {
 }
 
 /** 5025 -> "1:23". Para totales, donde los segundos son ruido. */
+/**
+ * Las duraciones se leen enteras: horas, minutos y segundos. 7080 -> "01:58:00".
+ * Los tramos de reloj -de 9:00 a 10:00- son otra cosa y siguen sin segundos.
+ */
 export function formatDurationShort(seconds: number | null | undefined): string {
   const total = Math.max(0, Math.floor(seconds ?? 0))
   const h = Math.floor(total / 3600)
-  const m = Math.round((total % 3600) / 60)
-  // redondear los minutos puede dar 60
-  const carry = m === 60 ? 1 : 0
-  return `${h + carry}:${String(carry ? 0 : m).padStart(2, "0")}`
+  const m = Math.floor((total % 3600) / 60)
+  const s = total % 60
+  return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":")
 }
 
 /** 5025 -> "1,40". Lo que se factura. */
@@ -220,7 +223,7 @@ export function weekLabel(mondayKey: string): string {
     : `${dia(lunes)} de ${mes(lunes)} – ${dia(domingo)} de ${mes(domingo)}`
 }
 
-/** Un objetivo en minutos, escrito como el resto de duraciones: "8:00". */
+/** Un objetivo en minutos, escrito como el resto de duraciones: "08:00:00". */
 export function formatObjetivoCorto(minutos: number): string {
-  return `${Math.floor(minutos / 60)}:${String(minutos % 60).padStart(2, "0")}`
+  return formatDurationShort(minutos * 60)
 }

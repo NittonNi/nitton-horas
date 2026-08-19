@@ -11,6 +11,7 @@ import {
   weekLabel,
 } from "@/lib/time"
 import type { Catalogo, EntradaVista } from "@/lib/tipos"
+import { cn } from "@/lib/utils"
 
 /**
  * Las horas van agrupadas por semana y, dentro, por dia. La cabecera de cada
@@ -125,16 +126,24 @@ function Cifra({
   const cumplido = objetivo !== null && segundos >= objetivo * 60
 
   return (
-    <span className="tabular text-sm">
+    <span
+      className={cn(
+        "caja-horas text-sm",
+        cumplido && "border-billable-line bg-billable-soft",
+      )}
+    >
       <span
-        className={
-          cumplido ? "font-medium text-billable" : discreto ? "text-ink-soft" : "text-ink"
-        }
+        className={cn(
+          "font-medium",
+          cumplido ? "text-billable" : discreto ? "text-ink-soft" : "text-ink",
+        )}
       >
         {formatDurationShort(segundos)}
       </span>
       {objetivo !== null && (
-        <span className="text-muted"> / {formatObjetivoCorto(objetivo)}</span>
+        <span className="text-xs text-muted">
+          / {formatObjetivoCorto(objetivo)}
+        </span>
       )}
     </span>
   )

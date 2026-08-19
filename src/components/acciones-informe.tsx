@@ -6,7 +6,10 @@ import { Euro, Loader2, Lock, LockOpen, Tag, Trash2, X } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
-import { SelectorProyecto } from "@/components/selector-proyecto"
+import {
+  SelectorProyecto,
+  type Seleccion,
+} from "@/components/selector-proyecto"
 import { formatDurationShort } from "@/lib/time"
 import type { TablesUpdate } from "@/lib/database.types"
 import type { Catalogo, EntradaVista } from "@/lib/tipos"
@@ -85,7 +88,7 @@ export function AccionesInforme({
     }
   }
 
-  function cambiarProyecto(sel: { project_id: string | null; task_id: string | null }) {
+  function cambiarProyecto(sel: Seleccion) {
     const proyecto = catalogo.proyectos.find((p) => p.id === sel.project_id)
     const antes = seleccionadas.map((e) => ({
       id: e.id,
@@ -100,8 +103,7 @@ export function AccionesInforme({
           .update({
             project_id: sel.project_id,
             task_id: sel.task_id,
-            // la edicion es de un proyecto: al moverlas, se cae
-            edition_id: null,
+            edition_id: sel.edition_id,
           })
           .in("id", ids),
       (n) =>
@@ -250,7 +252,7 @@ export function AccionesInforme({
           <SelectorProyecto
             catalogo={catalogo}
             compacto
-            valor={{ project_id: null, task_id: null }}
+            valor={{ project_id: null, task_id: null, edition_id: null }}
             onChange={cambiarProyecto}
           />
         </div>

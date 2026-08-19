@@ -11,7 +11,13 @@ import Papa from "papaparse"
 
 import type { CellObject, Row, SheetData } from "write-excel-file/browser"
 
-import { formatDateShort, formatHoursDecimal, fromDateKey, hoursDecimal } from "@/lib/time"
+import {
+  formatDateShort,
+  formatDurationShort,
+  formatHoursDecimal,
+  fromDateKey,
+  hoursDecimal,
+} from "@/lib/time"
 import type { EntradaVista } from "@/lib/tipos"
 
 function descargar(contenido: Blob, nombre: string) {
@@ -39,6 +45,7 @@ export function exportarCsv(entradas: EntradaVista[], nombre: string) {
     Tarea: entrada.task_name ?? "",
     Descripción: entrada.description,
     Etiquetas: entrada.tags.join(", "),
+    Duracion: formatDurationShort(entrada.duration_seconds),
     Horas: formatHoursDecimal(entrada.duration_seconds),
     Facturable: entrada.billable ? "Si" : "No",
     Importe:
@@ -91,6 +98,7 @@ export async function exportarExcel(
     { column: "Tarea", width: 22 },
     { column: "Descripción", width: 46 },
     { column: "Etiquetas", width: 22 },
+    { column: "Duración", width: 12 },
     { column: "Horas", width: 10 },
     { column: "Facturable", width: 12 },
     ...(opciones.conImportes ? [{ column: "Importe", width: 14 }] : []),
@@ -110,6 +118,11 @@ export async function exportarExcel(
         { value: entrada.task_name ?? "", type: String },
         { value: entrada.description, type: String, wrap: true },
         { value: entrada.tags.join(", "), type: String },
+        {
+          value: formatDurationShort(entrada.duration_seconds),
+          type: String,
+          align: "right",
+        },
         {
           value: hoursDecimal(entrada.duration_seconds),
           type: Number,
@@ -154,6 +167,7 @@ export async function exportarExcel(
     [],
     [
       cabecera("Proyecto"),
+      cabecera("Duración"),
       cabecera("Horas"),
       ...(opciones.conImportes ? [cabecera("Importe")] : []),
     ],
@@ -161,6 +175,11 @@ export async function exportarExcel(
       .sort((a, b) => b[1].horas - a[1].horas)
       .map(([nombre, v]): Row => [
         { value: nombre, type: String },
+        {
+          value: formatDurationShort(Math.round(v.horas * 3600)),
+          type: String,
+          align: "right",
+        },
         { value: Math.round(v.horas * 100) / 100, type: Number, format: "0.00" },
         ...(opciones.conImportes
           ? [{ value: v.importe, type: Number, format: EUROS }]
@@ -168,6 +187,12 @@ export async function exportarExcel(
       ]),
     [
       { value: "Total", type: String, fontWeight: "bold" },
+      {
+        value: formatDurationShort(Math.round(totalHoras * 3600)),
+        type: String,
+        align: "right",
+        fontWeight: "bold",
+      },
       {
         value: Math.round(totalHoras * 100) / 100,
         type: Number,

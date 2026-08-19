@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronRight,
   FolderOpen,
+  Layers,
   Loader2,
   Plus,
   Search,
@@ -26,7 +27,12 @@ import {
 } from "@/lib/tipos"
 import { cn } from "@/lib/utils"
 
-type Seleccion = { project_id: string | null; task_id: string | null }
+export type Seleccion = {
+  project_id: string | null
+  task_id: string | null
+  /** La edicion, si el proyecto tiene: TBCE 1, TBCE 2... */
+  edition_id: string | null
+}
 
 const sinAcentos = (texto: string) =>
   texto
@@ -125,8 +131,16 @@ export function SelectorProyecto({
     setError(null)
   }
 
-  function elegir(project_id: string | null, task_id: string | null) {
-    onChange({ project_id, task_id })
+  /**
+   * Se elige de una vez: proyecto, y dentro la edicion o la tarea. Cambiar de
+   * proyecto tira la edicion y la tarea, que eran de otro.
+   */
+  function elegir(
+    project_id: string | null,
+    task_id: string | null,
+    edition_id: string | null = null,
+  ) {
+    onChange({ project_id, task_id, edition_id })
     cerrar()
   }
 
@@ -251,6 +265,9 @@ export function SelectorProyecto({
                 {visibles.map(({ proyecto, tareas: suyas }) => {
                   const desplegado = desplegados.includes(proyecto.id) || q.length > 0
                   const elegido = valor.project_id === proyecto.id
+                  const ediciones = catalogo.ediciones.filter(
+                    (e) => e.project_id === proyecto.id && !e.archived,
+                  )
 
                   return (
                     <div key={proyecto.id}>
@@ -304,11 +321,52 @@ export function SelectorProyecto({
 
                       {desplegado && (
                         <div className="ml-[1.4rem] border-l border-line pl-1">
+                          {ediciones.length > 0 && (
+                            <>
+                              <p className="rotulo px-3 pb-0.5 pt-1.5">Ediciones</p>
+                              {ediciones.map((edicion) => (
+                                <button
+                                  key={edicion.id}
+                                  type="button"
+                                  onClick={() =>
+                                    elegir(proyecto.id, valor.task_id, edicion.id)
+                                  }
+                                  className={cn(
+                                    "flex w-full items-center gap-2 py-1.5 pl-3 pr-2 text-left text-sm transition hover:bg-surface-2",
+                                    valor.edition_id === edicion.id && "bg-surface-2",
+                                  )}
+                                >
+                                  <Layers
+                                    className="h-3.5 w-3.5 shrink-0 text-muted"
+                                    aria-hidden
+                                  />
+                                  <span className="min-w-0 flex-1 truncate">
+                                    {edicion.name}
+                                  </span>
+                                  {valor.edition_id === edicion.id && (
+                                    <Check className="h-4 w-4 shrink-0 text-accent" />
+                                  )}
+                                </button>
+                              ))}
+                              {suyas.length > 0 && (
+                                <p className="rotulo px-3 pb-0.5 pt-2">Tareas</p>
+                              )}
+                            </>
+                          )}
+
                           {suyas.map((tarea) => (
                             <button
                               key={tarea.id}
                               type="button"
-                              onClick={() => elegir(proyecto.id, tarea.id)}
+                              onClick={() =>
+                                elegir(
+                                  proyecto.id,
+                                  tarea.id,
+                                  valor.project_id === proyecto.id
+                                    ? valor.edition_id
+                                    : null,
+                                )
+                              }
                               className={cn(
                                 "flex w-full items-center gap-2 py-1.5 pl-3 pr-2 text-left text-sm transition hover:bg-surface-2",
                                 valor.task_id === tarea.id && "bg-surface-2",

@@ -12,7 +12,6 @@ import { DialogoEntrada } from "@/components/dialogo-entrada"
 import { SelectorPersonas } from "@/components/selector-personas"
 import { SelectorProyecto } from "@/components/selector-proyecto"
 import { SelectorEtiquetas } from "@/components/selector-etiquetas"
-import { SelectorEdicion } from "@/components/selector-edicion"
 import {
   ALTO_HORA,
   comoHora,
@@ -624,11 +623,6 @@ function DialogoNuevaEntrada({
       ? null
       : (minutosFin > minutosInicio ? minutosFin : minutosFin + 24 * 60) - minutosInicio
 
-  /** Ediciones del proyecto elegido; casi ningun proyecto tiene. */
-  const ediciones = proyecto.project_id
-    ? catalogo.ediciones.filter((e) => e.project_id === proyecto.project_id)
-    : []
-
   function elegirProyecto(sel: { project_id: string | null; task_id: string | null }) {
     setProyecto(sel)
     const encontrado = catalogo.proyectos.find((p) => p.id === sel.project_id)
@@ -796,22 +790,12 @@ function DialogoNuevaEntrada({
               <span className="label">Proyecto y tarea</span>
               <SelectorProyecto
                 catalogo={catalogo}
-                valor={proyecto}
+                valor={{ ...proyecto, edition_id: edicionId }}
                 onChange={(sel) => {
-                  // la edicion es de un proyecto: al cambiarlo, se cae
-                  if (sel.project_id !== proyecto.project_id) setEdicionId(null)
+                  setEdicionId(sel.edition_id)
                   elegirProyecto(sel)
                 }}
               />
-              {ediciones.length > 0 && (
-                <div className="mt-2">
-                  <SelectorEdicion
-                    ediciones={ediciones}
-                    valor={edicionId}
-                    onChange={setEdicionId}
-                  />
-                </div>
-              )}
             </div>
 
             <div>

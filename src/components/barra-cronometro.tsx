@@ -8,9 +8,11 @@ import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { useCronometro } from "@/components/proveedor-cronometro"
 import { useSesion } from "@/components/proveedor-sesion"
-import { SelectorProyecto } from "@/components/selector-proyecto"
+import {
+  SelectorProyecto,
+  type Seleccion,
+} from "@/components/selector-proyecto"
 import { SelectorEtiquetas } from "@/components/selector-etiquetas"
-import { SelectorEdicion } from "@/components/selector-edicion"
 import { SelectorPersonas } from "@/components/selector-personas"
 import { proponerHoras } from "@/lib/compartir"
 import {
@@ -111,19 +113,12 @@ export function BarraCronometro({
     else setBorrador((b) => ({ ...b, ...cambios }))
   }
 
-  /** Ediciones del proyecto que esta elegido ahora mismo. */
-  const edicionesDelProyecto = activo.project_id
-    ? catalogo.ediciones.filter((e) => e.project_id === activo.project_id)
-    : []
-
   /** Al elegir proyecto, hereda su marca de facturable si no se ha tocado. */
-  function elegirProyecto(sel: { project_id: string | null; task_id: string | null }) {
+  function elegirProyecto(sel: Seleccion) {
     const proyecto = catalogo.proyectos.find((p) => p.id === sel.project_id)
     if (sel.project_id) setFaltaProyecto(false)
     cambiar({
       ...sel,
-      // La edicion es de un proyecto: al cambiar de proyecto se cae
-      ...(sel.project_id !== activo.project_id ? { edition_id: null } : {}),
       ...(proyecto && !enMarcha ? { billable: proyecto.billable_default } : {}),
     })
   }
@@ -216,16 +211,14 @@ export function BarraCronometro({
           <div className="w-full sm:w-56">
             <SelectorProyecto
               catalogo={catalogo}
-              valor={{ project_id: activo.project_id, task_id: activo.task_id }}
+              valor={{
+                project_id: activo.project_id,
+                task_id: activo.task_id,
+                edition_id: activo.edition_id,
+              }}
               onChange={elegirProyecto}
             />
           </div>
-
-          <SelectorEdicion
-            ediciones={edicionesDelProyecto}
-            valor={activo.edition_id}
-            onChange={(edition_id) => cambiar({ edition_id })}
-          />
 
           <SelectorEtiquetas
             etiquetas={catalogo.etiquetas}

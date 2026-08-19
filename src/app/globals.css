@@ -320,6 +320,31 @@
     background: var(--surface-2);
   }
 
+  /**
+   * Las duraciones van en su cajita: un rato de trabajo no es un numero mas
+   * perdido en la fila, y con el recuadro se encuentra de un vistazo.
+   */
+  .caja-horas {
+    display: inline-flex;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 0.25rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radio-sm);
+    background: var(--surface);
+    padding: 0.125rem 0.4375rem;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    line-height: 1.35;
+    white-space: nowrap;
+  }
+
+  /** La misma caja, para los numeros grandes de las tarjetas. */
+  .caja-horas-grande {
+    padding: 0.25rem 0.5rem;
+    border-color: var(--line-strong);
+  }
+
   .chip {
     display: inline-flex;
     align-items: center;

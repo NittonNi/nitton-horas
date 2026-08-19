@@ -22,6 +22,7 @@ type Fila = {
   clave: string
   project_id: string | null
   task_id: string | null
+  edition_id: string | null
   descripcion: string
   proyecto: string
   cliente: string | null
@@ -33,8 +34,12 @@ type Fila = {
 const claveFila = (
   project_id: string | null,
   task_id: string | null,
+  edition_id: string | null,
   descripcion: string,
-) => `${project_id ?? "-"}|${task_id ?? "-"}|${descripcion.trim().toLowerCase()}`
+) =>
+  `${project_id ?? "-"}|${task_id ?? "-"}|${edition_id ?? "-"}|${descripcion
+    .trim()
+    .toLowerCase()}`
 
 export function TablaSemana({
   entradas,
@@ -55,7 +60,13 @@ export function TablaSemana({
 }) {
   const router = useRouter()
   const [nuevas, setNuevas] = useState<
-    { clave: string; project_id: string | null; task_id: string | null; descripcion: string }[]
+    {
+      clave: string
+      project_id: string | null
+      task_id: string | null
+      edition_id: string | null
+      descripcion: string
+    }[]
   >([])
   const [ocupado, setOcupado] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -71,11 +82,17 @@ export function TablaSemana({
 
     for (const entrada of entradas) {
       if (!entrada.end_at) continue // el cronometro en marcha no cuadricula
-      const clave = claveFila(entrada.project_id, entrada.task_id, entrada.description)
+      const clave = claveFila(
+        entrada.project_id,
+        entrada.task_id,
+        entrada.edition_id,
+        entrada.description,
+      )
       if (!mapa.has(clave)) {
         mapa.set(clave, {
           clave,
           project_id: entrada.project_id,
+          edition_id: entrada.edition_id,
           task_id: entrada.task_id,
           descripcion: entrada.description,
           proyecto: entrada.project_name ?? "Sin proyecto",
@@ -96,6 +113,7 @@ export function TablaSemana({
       mapa.set(pendiente.clave, {
         clave: pendiente.clave,
         project_id: pendiente.project_id,
+        edition_id: pendiente.edition_id,
         task_id: pendiente.task_id,
         descripcion: pendiente.descripcion,
         proyecto: proyecto
@@ -192,6 +210,7 @@ export function TablaSemana({
           workspace_id: espacioId,
           user_id: personaId,
           project_id: fila.project_id,
+          edition_id: fila.edition_id,
           task_id: fila.task_id,
           description: fila.descripcion,
           billable: fila.facturable,
@@ -398,13 +417,14 @@ export function TablaSemana({
       {/* Anadir una fila que falta, sea tu semana o la de otro */}
       <NuevaFila
         catalogo={catalogo}
-        onAnadir={(project_id, task_id, descripcion) =>
+        onAnadir={(project_id, task_id, edition_id, descripcion) =>
           setNuevas((previas) => [
             ...previas,
             {
-              clave: claveFila(project_id, task_id, descripcion),
+              clave: claveFila(project_id, task_id, edition_id, descripcion),
               project_id,
               task_id,
+              edition_id,
               descripcion,
             },
           ])
@@ -485,6 +505,7 @@ function NuevaFila({
   onAnadir: (
     project_id: string | null,
     task_id: string | null,
+    edition_id: string | null,
     descripcion: string,
   ) => void
 }) {
@@ -492,7 +513,8 @@ function NuevaFila({
   const [proyecto, setProyecto] = useState<{
     project_id: string | null
     task_id: string | null
-  }>({ project_id: null, task_id: null })
+    edition_id: string | null
+  }>({ project_id: null, task_id: null, edition_id: null })
   const [descripcion, setDescripcion] = useState("")
 
   if (!abierto) {
@@ -533,8 +555,13 @@ function NuevaFila({
       <button
         type="button"
         onClick={() => {
-          onAnadir(proyecto.project_id, proyecto.task_id, descripcion)
-          setProyecto({ project_id: null, task_id: null })
+          onAnadir(
+            proyecto.project_id,
+            proyecto.task_id,
+            proyecto.edition_id,
+            descripcion,
+          )
+          setProyecto({ project_id: null, task_id: null, edition_id: null })
           setDescripcion("")
           setAbierto(false)
         }}

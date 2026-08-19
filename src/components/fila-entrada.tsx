@@ -10,7 +10,6 @@ import { mensajeError } from "@/lib/errores"
 import { useCronometro } from "@/components/proveedor-cronometro"
 import { SelectorProyecto } from "@/components/selector-proyecto"
 import { SelectorEtiquetas } from "@/components/selector-etiquetas"
-import { SelectorEdicion } from "@/components/selector-edicion"
 import {
   combineDateAndTime,
   formatClock,
@@ -49,11 +48,6 @@ export function FilaEntrada({
   /* Quien mas cuenta estas horas. Un punto naranja avisa de que alguien no ha
      contestado todavia. */
   const compartida = entrada.compartida_con ?? []
-
-  /** Solo las del proyecto de esta entrada; si no tiene, no se ve nada. */
-  const ediciones = entrada.project_id
-    ? catalogo.ediciones.filter((e) => e.project_id === entrada.project_id)
-    : []
 
   async function guardar(cambios: TablesUpdate<"time_entries">) {
     setOcupado(true)
@@ -193,32 +187,23 @@ export function FilaEntrada({
         {/* ----------------------------------------------------- proyecto */}
         <div className="hidden w-52 shrink-0 md:block">
           {campo === "proyecto" ? (
-            <div className="space-y-1.5">
-              <SelectorProyecto
-                catalogo={catalogo}
-                compacto
-                autoAbrir
-                valor={{ project_id: entrada.project_id, task_id: entrada.task_id }}
-                onChange={(sel) =>
-                  void guardar({
-                    project_id: sel.project_id,
-                    task_id: sel.task_id,
-                    // la edicion es de un proyecto: al cambiarlo, se cae
-                    ...(sel.project_id !== entrada.project_id
-                      ? { edition_id: null }
-                      : {}),
-                  })
-                }
-              />
-              {ediciones.length > 0 && (
-                <SelectorEdicion
-                  ediciones={ediciones}
-                  valor={entrada.edition_id}
-                  compacto
-                  onChange={(edition_id) => void guardar({ edition_id })}
-                />
-              )}
-            </div>
+            <SelectorProyecto
+              catalogo={catalogo}
+              compacto
+              autoAbrir
+              valor={{
+                project_id: entrada.project_id,
+                task_id: entrada.task_id,
+                edition_id: entrada.edition_id,
+              }}
+              onChange={(sel) =>
+                void guardar({
+                  project_id: sel.project_id,
+                  task_id: sel.task_id,
+                  edition_id: sel.edition_id,
+                })
+              }
+            />
           ) : (
             <button
               type="button"
@@ -333,7 +318,7 @@ export function FilaEntrada({
         </div>
 
         {/* -------------------------------------------------- duracion */}
-        <div className="w-16 shrink-0">
+        <div className="w-[5.5rem] shrink-0">
           {campo === "duracion" ? (
             <input
               autoFocus
@@ -362,8 +347,8 @@ export function FilaEntrada({
               disabled={bloqueada}
               onClick={() => setCampo("duracion")}
               className={cn(
-                pulsable,
-                "tabular block w-full text-right text-[0.9375rem] font-semibold",
+                "caja-horas w-full text-[0.9375rem] font-semibold transition",
+                !bloqueada && "hover:border-line-strong hover:bg-surface-2",
               )}
             >
               {formatDurationShort(entrada.duration_seconds)}

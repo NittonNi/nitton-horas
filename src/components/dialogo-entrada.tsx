@@ -8,7 +8,6 @@ import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { SelectorProyecto } from "@/components/selector-proyecto"
 import { SelectorEtiquetas } from "@/components/selector-etiquetas"
-import { SelectorEdicion } from "@/components/selector-edicion"
 import {
   combineDateAndTime,
   formatDurationShort,
@@ -32,8 +31,8 @@ export function DialogoEntrada({
   const [proyecto, setProyecto] = useState({
     project_id: entrada.project_id,
     task_id: entrada.task_id,
+    edition_id: entrada.edition_id,
   })
-  const [edicionId, setEdicionId] = useState(entrada.edition_id)
   const [facturable, setFacturable] = useState(entrada.billable)
   const [fecha, setFecha] = useState(entrada.local_date)
   const [inicio, setInicio] = useState(toClockInput(entrada.start_at))
@@ -62,10 +61,6 @@ export function DialogoEntrada({
     document.addEventListener("keydown", esc)
     return () => document.removeEventListener("keydown", esc)
   }, [onCerrar])
-
-  const ediciones = proyecto.project_id
-    ? catalogo.ediciones.filter((e) => e.project_id === proyecto.project_id)
-    : []
 
   function recalcularDuracion(desde: string, hasta: string) {
     if (!desde || !hasta) return
@@ -106,7 +101,7 @@ export function DialogoEntrada({
         .update({
           description: descripcion,
           project_id: proyecto.project_id,
-          edition_id: edicionId,
+          edition_id: proyecto.edition_id,
           task_id: proyecto.task_id,
           billable: facturable,
           start_at,
@@ -186,20 +181,8 @@ export function DialogoEntrada({
             <SelectorProyecto
               catalogo={catalogo}
               valor={proyecto}
-              onChange={(sel) => {
-                if (sel.project_id !== proyecto.project_id) setEdicionId(null)
-                setProyecto(sel)
-              }}
+              onChange={setProyecto}
             />
-            {ediciones.length > 0 && (
-              <div className="mt-2">
-                <SelectorEdicion
-                  ediciones={ediciones}
-                  valor={edicionId}
-                  onChange={setEdicionId}
-                />
-              </div>
-            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

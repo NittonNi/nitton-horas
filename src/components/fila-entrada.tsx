@@ -3,11 +3,13 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import * as Popover from "@radix-ui/react-popover"
-import { Copy, Euro, Play, Trash2, Users } from "lucide-react"
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu"
+import { Copy, Euro, MoreHorizontal, Play, Trash2, Users } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { useCronometro } from "@/components/proveedor-cronometro"
+import { useAvisos } from "@/components/avisos"
 import { SelectorProyecto } from "@/components/selector-proyecto"
 import { SelectorEtiquetas } from "@/components/selector-etiquetas"
 import {
@@ -39,6 +41,7 @@ export function FilaEntrada({
 }) {
   const router = useRouter()
   const { arrancar } = useCronometro()
+  const { avisar } = useAvisos()
   const [campo, setCampo] = useState<Campo>(null)
   const [ocupado, setOcupado] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -84,10 +87,21 @@ export function FilaEntrada({
     router.refresh()
   }
 
+  /**
+   * Borrar sin susto: antes de irse se guarda la fila entera y sus etiquetas,
+   * y el aviso de abajo deja devolverla tal cual, con el mismo id.
+   */
   async function borrar() {
-    if (!confirm("¿Borrar esta entrada?")) return
     setOcupado(true)
-    const { error: err } = await createClient()
+    setError(null)
+    const supabase = createClient()
+
+    const [{ data: fila }, { data: etiquetas }] = await Promise.all([
+      supabase.from("time_entries").select("*").eq("id", entrada.id).single(),
+      supabase.from("time_entry_tags").select("entry_id, tag_id").eq("entry_id", entrada.id),
+    ])
+
+    const { error: err } = await supabase
       .from("time_entries")
       .delete()
       .eq("id", entrada.id)
@@ -96,7 +110,26 @@ export function FilaEntrada({
       setError(mensajeError(err))
       return
     }
+
     router.refresh()
+    avisar(
+      "Hora borrada.",
+      fila
+        ? async () => {
+            const cliente = createClient()
+            const { duration_seconds: _fuera, ...devolver } = fila
+            const { error: errVolver } = await cliente
+              .from("time_entries")
+              .insert(devolver)
+            if (errVolver) throw new Error(mensajeError(errVolver))
+            if (etiquetas && etiquetas.length > 0) {
+              await cliente.from("time_entry_tags").insert(etiquetas)
+            }
+            router.refresh()
+            return "Recuperada."
+          }
+        : undefined,
+    )
   }
 
   async function duplicar() {
@@ -134,6 +167,20 @@ export function FilaEntrada({
       return
     }
     router.refresh()
+    avisar(
+      "Duplicada.",
+      data
+        ? async () => {
+            const { error: errQuitar } = await createClient()
+              .from("time_entries")
+              .delete()
+              .eq("id", data.id)
+            if (errQuitar) throw new Error(mensajeError(errQuitar))
+            router.refresh()
+            return "Copia quitada."
+          }
+        : undefined,
+    )
   }
 
   /** Ids de las etiquetas puestas: la vista las trae por nombre. */
@@ -376,27 +423,44 @@ export function FilaEntrada({
           <Play className="h-3.5 w-3.5 fill-current" />
         </button>
 
-        <div className="flex w-[4rem] shrink-0 items-center justify-end gap-0.5 opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">
-          <button
-            type="button"
-            title="Duplicar"
-            aria-label="Duplicar"
-            onClick={() => void duplicar()}
-            disabled={ocupado}
-            className="btn btn-ghost p-1.5 text-muted hover:text-ink"
-          >
-            <Copy className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            title="Borrar"
-            aria-label="Borrar"
-            onClick={() => void borrar()}
-            disabled={ocupado || bloqueada}
-            className="btn btn-ghost p-1.5 text-muted hover:text-danger"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+        {/* Duplicar y borrar juntos y pequeños se confunden: van detrás de los
+            tres puntos, que es donde los busca todo el mundo. */}
+        <div className="flex w-8 shrink-0 items-center justify-end opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger
+              disabled={ocupado}
+              title="Más"
+              aria-label="Más cosas para esta hora"
+              className="btn btn-ghost p-1.5 text-muted hover:text-ink"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </DropdownMenu.Trigger>
+
+            <DropdownMenu.Portal>
+              <DropdownMenu.Content
+                align="end"
+                sideOffset={4}
+                className="z-50 w-44 overflow-hidden rounded-[var(--radio)] border border-line bg-surface p-1"
+                style={{ boxShadow: "var(--shadow-lg)" }}
+              >
+                <DropdownMenu.Item
+                  onSelect={() => void duplicar()}
+                  className="flex cursor-pointer items-center gap-2 rounded-[var(--radio-sm)] px-2 py-1.5 text-sm outline-none data-highlighted:bg-surface-2"
+                >
+                  <Copy className="h-3.5 w-3.5 text-muted" />
+                  Duplicar
+                </DropdownMenu.Item>
+                <DropdownMenu.Item
+                  disabled={bloqueada}
+                  onSelect={() => void borrar()}
+                  className="flex cursor-pointer items-center gap-2 rounded-[var(--radio-sm)] px-2 py-1.5 text-sm text-danger outline-none data-disabled:opacity-40 data-highlighted:bg-danger-soft"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Borrar
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Root>
         </div>
       </div>
 

@@ -582,7 +582,7 @@ function FilaGrupo({
           }
           aria-pressed={facturable === true}
           className={cn(
-            "hidden shrink-0 rounded-[6px] p-1 transition md:block",
+            "order-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] transition md:order-none md:h-auto md:w-auto md:p-1",
             facturable
               ? "text-billable hover:bg-billable-soft"
               : "text-muted hover:bg-surface-3/70",
@@ -619,7 +619,7 @@ function FilaGrupo({
         <span className="basis-full md:hidden" aria-hidden />
 
           {/* En movil, debajo: de que es el grupo y de cuando a cuando */}
-          <p className="flex min-w-0 flex-1 items-center gap-1.5 truncate py-0.5 pl-1.5 text-xs text-muted md:hidden">
+          <p className="order-1 flex min-w-0 flex-1 items-center gap-1.5 truncate py-0.5 pl-1.5 text-xs text-muted md:hidden">
             {primera.project_name ? (
               <>
                 <span
@@ -658,13 +658,13 @@ function FilaGrupo({
           }
           /* Naranja, que en esta casa es el color de lo que corre: el play es lo
             unico de la fila que pone el cronometro en marcha */
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] text-live transition hover:bg-live-soft md:h-auto md:w-auto md:px-2 md:py-1.5"
+          className="order-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] text-live transition hover:bg-live-soft md:order-none md:h-auto md:w-auto md:px-2 md:py-1.5"
         >
           <Play className="h-3.5 w-3.5 fill-current" />
         </button>
 
         {/* Hueco de los tres puntos: cada rato tiene los suyos dentro */}
-        <span className="w-10 shrink-0 md:w-8" aria-hidden />
+        <span className="order-4 w-10 shrink-0 md:order-none md:w-8" aria-hidden />
       </div>
 
 

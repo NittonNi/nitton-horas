@@ -408,7 +408,9 @@ export function FilaEntrada({
           title={entrada.billable ? "Se cobra" : "No se cobra"}
           aria-pressed={entrada.billable}
           className={cn(
-            "hidden shrink-0 rounded-[6px] p-1 transition md:block",
+            /* En movil se va a la segunda linea, detras del play; en
+               escritorio se queda donde estaba */
+            "order-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] transition md:order-none md:h-auto md:w-auto md:p-1",
             entrada.billable
               ? "text-billable hover:bg-billable-soft"
               : "text-muted hover:bg-surface-3/70",
@@ -478,7 +480,7 @@ export function FilaEntrada({
           <button
             type="button"
             onClick={() => setAbierta(true)}
-            className="flex min-w-0 flex-1 items-center gap-1.5 truncate py-0.5 pl-1.5 text-left text-xs text-muted md:hidden"
+            className="order-1 flex min-w-0 flex-1 items-center gap-1.5 truncate py-0.5 pl-1.5 text-left text-xs text-muted md:hidden"
           >
             {entrada.project_name ? (
               <>
@@ -506,9 +508,6 @@ export function FilaEntrada({
                 <sup className="ml-0.5 text-live">+1</sup>
               )}
             </span>
-            {entrada.billable && (
-              <Euro className="h-3 w-3 shrink-0 text-billable" aria-hidden />
-            )}
             {entrada.tags.length > 0 && (
               <Tag className="h-3 w-3 shrink-0" aria-hidden />
             )}
@@ -534,14 +533,14 @@ export function FilaEntrada({
           }
           /* Naranja, que en esta casa es el color de lo que corre: el play es lo
             unico de la fila que pone el cronometro en marcha */
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] text-live transition hover:bg-live-soft md:h-auto md:w-auto md:px-2 md:py-1.5"
+          className="order-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] text-live transition hover:bg-live-soft md:order-none md:h-auto md:w-auto md:px-2 md:py-1.5"
         >
           <Play className="h-3.5 w-3.5 fill-current" />
         </button>
 
         {/* Duplicar y borrar juntos y pequeños se confunden: van detrás de los
             tres puntos, que es donde los busca todo el mundo. */}
-        <div className="flex w-10 shrink-0 items-center justify-end md:w-8">
+        <div className="order-4 flex w-10 shrink-0 items-center justify-end md:order-none md:w-8">
           <DropdownMenu.Root>
             <DropdownMenu.Trigger
               disabled={ocupado}

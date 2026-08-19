@@ -15,6 +15,13 @@ import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { SelectorProyecto } from "@/components/selector-proyecto"
 import {
+  FiltrosDeHoras,
+  filtrarHoras,
+  hayFiltros,
+  SIN_FILTROS,
+  type Filtros,
+} from "@/components/filtros-horas"
+import {
   addDays,
   formatDurationShort,
   fromDateKey,
@@ -75,6 +82,7 @@ export function TablaSemana({
   >([])
   const [ocupado, setOcupado] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [filtros, setFiltros] = useState<Filtros>(SIN_FILTROS)
 
   const dias = useMemo(
     () => Array.from({ length: 7 }, (_, i) => toDateKey(addDays(fromDateKey(lunes), i))),
@@ -82,10 +90,15 @@ export function TablaSemana({
   )
 
 
+  /* Lo que se enseña, y por tanto lo que suma: los totales de abajo son de
+     lo que hay en la tabla. */
+  const visibles = useMemo(() => filtrarHoras(entradas, filtros), [entradas, filtros])
+  const filtrando = hayFiltros(filtros)
+
   const filas = useMemo(() => {
     const mapa = new Map<string, Fila>()
 
-    for (const entrada of entradas) {
+    for (const entrada of visibles) {
       if (!entrada.end_at) continue // el cronometro en marcha no cuadricula
       const clave = claveFila(
         entrada.project_id,
@@ -132,7 +145,7 @@ export function TablaSemana({
     }
 
     return [...mapa.values()]
-  }, [entradas, nuevas, catalogo])
+  }, [visibles, nuevas, catalogo])
 
   const totalDia = (dia: string) =>
     filas.reduce(
@@ -273,6 +286,15 @@ export function TablaSemana({
             year: "numeric",
           })}
         </p>
+
+        {/* Los mismos mandos que en el calendario: la hoja de la semana es
+            la misma semana, mirada de otra manera. */}
+        <div className="no-print flex flex-wrap items-center gap-2">
+          <FiltrosDeHoras catalogo={catalogo} valor={filtros} onChange={setFiltros} />
+          {filtrando && (
+            <span className="text-xs text-accent">solo lo filtrado</span>
+          )}
+        </div>
 
         {/* A la derecha lo de moverse por el tiempo, igual que en el
             calendario; a la izquierda, donde estas. */}

@@ -21,6 +21,13 @@ import { useAvisos } from "@/components/avisos"
 import { CampoHora } from "@/components/campo-hora"
 import { DialogoEntrada } from "@/components/dialogo-entrada"
 import { SelectorPersonas } from "@/components/selector-personas"
+import {
+  FiltrosDeHoras,
+  filtrarHoras,
+  hayFiltros,
+  SIN_FILTROS,
+  type Filtros,
+} from "@/components/filtros-horas"
 import { SelectorProyecto } from "@/components/selector-proyecto"
 import { SelectorEtiquetas } from "@/components/selector-etiquetas"
 import {
@@ -136,6 +143,7 @@ export function RejillaCalendario({
   const [diaMovil, setDiaMovil] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [ahora, setAhora] = useState(() => new Date())
+  const [filtros, setFiltros] = useState<Filtros>(SIN_FILTROS)
 
   /* El calendario es de uso personal: siempre son tus horas. Para mirar -o
      corregir- las de otra persona estan los informes, que es donde eso tiene
@@ -147,6 +155,12 @@ export function RejillaCalendario({
     [lunes],
   )
 
+  /* Lo que se pinta. Filtrar tambien cambia los totales: si la semana enseña
+     un proyecto, el numero de arriba tiene que ser el de ese proyecto y no el
+     de todo, que si no no cuadra con lo que se ve. */
+  const visibles = useMemo(() => filtrarHoras(entradas, filtros), [entradas, filtros])
+  const filtrando = hayFiltros(filtros)
+
   /* Las propuestas se colocan en la rejilla igual que las horas -para que no
      se pisen unas con otras- pero llevan el id marcado: ni se arrastran ni
      suman en el total del dia, porque no son tuyas hasta que dices que si. */
@@ -157,14 +171,14 @@ export function RejillaCalendario({
 
   const porDia = useMemo(() => {
     const mapa = new Map<string, Bloque[]>()
-    const todo = [...entradas, ...comoEntradas]
+    const todo = [...visibles, ...comoEntradas]
     for (const dia of dias) {
       // Sin filtrar por local_date: un rato que cruza la medianoche le toca a
       // dos dias, y cada uno se queda con su trozo.
       mapa.set(dia, repartir(todo, dia))
     }
     return mapa
-  }, [entradas, comoEntradas, dias])
+  }, [visibles, comoEntradas, dias])
 
   // El dia entero, siempre: apuntar a las 6 o a las 23 tiene que ser posible
   const franja = DIA_ENTERO
@@ -370,7 +384,7 @@ export function RejillaCalendario({
     router.push(`/calendario?semana=${nuevoLunes}`)
   }
 
-  const totalSemana = entradas.reduce((s, e) => s + (e.duration_seconds ?? 0), 0)
+  const totalSemana = visibles.reduce((s, e) => s + (e.duration_seconds ?? 0), 0)
 
   /* En movil se ve la semana entera, como el calendario del telefono: siete
      columnas estrechas y la tira de dias arriba. Tocando un dia se abre solo
@@ -415,7 +429,16 @@ export function RejillaCalendario({
           })}
         </p>
 
-        <span className="chip">{formatDurationShort(totalSemana)}</span>
+        <span className={cn("chip", filtrando && "border-accent text-accent")}>
+          {formatDurationShort(totalSemana)}
+          {filtrando && " filtradas"}
+        </span>
+
+        {/* Por area, por proyecto y por etiqueta: para mirar una semana con
+            los ojos puestos en una sola cosa. */}
+        <div className="no-print flex flex-wrap items-center gap-2">
+          <FiltrosDeHoras catalogo={catalogo} valor={filtros} onChange={setFiltros} />
+        </div>
 
         {/* A la derecha lo de moverse por el tiempo; a la izquierda, donde
             estas. Asi la cabecera no es una fila de cosas sueltas. */}
@@ -474,7 +497,7 @@ export function RejillaCalendario({
             const esHoy = dia === hoy
             /* Cuenta en el dia en que empezo, aunque el dibujo siga en el
                siguiente: si no, un rato de 21:00 a 02:00 sumaria dos veces. */
-            const segundos = entradas
+            const segundos = visibles
               .filter((e) => e.local_date === dia)
               .reduce((s, e) => s + (e.duration_seconds ?? 0), 0)
             return (

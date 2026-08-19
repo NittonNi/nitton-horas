@@ -266,6 +266,51 @@ export function RejillaCalendario({
     window.addEventListener("pointercancel", soltar)
   }
 
+  /**
+   * Con el raton, apretar ya es arrastrar. Con el dedo no: deslizar hacia
+   * abajo es bajar por la pantalla, no apuntar tres horas. Asi que en tactil
+   * hay que mantener pulsado un momento -como en el calendario del telefono-
+   * y si el dedo se mueve antes, se entiende que estabas desplazando.
+   */
+  function iniciarSegunPuntero(
+    evento: React.PointerEvent<HTMLElement>,
+    inicial: Arrastre,
+  ) {
+    if (evento.pointerType !== "touch") {
+      iniciar(inicial)
+      return
+    }
+
+    const desdeX = evento.clientX
+    const desdeY = evento.clientY
+    let vivo = true
+
+    const limpiar = () => {
+      vivo = false
+      clearTimeout(espera)
+      window.removeEventListener("pointermove", alMover)
+      window.removeEventListener("pointerup", limpiar)
+      window.removeEventListener("pointercancel", limpiar)
+    }
+
+    const alMover = (ev: PointerEvent) => {
+      if (Math.abs(ev.clientX - desdeX) > 8 || Math.abs(ev.clientY - desdeY) > 8) {
+        limpiar()
+      }
+    }
+
+    const espera = setTimeout(() => {
+      if (!vivo) return
+      limpiar()
+      navigator.vibrate?.(10)
+      iniciar(inicial)
+    }, 350)
+
+    window.addEventListener("pointermove", alMover)
+    window.addEventListener("pointerup", limpiar)
+    window.addEventListener("pointercancel", limpiar)
+  }
+
   async function confirmar(final: Arrastre) {
     if (final.tipo === "crear") {
       const desde = Math.min(final.ancla, final.hasta)
@@ -521,7 +566,8 @@ export function RejillaCalendario({
                 esMovil && diaVisto ? "grid-cols-1" : "grid-cols-7",
                 !esMovil && "col-span-7",
               )}
-              style={{ height: alto }}
+              // Mientras se arrastra, el dedo mueve el bloque y no la pagina
+              style={{ height: alto, touchAction: arrastre ? "none" : undefined }}
             >
               {diasPintados.map((dia) => (
                 <ColumnaDia
@@ -533,15 +579,20 @@ export function RejillaCalendario({
                   editable
                   arrastre={arrastre}
                   ahora={ahora}
-                  onCrear={(minutos) =>
-                    iniciar({ tipo: "crear", dia, ancla: minutos, hasta: minutos })
+                  onCrear={(minutos, e) =>
+                    iniciarSegunPuntero(e, {
+                      tipo: "crear",
+                      dia,
+                      ancla: minutos,
+                      hasta: minutos,
+                    })
                   }
                   /* Ojo: se arranca del fin de VERDAD, no del dibujado. Si se
                      cogiera `hasta`, tocar un rato que cruza la medianoche
                      -moverlo, estirarlo o solo hacerle clic- lo dejaria
                      acabando a las 24:00 y se perderian las horas de despues. */
-                  onMover={(bloque, minutos) =>
-                    iniciar({
+                  onMover={(bloque, minutos, e) =>
+                    iniciarSegunPuntero(e, {
                       tipo: "mover",
                       id: bloque.entrada.id,
                       dia,
@@ -550,8 +601,8 @@ export function RejillaCalendario({
                       pinza: minutos - bloque.desde,
                     })
                   }
-                  onRedimensionar={(bloque) =>
-                    iniciar({
+                  onRedimensionar={(bloque, e) =>
+                    iniciarSegunPuntero(e, {
                       tipo: "redim",
                       id: bloque.entrada.id,
                       dia,
@@ -574,8 +625,15 @@ export function RejillaCalendario({
       </div>
 
       <p className="no-print text-xs text-muted">
-        Arrastra sobre un hueco para apuntar horas. Mueve un bloque para
-        cambiarlo de sitio, o estira su borde de abajo para alargarlo.
+        <span className="hidden md:inline">
+          Arrastra sobre un hueco para apuntar horas. Mueve un bloque para
+          cambiarlo de sitio, o estira su borde de abajo para alargarlo.
+        </span>
+        {/* Con el dedo la regla es otra: deslizar es bajar por la pantalla */}
+        <span className="md:hidden">
+          Mantén pulsado sobre un hueco para apuntar horas, o sobre un rato
+          para moverlo. Deslizar sin más baja por el día.
+        </span>
       </p>
 
       {nuevo && (
@@ -757,9 +815,16 @@ function ColumnaDia({
   editable: boolean
   arrastre: Arrastre | null
   ahora: Date
-  onCrear: (minutos: number) => void
-  onMover: (bloque: Bloque, minutos: number) => void
-  onRedimensionar: (bloque: Bloque) => void
+  onCrear: (minutos: number, evento: React.PointerEvent<HTMLElement>) => void
+  onMover: (
+    bloque: Bloque,
+    minutos: number,
+    evento: React.PointerEvent<HTMLElement>,
+  ) => void
+  onRedimensionar: (
+    bloque: Bloque,
+    evento: React.PointerEvent<HTMLElement>,
+  ) => void
   onAbrir: (entrada: EntradaVista) => void
   onContestar: (id: string) => void
 }) {
@@ -794,7 +859,7 @@ function ColumnaDia({
       onPointerDown={(e) => {
         if (!editable || e.button !== 0) return
         if ((e.target as HTMLElement).closest("[data-bloque]")) return
-        onCrear(minutosDelEvento(e))
+        onCrear(minutosDelEvento(e), e)
       }}
     >
       {esHoy && enFranja && (
@@ -854,12 +919,12 @@ function ColumnaDia({
               e.stopPropagation()
               const caja = e.currentTarget.getBoundingClientRect()
               // los últimos 8 px de alto son el tirador para alargar
-              if (e.clientY > caja.bottom - 8) onRedimensionar(bloque)
+              if (e.clientY > caja.bottom - 8) onRedimensionar(bloque, e)
               else {
                 const caso = limitar(
                   redondear(franja.desde + ((e.clientY - (caja.top - arriba(desde))) / ALTO_HORA) * 60),
                 )
-                onMover(bloque, caso)
+                onMover(bloque, caso, e)
               }
             }}
             onClick={(e) => {

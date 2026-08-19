@@ -357,11 +357,12 @@ function FilaGrupo({
     >
       <div
         className={cn(
-          "group flex items-center gap-3 px-2.5 py-2.5 transition",
+          "group flex items-center gap-2 px-2.5 py-2.5 transition md:gap-3",
         )}
       >
         {/* ------------------------------------------- contador y descripcion */}
-        <div className="flex min-w-0 flex-1 items-center gap-1.5 md:w-[30%] md:flex-none">
+        <div className="min-w-0 flex-1 md:w-[30%] md:flex-none">
+          <div className="flex items-center gap-1.5">
           {/* Cuantos ratos son, y abre o cierra */}
           <button
             type="button"
@@ -438,6 +439,8 @@ function FilaGrupo({
             </button>
           )}
           </div>
+          </div>
+
         </div>
 
         {/* ---------------------------------------------------- proyecto */}
@@ -579,7 +582,7 @@ function FilaGrupo({
           }
           aria-pressed={facturable === true}
           className={cn(
-            "shrink-0 rounded-[6px] p-1 transition",
+            "hidden shrink-0 rounded-[6px] p-1 transition md:block",
             facturable
               ? "text-billable hover:bg-billable-soft"
               : "text-muted hover:bg-surface-3/70",
@@ -605,7 +608,7 @@ function FilaGrupo({
         </div>
 
         {/* ---------------------------------------------------- el total */}
-        <div className="w-[5.5rem] shrink-0">
+        <div className="w-[4.75rem] shrink-0 md:w-[5.5rem]">
           <p className="caja-horas w-full text-[0.9375rem] font-semibold">
             {formatDurationShort(total)}
           </p>
@@ -634,6 +637,31 @@ function FilaGrupo({
         {/* Hueco de los tres puntos: cada rato tiene los suyos dentro */}
         <span className="w-8 shrink-0" aria-hidden />
       </div>
+
+          {/* En movil, debajo: de que es el grupo y de cuando a cuando */}
+          <p className="-mt-1 flex items-center gap-1.5 truncate pb-1.5 pl-11 pr-2.5 text-xs text-muted md:hidden">
+            {primera.project_name ? (
+              <>
+                <span
+                  className="h-1.5 w-1.5 shrink-0 rounded-full"
+                  style={{ background: primera.project_color ?? "var(--line-strong)" }}
+                />
+                <span
+                  className="min-w-0 truncate font-medium"
+                  style={{ color: primera.project_color ?? undefined }}
+                >
+                  {primera.project_name}
+                </span>
+              </>
+            ) : (
+              <span className="shrink-0">Sin proyecto</span>
+            )}
+            <span aria-hidden>·</span>
+            <span className="tabular shrink-0">
+              {formatClock(empieza)}–{formatClock(acaba)}
+              {acabaOtroDia && <sup className="ml-0.5 text-live">+1</sup>}
+            </span>
+          </p>
 
       {error && <p className="px-2.5 pb-2 text-xs text-danger">{error}</p>}
 

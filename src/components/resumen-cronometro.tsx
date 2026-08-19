@@ -168,13 +168,19 @@ export function ResumenCronometro({
   }
 
   return (
-    <div className="card grid grid-cols-3 divide-x divide-line">
+    /* Tres columnas en un movil son tres columnas rotas: ahi van una debajo de
+       otra, con la cifra a la derecha. */
+    <div className="card grid grid-cols-1 divide-y divide-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">
       {elegidos.map((clave, hueco) => {
         const dato = valor(clave, cifras)
         const etiqueta =
           DATOS.find((d) => d.clave === clave)?.etiqueta ?? "Dato"
         return (
-          <div key={hueco} className="px-4 py-3">
+          <div
+            key={hueco}
+            className="flex items-center justify-between gap-3 px-4 py-3 sm:block"
+          >
+            <div className="min-w-0">
             <DropdownMenu.Root>
               <DropdownMenu.Trigger className="rotulo group flex items-center gap-1 transition hover:text-ink">
                 {etiqueta}
@@ -202,16 +208,22 @@ export function ResumenCronometro({
                 </DropdownMenu.Content>
               </DropdownMenu.Portal>
             </DropdownMenu.Root>
+            {/* En movil el pie va pegado al rotulo, que la cifra se va a la
+                derecha; en pantalla grande, debajo de la cifra como siempre */}
+            <p className="mt-0.5 text-xs text-muted sm:hidden">{dato.pie}</p>
+            </div>
 
             <p
               className={cn(
-                "cifra mt-1 text-2xl font-semibold leading-none tracking-tight",
+                "cifra shrink-0 text-2xl font-semibold leading-none tracking-tight sm:mt-1",
                 dato.verde && "text-billable",
               )}
             >
               {dato.valor}
             </p>
-            <p className="mt-1.5 h-4 text-xs text-muted">{dato.pie}</p>
+            <p className="mt-1.5 hidden h-4 text-xs text-muted sm:block">
+              {dato.pie}
+            </p>
           </div>
         )
       })}

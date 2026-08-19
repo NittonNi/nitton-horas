@@ -19,6 +19,7 @@ import { mensajeError } from "@/lib/errores"
 import { useCronometro } from "@/components/proveedor-cronometro"
 import { useAvisos } from "@/components/avisos"
 import { CompartirCon } from "@/components/compartir-con"
+import { DialogoEntrada } from "@/components/dialogo-entrada"
 import { CampoHora } from "@/components/campo-hora"
 import { SelectorProyecto } from "@/components/selector-proyecto"
 import { SelectorEtiquetas } from "@/components/selector-etiquetas"
@@ -32,6 +33,17 @@ import {
 import type { TablesUpdate } from "@/lib/database.types"
 import type { Catalogo, EntradaVista, Miembro } from "@/lib/tipos"
 import { cn } from "@/lib/utils"
+
+/**
+ * Mismo criterio que el calendario: acabar justo a las 00:00 es cerrar el dia,
+ * no pasar al siguiente; el +1 solo sale si de verdad sigue de madrugada.
+ */
+function acabaOtroDia(entrada: { start_at: string; end_at: string | null }) {
+  if (!entrada.end_at) return false
+  const medianoche = new Date(entrada.start_at)
+  medianoche.setHours(24, 0, 0, 0)
+  return new Date(entrada.end_at) > medianoche
+}
 
 /** Que celda esta abierta para editar. Solo una a la vez. */
 type Campo = "descripcion" | "proyecto" | "etiquetas" | "horario" | "duracion" | null
@@ -56,6 +68,8 @@ export function FilaEntrada({
   const { arrancar } = useCronometro()
   const { avisar } = useAvisos()
   const [campo, setCampo] = useState<Campo>(null)
+  // En movil la fila abre la tarjeta entera: editar por celdas ahi no funciona
+  const [abierta, setAbierta] = useState(false)
   const [ocupado, setOcupado] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -243,7 +257,7 @@ export function FilaEntrada({
         ocupado && "opacity-50",
       )}
     >
-      <div className="flex items-center gap-3 py-2.5">
+      <div className="flex items-center gap-2 py-2.5 md:gap-3">
         {/* -------------------------------------------------- descripcion */}
         <div className="min-w-0 flex-1 md:w-[30%] md:flex-none">
           {campo === "descripcion" ? (
@@ -274,6 +288,7 @@ export function FilaEntrada({
               )}
             </button>
           )}
+
         </div>
 
         {/* ----------------------------------------------------- proyecto */}
@@ -390,7 +405,7 @@ export function FilaEntrada({
           title={entrada.billable ? "Se cobra" : "No se cobra"}
           aria-pressed={entrada.billable}
           className={cn(
-            "shrink-0 rounded-[6px] p-1 transition",
+            "hidden shrink-0 rounded-[6px] p-1 transition md:block",
             entrada.billable
               ? "text-billable hover:bg-billable-soft"
               : "text-muted hover:bg-surface-3/70",
@@ -412,7 +427,7 @@ export function FilaEntrada({
         </div>
 
         {/* -------------------------------------------------- duracion */}
-        <div className="w-[5.5rem] shrink-0">
+        <div className="w-[4.75rem] shrink-0 md:w-[5.5rem]">
           {campo === "duracion" ? (
             <input
               autoFocus
@@ -513,8 +528,62 @@ export function FilaEntrada({
         </div>
       </div>
 
+          {/* En un movil no caben las columnas de al lado, asi que lo esencial
+              -proyecto y horario- va debajo de la descripcion. Al pulsarlo se
+              abre la tarjeta entera, que es donde se edita comodo con el dedo. */}
+          <button
+            type="button"
+            onClick={() => setAbierta(true)}
+            className="-mt-1 flex w-full items-center gap-1.5 truncate pb-1.5 pl-1.5 text-left text-xs text-muted md:hidden"
+          >
+            {entrada.project_name ? (
+              <>
+                <span
+                  className={cn(
+                    "h-1.5 w-1.5 shrink-0 rounded-full",
+                    entrada.billable && "marca-facturable",
+                  )}
+                  style={{ background: entrada.project_color ?? "var(--line-strong)" }}
+                />
+                <span
+                  className="min-w-0 truncate font-medium"
+                  style={{ color: entrada.project_color ?? undefined }}
+                >
+                  {entrada.project_name}
+                </span>
+              </>
+            ) : (
+              <span className="shrink-0">Sin proyecto</span>
+            )}
+            <span aria-hidden>·</span>
+            <span className="tabular shrink-0">
+              {formatClock(entrada.start_at)}–{formatClock(entrada.end_at)}
+              {acabaOtroDia(entrada) && (
+                <sup className="ml-0.5 text-live">+1</sup>
+              )}
+            </span>
+            {entrada.billable && (
+              <Euro className="h-3 w-3 shrink-0 text-billable" aria-hidden />
+            )}
+            {entrada.tags.length > 0 && (
+              <Tag className="h-3 w-3 shrink-0" aria-hidden />
+            )}
+            {compartida.length > 0 && (
+              <Users className="h-3 w-3 shrink-0" aria-hidden />
+            )}
+          </button>
+
       {error && (
         <p className="pb-2 pl-1.5 text-xs text-danger">{error}</p>
+      )}
+
+      {abierta && (
+        <DialogoEntrada
+          entrada={entrada}
+          catalogo={catalogo}
+          miembros={miembros}
+          onCerrar={() => setAbierta(false)}
+        />
       )}
     </li>
   )
@@ -552,14 +621,6 @@ function PopoverHorario({
     void onGuardar({ start_at, end_at })
   }
 
-  /* Mismo criterio que el calendario: acabar justo a las 00:00 es cerrar el
-     dia, no pasar al siguiente; el +1 solo sale si de verdad sigue de madrugada. */
-  const acabaOtroDia = (() => {
-    if (!entrada.end_at) return false
-    const medianoche = new Date(entrada.start_at)
-    medianoche.setHours(24, 0, 0, 0)
-    return new Date(entrada.end_at) > medianoche
-  })()
 
   return (
     <Popover.Root
@@ -579,7 +640,7 @@ function PopoverHorario({
       >
         {formatClock(entrada.start_at)}–{formatClock(entrada.end_at)}
         {/* El rato acabo ya en el dia siguiente; se apunta igual en el dia que empezo */}
-        {acabaOtroDia && (
+        {acabaOtroDia(entrada) && (
           <sup className="ml-0.5 font-semibold text-live" title="Termina al día siguiente">
             +1
           </sup>

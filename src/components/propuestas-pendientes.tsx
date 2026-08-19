@@ -73,7 +73,9 @@ export function PropuestasPendientes({ propuestas }: { propuestas: Propuesta[] }
           return (
             <li
               key={propuesta.id}
-              className="flex flex-wrap items-center gap-3 px-4 py-3"
+              /* En movil no cabe todo en una linea: el texto arriba y los
+                 botones debajo, anchos, que se pulsan con el pulgar. */
+              className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3"
             >
               <span
                 aria-hidden
@@ -105,7 +107,7 @@ export function PropuestasPendientes({ propuestas }: { propuestas: Propuesta[] }
                 {formatDurationShort(segundos)}
               </span>
 
-              <div className="flex gap-2">
+              <div className="flex w-full gap-2 sm:w-auto">
                 <button
                   type="button"
                   onClick={() => void responder(propuesta.id, false)}

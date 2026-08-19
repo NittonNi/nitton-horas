@@ -26,7 +26,9 @@ const POLITICA_CONTENIDO = [
 
 const CABECERAS = [
   { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "X-Frame-Options", value: "DENY" },
+  /* En produccion nadie mete esta web en un marco. En desarrollo si, que es
+     como se revisa el diseño de movil sin tener el movil delante. */
+  { key: "X-Frame-Options", value: enProduccion ? "DENY" : "SAMEORIGIN" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
     key: "Permissions-Policy",

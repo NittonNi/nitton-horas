@@ -2,8 +2,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import * as Dialog from "@radix-ui/react-dialog"
+import { useRouter, useSearchParams } from "next/navigation"
 import {
   Archive,
   ArrowLeft,
@@ -39,10 +38,30 @@ import type {
 } from "@/lib/tipos"
 import {
   ResultadosProyecto,
+  resumenDeResultados,
   type Resultado,
 } from "@/components/resultados-proyecto"
 import { TarjetasEdicion } from "@/components/tarjetas-edicion"
 import { cn } from "@/lib/utils"
+
+/**
+ * Las pestañas del proyecto. Todo lo de un proyecto en una sola columna hacía
+ * que pesara lo mismo cerrar una edición que cambiarle el color; separado, cada
+ * cosa se busca donde toca.
+ */
+const PESTANAS: {
+  clave: "resumen" | "ediciones" | "tareas" | "horas" | "ajustes"
+  etiqueta: string
+  soloGestor?: boolean
+}[] = [
+  { clave: "resumen", etiqueta: "Resumen" },
+  { clave: "ediciones", etiqueta: "Ediciones" },
+  { clave: "tareas", etiqueta: "Tareas" },
+  { clave: "horas", etiqueta: "Horas" },
+  { clave: "ajustes", etiqueta: "Ajustes", soloGestor: true },
+]
+
+type Pestana = (typeof PESTANAS)[number]["clave"]
 
 /** Los cuatro tipos de trabajo del equipo, cada uno se cierra a su ritmo. */
 const TIPOS = [
@@ -81,10 +100,31 @@ export function DetalleProyecto({
   puedeGestionar: boolean
   puedeVerImportes: boolean
 }) {
-  // Las horas de abajo se corrigen aqui mismo, como en los informes
+  const parametros = useSearchParams()
+
+  // Las horas se corrigen aqui mismo, como en los informes
   const [editando, setEditando] = useState<EntradaVista | null>(null)
   const cerradas = useMemo(() => entradas.filter((e) => e.end_at), [entradas])
   const suma = useMemo(() => totales(cerradas), [cerradas])
+
+  const visibles = PESTANAS.filter((p) => !p.soloGestor || puedeGestionar)
+  const pedida = parametros.get("ver")
+
+  /* La pestana empieza donde diga la URL -asi se puede pasar el enlace de una
+     parte concreta- pero a partir de ahi manda el estado: cambiarla no tiene
+     que ir y volver del servidor. La URL se actualiza al margen del router,
+     que es lo que la deja instantanea. */
+  const [activa, setActiva] = useState<Pestana>(
+    () => (visibles.find((p) => p.clave === pedida)?.clave as Pestana) ?? "resumen",
+  )
+
+  function abrir(clave: Pestana) {
+    setActiva(clave)
+    const url = new URL(window.location.href)
+    if (clave === "resumen") url.searchParams.delete("ver")
+    else url.searchParams.set("ver", clave)
+    window.history.replaceState(null, "", url)
+  }
 
   const porTarea = useMemo(
     () =>
@@ -98,6 +138,11 @@ export function DetalleProyecto({
   const porPersona = useMemo(
     () => agrupar(cerradas, (e) => e.user_id, (e) => e.user_name),
     [cerradas],
+  )
+
+  const dinero = useMemo(
+    () => resumenDeResultados(entradas, resultados),
+    [entradas, resultados],
   )
 
   /* Cuando empezo y cuando acabo, sin escribir una sola fecha: la primera hora
@@ -117,7 +162,9 @@ export function DetalleProyecto({
       </Link>
 
       {/* ------------------------------------------------------- cabecera */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      {/* Lo que no cambia al moverte entre pestanas: de que proyecto va y como
+          va. Las tres cifras que se miran de verdad, a la derecha. */}
+      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
         <div className="flex min-w-0 items-center gap-3">
           <span
             aria-hidden
@@ -125,8 +172,11 @@ export function DetalleProyecto({
             style={{ background: proyecto.color }}
           />
           <div className="min-w-0">
-            <h1 className="flex min-w-0 items-center gap-2">
-              <span className="truncate text-lg font-semibold tracking-tight">
+            <h1 className="flex min-w-0 flex-wrap items-center gap-2">
+              <span
+                className="truncate text-lg font-semibold tracking-tight"
+                style={{ color: proyecto.color }}
+              >
                 {proyecto.name}
               </span>
               {proyecto.kind && (
@@ -141,95 +191,165 @@ export function DetalleProyecto({
               )}
             </h1>
             <p className="truncate text-sm text-muted">
-              {proyecto.billable_default
-                ? "Facturable por defecto"
-                : "No facturable por defecto"}
+              Desde el {formatDateShort(nacio)}
+              {ultima
+                ? ` hasta el ${formatDateShort(ultima)}`
+                : ", sin horas todavia"}
               {proyecto.archived && " · archivado"}
             </p>
           </div>
         </div>
 
-        {puedeGestionar && (
-          <EditarProyecto proyecto={proyecto} categorias={categorias} />
-        )}
+        <div className="flex items-end gap-5">
+          <Cifra etiqueta="Horas" valor={formatDurationShort(suma.segundos)} />
+          <Cifra
+            etiqueta="Se cobran"
+            valor={formatDurationShort(suma.facturables)}
+            tono={suma.facturables > 0 ? "billable" : undefined}
+          />
+          {puedeVerImportes && dinero.porHora !== null && (
+            <Cifra
+              etiqueta={objetivoHora ? `de ${objetivoHora} €/h` : "por hora"}
+              valor={`${dinero.porHora.toLocaleString("es-ES", {
+                maximumFractionDigits: 0,
+              })} €/h`}
+              tono={
+                objetivoHora == null
+                  ? undefined
+                  : dinero.porHora >= objetivoHora
+                    ? "billable"
+                    : "danger"
+              }
+            />
+          )}
+        </div>
       </div>
 
-      {/* ---------------------------------------------------------- datos */}
-      <div className="card grid grid-cols-2 divide-line sm:grid-cols-4 sm:divide-x">
-        <Dato etiqueta="Total" valor={formatDurationShort(suma.segundos)} />
-        <Dato
-          etiqueta="Facturable"
-          valor={formatDurationShort(suma.facturables)}
-          resaltado={suma.facturables > 0}
-          pie={
-            suma.segundos > 0
-              ? `${Math.round((suma.facturables / suma.segundos) * 100)}% del total`
-              : undefined
-          }
-        />
-        {puedeVerImportes ? (
-          <Dato etiqueta="Importe" valor={formatMoney(suma.importe)} />
-        ) : (
-          <Dato etiqueta="Entradas" valor={String(suma.entradas)} />
-        )}
-        {/* Cuando nacio y cuando fue la ultima hora. Nada de esto se escribe:
-            lo dice el propio trabajo apuntado. */}
-        <Dato
-          etiqueta="Desde"
-          valor={formatDateShort(nacio)}
-          pie={ultima ? `hasta el ${formatDateShort(ultima)}` : "sin horas todavía"}
-        />
+      {/* ------------------------------------------------------- pestanas */}
+      {/* En movil se desliza; nada de esconderlas en un menu. */}
+      <div className="no-print -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <div role="tablist" className="flex min-w-max gap-1 border-b border-line">
+          {visibles.map((pestana) => {
+            const puesta = pestana.clave === activa
+            return (
+              <button
+                key={pestana.clave}
+                type="button"
+                role="tab"
+                aria-selected={puesta}
+                onClick={() => abrir(pestana.clave as Pestana)}
+                className={cn(
+                  "-mb-px border-b-2 px-3 py-2 text-sm transition",
+                  puesta
+                    ? "border-accent font-medium text-ink"
+                    : "border-transparent text-muted hover:text-ink",
+                )}
+              >
+                {pestana.etiqueta}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
-      {puedeVerImportes && (
-        <ResultadosProyecto
-          entradas={entradas}
+      {/* -------------------------------------------------------- resumen */}
+      {activa === "resumen" && (
+        <div className="space-y-5">
+          {puedeVerImportes && (
+            <ResultadosProyecto
+              entradas={entradas}
+              resultados={resultados}
+              objetivoHora={objetivoHora}
+            />
+          )}
+
+          <div className="card grid grid-cols-2 divide-line sm:grid-cols-4 sm:divide-x">
+            <Dato etiqueta="Total" valor={formatDurationShort(suma.segundos)} />
+            <Dato
+              etiqueta="Facturable"
+              valor={formatDurationShort(suma.facturables)}
+              resaltado={suma.facturables > 0}
+              pie={
+                suma.segundos > 0
+                  ? `${Math.round(
+                      (suma.facturables / suma.segundos) * 100,
+                    )}% del total`
+                  : undefined
+              }
+            />
+            {puedeVerImportes ? (
+              <Dato etiqueta="Importe" valor={formatMoney(suma.importe)} />
+            ) : (
+              <Dato etiqueta="Entradas" valor={String(suma.entradas)} />
+            )}
+            <Dato
+              etiqueta="Ediciones"
+              valor={String(ediciones.filter((e) => !e.archived).length)}
+              pie={
+                ediciones.some((e) => e.archived)
+                  ? `${ediciones.filter((e) => e.archived).length} cerradas`
+                  : undefined
+              }
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            <Desglose
+              titulo="Por tarea"
+              grupos={porTarea}
+              total={suma.segundos}
+              vacio="Las horas de este proyecto no estan repartidas en tareas."
+            />
+            <Desglose
+              titulo="Por persona"
+              grupos={porPersona}
+              total={suma.segundos}
+              vacio="Todavia no hay horas apuntadas."
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------ ediciones */}
+      {activa === "ediciones" && (
+        <TarjetasEdicion
+          espacioId={espacioId}
+          proyectoId={proyecto.id}
+          ediciones={ediciones}
+          entradas={cerradas}
           resultados={resultados}
           objetivoHora={objetivoHora}
+          predeterminada={proyecto.default_edition_id}
+          puedeGestionar={puedeGestionar}
+          puedeVerImportes={puedeVerImportes}
         />
       )}
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <Desglose
-          titulo="Por tarea"
-          grupos={porTarea}
-          total={suma.segundos}
-          vacio="Las horas de este proyecto no están repartidas en tareas."
+      {/* --------------------------------------------------------- tareas */}
+      {activa === "tareas" && (
+        <Tareas
+          espacioId={espacioId}
+          proyectoId={proyecto.id}
+          tareas={tareas}
+          porTarea={porTarea}
+          puedeGestionar={puedeGestionar}
         />
-        <Desglose
-          titulo="Por persona"
-          grupos={porPersona}
-          total={suma.segundos}
-          vacio="Todavía no hay horas apuntadas."
+      )}
+
+      {/* ---------------------------------------------------------- horas */}
+      {activa === "horas" && (
+        <HorasDelProyecto
+          entradas={cerradas}
+          ediciones={ediciones}
+          conImportes={puedeVerImportes}
+          onAbrir={setEditando}
         />
-      </div>
+      )}
 
-
-      <TarjetasEdicion
-        espacioId={espacioId}
-        proyectoId={proyecto.id}
-        ediciones={ediciones}
-        entradas={cerradas}
-        resultados={resultados}
-        objetivoHora={objetivoHora}
-        predeterminada={proyecto.default_edition_id}
-        puedeGestionar={puedeGestionar}
-        puedeVerImportes={puedeVerImportes}
-      />
-
-      <Tareas
-        espacioId={espacioId}
-        proyectoId={proyecto.id}
-        tareas={tareas}
-        porTarea={porTarea}
-        puedeGestionar={puedeGestionar}
-      />
-
-      <UltimasEntradas
-        entradas={cerradas.slice(0, 12)}
-        conImportes={puedeVerImportes}
-        onAbrir={setEditando}
-      />
+      {/* -------------------------------------------------------- ajustes */}
+      {activa === "ajustes" && puedeGestionar && (
+        <AjustesProyecto proyecto={proyecto} categorias={categorias} />
+      )}
 
       {editando && (
         <DialogoEntrada
@@ -244,6 +364,35 @@ export function DetalleProyecto({
 }
 
 /* ------------------------------------------------------------------ piezas */
+
+/**
+ * Un numero de la cabecera. Se queda arriba pase lo que pase en las pestanas:
+ * son los tres que se miran de un vistazo.
+ */
+function Cifra({
+  etiqueta,
+  valor,
+  tono,
+}: {
+  etiqueta: string
+  valor: string
+  tono?: "billable" | "danger"
+}) {
+  return (
+    <div className="min-w-0">
+      <p
+        className={cn(
+          "cifra whitespace-nowrap text-lg font-semibold leading-none",
+          tono === "billable" && "text-billable",
+          tono === "danger" && "text-danger",
+        )}
+      >
+        {valor}
+      </p>
+      <p className="mt-1 whitespace-nowrap text-xs text-muted">{etiqueta}</p>
+    </div>
+  )
+}
 
 function Dato({
   etiqueta,
@@ -520,79 +669,143 @@ function Tareas({
   )
 }
 
-/* -------------------------------------------------------------- últimas */
+/* ------------------------------------------------------------------ horas */
 
-function UltimasEntradas({
+/**
+ * Todas las horas del proyecto, editables igual que en los informes: se pulsa
+ * una y se corrige. Con el filtro de edicion se mira una sola tanda.
+ */
+function HorasDelProyecto({
   entradas,
+  ediciones,
   conImportes,
   onAbrir,
 }: {
   entradas: EntradaVista[]
+  ediciones: Edicion[]
   conImportes: boolean
   onAbrir: (entrada: EntradaVista) => void
 }) {
-  if (entradas.length === 0) return null
+  const [edicion, setEdicion] = useState("")
+
+  const suyas = useMemo(() => {
+    if (!edicion) return entradas
+    if (edicion === "sin") return entradas.filter((e) => !e.edition_id)
+    return entradas.filter((e) => e.edition_id === edicion)
+  }, [entradas, edicion])
+
+  const segundos = suyas.reduce((s, e) => s + (e.duration_seconds ?? 0), 0)
 
   return (
     <section className="card p-4">
-      <h2 className="mb-1 text-sm font-semibold">Últimas horas</h2>
-      <p className="mb-3 text-sm text-muted">
-        Pulsa una para corregirla, igual que en los informes.
-      </p>
-      <div className="scroll-thin overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr>
-              <th className="th">Fecha</th>
-              <th className="th">Persona</th>
-              <th className="th">Descripción</th>
-              <th className="th text-right">Horas</th>
-              {conImportes && <th className="th text-right">Importe</th>}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line">
-            {entradas.map((entrada) => (
-              <tr
-                key={entrada.id}
-                onClick={() => onAbrir(entrada)}
-                className="cursor-pointer transition hover:bg-surface-2"
-                title="Pulsa para corregirla"
-              >
-                <td className="cifra whitespace-nowrap py-2 pr-3 text-muted">
-                  {formatDateShort(entrada.local_date)}
-                </td>
-                <td className="whitespace-nowrap py-2 pr-3">{entrada.user_name}</td>
-                <td className="max-w-[24rem] truncate py-2 pr-3 text-muted">
-                  {entrada.description || "-"}
-                  {entrada.task_name && (
-                    <span className="chip ml-2">{entrada.task_name}</span>
-                  )}
-                </td>
-                <td className="cifra py-2 pr-3 text-right font-medium">
-                  <span className="inline-flex items-center gap-1">
-                    {entrada.billable && (
-                      <Euro className="h-3 w-3 text-billable" aria-label="Facturable" />
-                    )}
-                    {formatHoursDecimal(entrada.duration_seconds)}
-                  </span>
-                </td>
-                {conImportes && (
-                  <td className="cifra py-2 text-right text-billable">
-                    {entrada.amount != null ? formatMoney(Number(entrada.amount)) : "-"}
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold">
+            Horas <span className="text-muted">({suyas.length})</span>
+          </h2>
+          <p className="text-sm text-muted">
+            Pulsa una para corregirla, igual que en los informes.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <span className="cifra text-sm font-semibold">
+            {formatDurationShort(segundos)}
+          </span>
+          {ediciones.length > 0 && (
+            <select
+              className="field w-auto py-1"
+              value={edicion}
+              onChange={(e) => setEdicion(e.target.value)}
+              aria-label="Edicion"
+            >
+              <option value="">Todas las ediciones</option>
+              {ediciones.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name}
+                </option>
+              ))}
+              <option value="sin">Sin edicion</option>
+            </select>
+          )}
+        </div>
       </div>
+
+      {suyas.length === 0 ? (
+        <p className="py-3 text-sm text-muted">
+          Todavia no hay horas apuntadas aqui.
+        </p>
+      ) : (
+        <div className="scroll-thin overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                <th className="th">Fecha</th>
+                <th className="th">Persona</th>
+                <th className="th">Descripción</th>
+                <th className="th text-right">Horas</th>
+                {conImportes && <th className="th text-right">Importe</th>}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {suyas.map((entrada) => (
+                <tr
+                  key={entrada.id}
+                  onClick={() => onAbrir(entrada)}
+                  className="cursor-pointer transition hover:bg-surface-2"
+                  title="Pulsa para corregirla"
+                >
+                  <td className="cifra whitespace-nowrap py-2 pr-3 text-muted">
+                    {formatDateShort(entrada.local_date)}
+                  </td>
+                  <td className="whitespace-nowrap py-2 pr-3">
+                    {entrada.user_name}
+                  </td>
+                  <td className="max-w-[24rem] truncate py-2 pr-3 text-muted">
+                    {entrada.description || "-"}
+                    {entrada.task_name && (
+                      <span className="chip ml-2">{entrada.task_name}</span>
+                    )}
+                    {entrada.edition_name && !edicion && (
+                      <span className="chip ml-2">{entrada.edition_name}</span>
+                    )}
+                  </td>
+                  <td className="cifra py-2 pr-3 text-right font-medium">
+                    <span className="inline-flex items-center gap-1">
+                      {entrada.billable && (
+                        <Euro
+                          className="h-3 w-3 text-billable"
+                          aria-label="Facturable"
+                        />
+                      )}
+                      {formatHoursDecimal(entrada.duration_seconds)}
+                    </span>
+                  </td>
+                  {conImportes && (
+                    <td className="cifra py-2 text-right text-billable">
+                      {entrada.amount != null
+                        ? formatMoney(Number(entrada.amount))
+                        : "-"}
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   )
 }
 
-/* ------------------------------------------------------------------ editar */
+/* ---------------------------------------------------------------- ajustes */
 
-function EditarProyecto({
+/**
+ * Lo que se toca de vez en cuando: como se llama, de que color es, de que rama
+ * cuelga y si sus horas nacen facturables. Ya no es un dialogo: es una pestana
+ * mas, porque tampoco es algo que estorbe donde esta.
+ */
+function AjustesProyecto({
   proyecto,
   categorias,
 }: {
@@ -600,14 +813,21 @@ function EditarProyecto({
   categorias: Categoria[]
 }) {
   const router = useRouter()
-  const [abierto, setAbierto] = useState(false)
   const [nombre, setNombre] = useState(proyecto.name)
   const [categoriaId, setCategoriaId] = useState(proyecto.category_id ?? "")
   const [color, setColor] = useState(proyecto.color)
   const [facturable, setFacturable] = useState(proyecto.billable_default)
   const [tipo, setTipo] = useState(proyecto.kind ?? "")
   const [guardando, setGuardando] = useState(false)
+  const [guardado, setGuardado] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const cambiado =
+    nombre !== proyecto.name ||
+    categoriaId !== (proyecto.category_id ?? "") ||
+    color !== proyecto.color ||
+    facturable !== proyecto.billable_default ||
+    tipo !== (proyecto.kind ?? "")
 
   async function guardar() {
     const limpio = nombre.trim()
@@ -617,8 +837,7 @@ function EditarProyecto({
     }
     setGuardando(true)
     setError(null)
-    const supabase = createClient()
-    const { error: err } = await supabase
+    const { error: err } = await createClient()
       .from("projects")
       .update({
         name: limpio,
@@ -634,14 +853,13 @@ function EditarProyecto({
       setError(mensajeError(err))
       return
     }
-    setAbierto(false)
+    setGuardado(true)
     router.refresh()
   }
 
   async function archivar() {
     setGuardando(true)
-    const supabase = createClient()
-    const { error: err } = await supabase
+    const { error: err } = await createClient()
       .from("projects")
       .update({ archived: !proyecto.archived })
       .eq("id", proyecto.id)
@@ -650,153 +868,170 @@ function EditarProyecto({
       setError(mensajeError(err))
       return
     }
-    setAbierto(false)
     router.refresh()
   }
 
   return (
-    <Dialog.Root open={abierto} onOpenChange={setAbierto}>
-      <Dialog.Trigger className="btn">
-        <Pencil className="h-4 w-4" />
-        Editar
-      </Dialog.Trigger>
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,28rem)_minmax(0,1fr)]">
+      <section className="card p-4">
+        <h2 className="mb-3 text-sm font-semibold">Ajustes del proyecto</h2>
 
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
-        <Dialog.Content
-          className="card fixed left-1/2 top-1/2 z-50 w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 p-0"
-          style={{ boxShadow: "var(--shadow-lg)" }}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            void guardar()
+          }}
+          className="space-y-3"
         >
-          <div className="flex items-center justify-between border-b border-line px-4 py-3">
-            <Dialog.Title className="text-sm font-semibold">
-              Editar proyecto
-            </Dialog.Title>
-            <Dialog.Close className="btn btn-ghost p-1" aria-label="Cerrar">
-              <X className="h-4 w-4" />
-            </Dialog.Close>
+          <div>
+            <label className="label" htmlFor="ap-nombre">
+              Nombre
+            </label>
+            <input
+              id="ap-nombre"
+              className="field"
+              value={nombre}
+              onChange={(e) => {
+                setNombre(e.target.value)
+                setGuardado(false)
+              }}
+            />
           </div>
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              void guardar()
-            }}
-            className="space-y-3 p-4"
-          >
-            <div>
-              <label className="label" htmlFor="ep-nombre">
-                Nombre
-              </label>
-              <input
-                id="ep-nombre"
-                className="field"
-                value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="label" htmlFor="ep-tipo">
-                Tipo de trabajo
-              </label>
-              <select
-                id="ep-tipo"
-                className="field"
-                value={tipo}
-                onChange={(e) => setTipo(e.target.value as typeof tipo)}
-              >
-                <option value="">Sin decidir</option>
-                {TIPOS.map((t) => (
-                  <option key={t.clave} value={t.clave}>
-                    {t.etiqueta}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="label" htmlFor="ep-categoria">
-                Categoría
-              </label>
-              <select
-                id="ep-categoria"
-                className="field"
-                value={categoriaId}
-                onChange={(e) => setCategoriaId(e.target.value)}
-              >
-                <option value="">{SIN_CATEGORIA}</option>
-                {ramas(
-                  categorias.filter((c) => !c.archived || c.id === categoriaId),
-                ).map(({ categoria, camino }) => (
-                  <option key={categoria.id} value={categoria.id}>
-                    {camino}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <span className="label">Color</span>
-              <SelectorColor valor={color} onChange={setColor} />
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setFacturable((v) => !v)}
-              aria-pressed={facturable}
-              className={cn(
-                "flex h-9 items-center gap-1.5 rounded-[var(--radio-sm)] border px-3 text-sm transition",
-                facturable
-                  ? "border-billable-line bg-billable-soft text-billable"
-                  : "border-line-strong bg-surface text-muted hover:bg-surface-2",
-              )}
+          <div>
+            <label className="label" htmlFor="ap-tipo">
+              Tipo de trabajo
+            </label>
+            <select
+              id="ap-tipo"
+              className="field"
+              value={tipo}
+              onChange={(e) => {
+                setTipo(e.target.value as typeof tipo)
+                setGuardado(false)
+              }}
             >
-              <Euro className="h-4 w-4" />
-              {facturable
-                ? "Las horas nacen facturables"
-                : "Las horas nacen sin facturar"}
-            </button>
+              <option value="">Sin decidir</option>
+              {TIPOS.map((t) => (
+                <option key={t.clave} value={t.clave}>
+                  {t.etiqueta}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-xs text-muted">
+              Cada tipo se cierra a su ritmo: el evento por edición, lo
+              recurrente cada mes.
+            </p>
+          </div>
 
-            {error && (
-              <p className="rounded-[var(--radio-sm)] bg-danger-soft p-2.5 text-sm text-danger">
-                {error}
-              </p>
+          <div>
+            <label className="label" htmlFor="ap-categoria">
+              Área y categoría
+            </label>
+            <select
+              id="ap-categoria"
+              className="field"
+              value={categoriaId}
+              onChange={(e) => {
+                setCategoriaId(e.target.value)
+                setGuardado(false)
+              }}
+            >
+              <option value="">{SIN_CATEGORIA}</option>
+              {ramas(
+                categorias.filter((c) => !c.archived || c.id === categoriaId),
+              ).map(({ categoria, camino }) => (
+                <option key={categoria.id} value={categoria.id}>
+                  {camino}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <span className="label">Color</span>
+            <SelectorColor
+              valor={color}
+              onChange={(c) => {
+                setColor(c)
+                setGuardado(false)
+              }}
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setFacturable((v) => !v)
+              setGuardado(false)
+            }}
+            aria-pressed={facturable}
+            className={cn(
+              "flex h-9 items-center gap-1.5 rounded-[var(--radio-sm)] border px-3 text-sm transition",
+              facturable
+                ? "border-billable-line bg-billable-soft text-billable"
+                : "border-line-strong bg-surface text-muted hover:bg-surface-2",
             )}
+          >
+            <Euro className="h-4 w-4" />
+            {facturable
+              ? "Las horas nacen facturables"
+              : "Las horas nacen sin facturar"}
+          </button>
 
-            <div className="flex items-center justify-between gap-2 border-t border-line pt-3">
-              <button
-                type="button"
-                onClick={() => void archivar()}
-                disabled={guardando}
-                className="btn btn-danger"
-              >
-                {proyecto.archived ? (
-                  <>
-                    <RotateCcw className="h-4 w-4" />
-                    Reactivar
-                  </>
-                ) : (
-                  <>
-                    <Archive className="h-4 w-4" />
-                    Archivar
-                  </>
-                )}
-              </button>
-              <div className="flex gap-2">
-                <Dialog.Close className="btn">Cancelar</Dialog.Close>
-                <button
-                  type="submit"
-                  disabled={guardando}
-                  className="btn btn-primary"
-                >
-                  {guardando && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Guardar
-                </button>
-              </div>
-            </div>
-          </form>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+          {error && (
+            <p className="rounded-[var(--radio-sm)] bg-danger-soft p-2.5 text-sm text-danger">
+              {error}
+            </p>
+          )}
+
+          <div className="flex items-center gap-2 border-t border-line pt-3">
+            <button
+              type="submit"
+              disabled={guardando || !cambiado}
+              className="btn btn-primary"
+            >
+              {guardando && <Loader2 className="h-4 w-4 animate-spin" />}
+              Guardar
+            </button>
+            {guardado && !cambiado && (
+              <span className="flex items-center gap-1 text-sm text-running">
+                <Check className="h-4 w-4" />
+                Guardado
+              </span>
+            )}
+          </div>
+        </form>
+      </section>
+
+      <section className="card h-fit p-4">
+        <h2 className="mb-1 text-sm font-semibold">
+          {proyecto.archived ? "Proyecto archivado" : "Archivar el proyecto"}
+        </h2>
+        <p className="mb-3 text-sm text-muted">
+          {proyecto.archived
+            ? "No sale al apuntar horas. Sus horas siguen contando en los informes."
+            : "Deja de salir al apuntar horas, pero no se borra nada: las horas apuntadas siguen contando en los informes."}
+        </p>
+        <button
+          type="button"
+          onClick={() => void archivar()}
+          disabled={guardando}
+          className={proyecto.archived ? "btn" : "btn btn-danger"}
+        >
+          {proyecto.archived ? (
+            <>
+              <RotateCcw className="h-4 w-4" />
+              Reactivar
+            </>
+          ) : (
+            <>
+              <Archive className="h-4 w-4" />
+              Archivar
+            </>
+          )}
+        </button>
+      </section>
+    </div>
   )
 }

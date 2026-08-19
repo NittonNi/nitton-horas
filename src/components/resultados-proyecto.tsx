@@ -18,6 +18,40 @@ export type Resultado = {
 }
 
 /**
+ * Lo que ha dejado un trabajo y lo que ha costado en horas: ingresos, gastos y
+ * la facturacion por hora.
+ *
+ * Las horas de un cierre son las de su edicion si la lleva, y si no las del
+ * proyecto dentro de su periodo. Solo cuentan las que llevan el euro: son las
+ * que se han hecho para ganar ese dinero.
+ */
+export function resumenDeResultados(
+  entradas: EntradaVista[],
+  resultados: Resultado[],
+) {
+  const horasDe = (r: Resultado) =>
+    entradas
+      .filter((e) => {
+        if (!e.end_at || !e.billable) return false
+        if (r.edition_id) return e.edition_id === r.edition_id
+        return e.local_date >= r.starts_on && e.local_date <= r.ends_on
+      })
+      .reduce((s, e) => s + (e.duration_seconds ?? 0), 0)
+
+  const ingresos = resultados.reduce((s, r) => s + Number(r.income), 0)
+  const gastos = resultados.reduce((s, r) => s + Number(r.expenses), 0)
+  const segundos = resultados.reduce((s, r) => s + horasDe(r), 0)
+  const horas = segundos / 3600
+  return {
+    ingresos,
+    gastos,
+    neto: ingresos - gastos,
+    segundos,
+    porHora: horas > 0 ? ingresos / horas : null,
+  }
+}
+
+/**
  * Lo que ha dejado un trabajo y lo que ha costado en horas.
  *
  * Aquí no se presupuesta ni se cobra por tarifa: se apunta lo que entró y lo
@@ -35,33 +69,10 @@ export function ResultadosProyecto({
   /** Facturación por hora a la que se aspira. En LEINN, 17 €/h. */
   objetivoHora: number | null
 }) {
-  /**
-   * Las horas de un cierre: por edición si la lleva, y si no, las del proyecto
-   * dentro de su periodo. Solo cuentan las que llevan el euro: son las que se
-   * han hecho para ganar ese dinero.
-   */
-  const total = useMemo(() => {
-    const horasDe = (r: Resultado) =>
-      entradas
-        .filter((e) => {
-          if (!e.end_at || !e.billable) return false
-          if (r.edition_id) return e.edition_id === r.edition_id
-          return e.local_date >= r.starts_on && e.local_date <= r.ends_on
-        })
-        .reduce((s, e) => s + (e.duration_seconds ?? 0), 0)
-
-    const ingresos = resultados.reduce((s, r) => s + Number(r.income), 0)
-    const gastos = resultados.reduce((s, r) => s + Number(r.expenses), 0)
-    const segundos = resultados.reduce((s, r) => s + horasDe(r), 0)
-    const horas = segundos / 3600
-    return {
-      ingresos,
-      gastos,
-      neto: ingresos - gastos,
-      segundos,
-      porHora: horas > 0 ? ingresos / horas : null,
-    }
-  }, [entradas, resultados])
+  const total = useMemo(
+    () => resumenDeResultados(entradas, resultados),
+    [entradas, resultados],
+  )
 
   if (resultados.length === 0) return null
 
@@ -98,7 +109,7 @@ export function ResultadosProyecto({
  * La facturación por hora en un círculo: lo que llevas del objetivo. Se pasa
  * de vuelta si lo superas, que es justo lo que se quiere ver.
  */
-function Rueda({ valor, objetivo }: { valor: number; objetivo: number | null }) {
+export function Rueda({ valor, objetivo }: { valor: number; objetivo: number | null }) {
   const meta = objetivo && objetivo > 0 ? objetivo : null
   const parte = meta ? Math.min(1, valor / meta) : 1
   const radio = 34
@@ -146,34 +157,5 @@ function Rueda({ valor, objetivo }: { valor: number; objetivo: number | null }) 
         )}
       </div>
     </div>
-  )
-}
-
-/** El número que se mira, con su verde o su rojo según el objetivo. */
-function PorHora({
-  valor,
-  objetivo,
-  grande = false,
-}: {
-  valor: number
-  objetivo: number | null
-  grande?: boolean
-}) {
-  const llega = objetivo === null ? null : valor >= objetivo
-  return (
-    <span
-      className={cn(
-        "cifra whitespace-nowrap font-semibold",
-        grande ? "text-lg" : "text-sm",
-        llega === null ? "" : llega ? "text-billable" : "text-danger",
-      )}
-      title={
-        objetivo === null
-          ? "Facturación por hora"
-          : `Objetivo del equipo: ${objetivo} €/h`
-      }
-    >
-      {valor.toLocaleString("es-ES", { maximumFractionDigits: 2 })} €/h
-    </span>
   )
 }

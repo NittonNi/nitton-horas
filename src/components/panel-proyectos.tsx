@@ -15,7 +15,7 @@ import {
 import { NuevoProyecto } from "@/components/nuevo-proyecto"
 import { caminoDe } from "@/lib/categorias"
 import { formatDateShort, formatDurationShort, formatMoney } from "@/lib/time"
-import type { Categoria, Cliente, ProyectoConCliente, Tarea } from "@/lib/tipos"
+import type { Categoria, Proyecto, Tarea } from "@/lib/tipos"
 import { cn } from "@/lib/utils"
 
 export type ResumenProyecto = {
@@ -62,7 +62,6 @@ function guardarVista(vista: Vista) {
 
 /* --------------------------------------------------------------- pantalla */
 
-const SIN_CLIENTE = "sin-cliente"
 const SIN_RAMA = "sin-rama"
 
 export function PanelProyectos({
@@ -70,21 +69,18 @@ export function PanelProyectos({
   proyectos,
   tareas,
   categorias,
-  clientes,
   resumen,
   gestor,
 }: {
   espacioId: string
-  proyectos: ProyectoConCliente[]
+  proyectos: Proyecto[]
   tareas: Tarea[]
   categorias: Categoria[]
-  clientes: Cliente[]
   resumen: ResumenProyecto[]
   gestor: boolean
 }) {
   const vista = useSyncExternalStore(suscribir, leerVista, () => "lista" as Vista)
   const [busqueda, setBusqueda] = useState("")
-  const [clientesElegidos, setClientesElegidos] = useState<string[]>([])
   const [categoriasElegidas, setCategoriasElegidas] = useState<string[]>([])
   const [subcategoriasElegidas, setSubcategoriasElegidas] = useState<string[]>([])
   const [estado, setEstado] = useState<"activos" | "archivados" | "todos">(
@@ -145,10 +141,6 @@ export function PanelProyectos({
       if (estado === "activos" && p.archived) return false
       if (estado === "archivados" && !p.archived) return false
 
-      if (clientesElegidos.length > 0) {
-        if (!clientesElegidos.includes(p.client_id ?? SIN_CLIENTE)) return false
-      }
-
       if (categoriasElegidas.length > 0) {
         /* Con varias categorias marcadas vale con estar en cualquiera de
            ellas -o en algo que cuelgue de ellas-. */
@@ -168,12 +160,8 @@ export function PanelProyectos({
       }
 
       if (!texto) return true
-      /* Nombre, cliente y categoria: es como los busca la gente. */
-      const donde = [
-        p.name,
-        p.clients?.name ?? "",
-        caminoDe(categorias, p.category_id) ?? "",
-      ]
+      /* Nombre y categorizacion: es como los busca la gente. */
+      const donde = [p.name, caminoDe(categorias, p.category_id) ?? ""]
         .join(" ")
         .toLowerCase()
       return donde.includes(texto)
@@ -183,7 +171,6 @@ export function PanelProyectos({
     categorias,
     conSusHijas,
     busqueda,
-    clientesElegidos,
     categoriasElegidas,
     subcategoriasElegidas,
     estado,
@@ -191,7 +178,6 @@ export function PanelProyectos({
 
   const hayFiltros = Boolean(
     busqueda ||
-      clientesElegidos.length > 0 ||
       categoriasElegidas.length > 0 ||
       estado !== "activos",
   )
@@ -219,19 +205,6 @@ export function PanelProyectos({
           <option value="archivados">Archivados</option>
           <option value="todos">Todos</option>
         </select>
-
-        {clientes.length > 0 && (
-          <FiltroMultiple
-            etiqueta="Cliente"
-            todos="Todos los clientes"
-            opciones={[
-              { id: SIN_CLIENTE, nombre: "Sin cliente" },
-              ...clientes.map((c) => ({ id: c.id, nombre: c.name })),
-            ]}
-            elegidas={clientesElegidos}
-            onChange={setClientesElegidos}
-          />
-        )}
 
         {padres.length > 0 && (
           <FiltroMultiple
@@ -276,7 +249,7 @@ export function PanelProyectos({
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             className="field rounded-[3px] py-1.5 pl-8"
-            placeholder="Buscar por nombre, cliente o categoría"
+            placeholder="Buscar por nombre o por categoría"
             type="search"
             aria-label="Buscar un proyecto"
           />
@@ -285,11 +258,7 @@ export function PanelProyectos({
         <BotonVista vista={vista} />
 
         {gestor && (
-          <NuevoProyecto
-            espacioId={espacioId}
-            clientes={clientes}
-            categorias={categorias}
-          />
+          <NuevoProyecto espacioId={espacioId} categorias={categorias} />
         )}
       </div>
 
@@ -301,7 +270,7 @@ export function PanelProyectos({
           </p>
           <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
             {hayFiltros
-              ? "Prueba a quitar algún filtro. Se busca por nombre, por cliente y por la categoría."
+              ? "Prueba a quitar algún filtro. Se busca por nombre y por la categoría."
               : gestor
                 ? "Crea el primero y ya puedes empezar a apuntar horas contra él."
                 : "Pide a un administrador que cree los del equipo."}
@@ -341,8 +310,8 @@ export function PanelProyectos({
 /* ---------------------------------------------------------- un filtro */
 
 /**
- * Un filtro de varios a la vez: sin nada marcado no filtra -"Todos los
- * clientes"- y marcando dos o tres se quedan esos. Es el mismo menu con
+ * Un filtro de varios a la vez: sin nada marcado no filtra -"Todas las
+ * areas"- y marcando dos o tres se quedan esas. Es el mismo menu con
  * casillas que las etiquetas y las personas, para que se use igual en toda
  * la app.
  */
@@ -482,7 +451,7 @@ function useDatos({
   datos,
   tareas,
 }: {
-  proyecto: ProyectoConCliente
+  proyecto: Proyecto
   datos: ResumenProyecto | undefined
   tareas: Tarea[]
 }) {
@@ -505,7 +474,7 @@ function FilaProyecto({
   categorias,
   conImportes,
 }: {
-  proyecto: ProyectoConCliente
+  proyecto: Proyecto
   datos: ResumenProyecto | undefined
   tareas: Tarea[]
   categorias: Categoria[]
@@ -538,9 +507,9 @@ function FilaProyecto({
           {rama && <span className="chip shrink-0">{rama}</span>}
         </p>
         <p className="truncate text-xs text-muted">
-          {proyecto.clients?.name ?? "Sin cliente"}
-          {suyas > 0 && ` · ${suyas} ${suyas === 1 ? "tarea" : "tareas"}`}
-          {datos?.ultima && ` · última el ${formatDateShort(datos.ultima)}`}
+          {suyas > 0 && `${suyas} ${suyas === 1 ? "tarea" : "tareas"}`}
+          {suyas > 0 && datos?.ultima && " · "}
+          {datos?.ultima && `última el ${formatDateShort(datos.ultima)}`}
         </p>
       </div>
 
@@ -579,7 +548,7 @@ function TarjetaProyecto({
   categorias,
   conImportes,
 }: {
-  proyecto: ProyectoConCliente
+  proyecto: Proyecto
   datos: ResumenProyecto | undefined
   tareas: Tarea[]
   categorias: Categoria[]
@@ -604,8 +573,9 @@ function TarjetaProyecto({
       <div className="min-w-0">
         <p className="truncate text-sm font-medium">{proyecto.name}</p>
         <p className="truncate text-xs text-muted">
-          {proyecto.clients?.name ?? "Sin cliente"}
-          {suyas > 0 && ` · ${suyas} ${suyas === 1 ? "tarea" : "tareas"}`}
+          {suyas > 0
+            ? `${suyas} ${suyas === 1 ? "tarea" : "tareas"}`
+            : "Sin tareas"}
         </p>
       </div>
 

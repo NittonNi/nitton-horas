@@ -17,7 +17,8 @@ export type FilaClockify = {
   fila: number
   usuario: string
   email: string
-  cliente: string
+  /** La columna «Client» del informe: en LEINN es la rama del equipo. */
+  area: string
   proyecto: string
   tarea: string
   descripcion: string
@@ -38,7 +39,7 @@ export type Analisis = {
 
 const CAMPOS = {
   proyecto: ["project", "proyecto"],
-  cliente: ["client", "cliente"],
+  area: ["client", "cliente", "area"],
   descripcion: ["description", "descripcion"],
   tarea: ["task", "tarea"],
   usuario: ["user", "usuario"],
@@ -278,7 +279,7 @@ export function analizarCsv(texto: string, forzarFormato?: FormatoFecha): Analis
       fila: numero,
       usuario,
       email,
-      cliente: valor(registro, "cliente"),
+      area: valor(registro, "area"),
       proyecto: valor(registro, "proyecto"),
       tarea: valor(registro, "tarea"),
       descripcion: valor(registro, "descripcion"),

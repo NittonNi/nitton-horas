@@ -26,7 +26,7 @@ export default async function LayoutGestion({
       <div>
         <h1 className="text-lg font-semibold tracking-tight">Gestión</h1>
         <p className="mt-0.5 text-sm text-muted">
-          Clientes, proyectos, categorización, equipo y tarifas.
+          Proyectos, categorización, equipo y tarifas.
         </p>
       </div>
       <SubNav enlaces={enlaces} />

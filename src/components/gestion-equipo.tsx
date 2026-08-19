@@ -565,7 +565,7 @@ function Ajustes({ espacio }: { espacio: Espacio }) {
           </select>
           <p className="mt-1 text-xs text-muted">
             Se aplica al guardar, a las descripciones y a los nombres de
-            clientes, proyectos, tareas y etiquetas. Vale también para lo que
+            proyectos, tareas y etiquetas. Vale también para lo que
             entra por el importador, así que nadie tiene que acordarse.
           </p>
         </div>

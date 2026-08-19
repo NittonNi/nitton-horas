@@ -83,8 +83,6 @@ function propuestaComoEntrada(p: Propuesta): EntradaVista {
     project_id: null,
     project_name: p.project_name,
     project_color: p.project_color,
-    client_id: null,
-    client_name: null,
     category_id: null,
     category_name: null,
     subcategory_name: null,

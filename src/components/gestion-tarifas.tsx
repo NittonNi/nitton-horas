@@ -7,7 +7,7 @@ import { Loader2, Plus, Trash2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { formatDateShort, formatMoney, todayKey } from "@/lib/time"
-import type { Miembro, ProyectoConCliente, Tarifa } from "@/lib/tipos"
+import type { Miembro, Proyecto, Tarifa } from "@/lib/tipos"
 
 /**
  * La base resuelve la tarifa de cada entrada con `resolve_rate`: gana la más
@@ -23,7 +23,7 @@ export function GestionTarifas({
   espacioId: string
   tarifas: Tarifa[]
   miembros: Miembro[]
-  proyectos: ProyectoConCliente[]
+  proyectos: Proyecto[]
 }) {
   const router = useRouter()
   const [userId, setUserId] = useState("")
@@ -142,7 +142,7 @@ export function GestionTarifas({
               <option value="">Todos</option>
               {proyectos.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.clients?.name ? `${p.clients.name} · ${p.name}` : p.name}
+                  {p.name}
                 </option>
               ))}
             </select>

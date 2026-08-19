@@ -13,7 +13,7 @@ import {
   subcategoriasDe,
 } from "@/lib/categorias"
 import { formatDurationShort } from "@/lib/time"
-import type { Categoria, ProyectoConCliente } from "@/lib/tipos"
+import type { Categoria, Proyecto } from "@/lib/tipos"
 import { cn } from "@/lib/utils"
 
 /**
@@ -29,7 +29,7 @@ export function GestionCategorias({
 }: {
   espacioId: string
   categorias: Categoria[]
-  proyectos: ProyectoConCliente[]
+  proyectos: Proyecto[]
   /** Lo que llevas tu esta semana en cada rama, para leer el objetivo. */
   segundosPorRama?: Record<string, number>
 }) {
@@ -244,7 +244,7 @@ function Fila({
   onArchivar,
 }: {
   categoria: Categoria
-  proyectos: ProyectoConCliente[]
+  proyectos: Proyecto[]
   segundos: number
   ocupado: boolean
   onRenombrar: (nombre: string) => void

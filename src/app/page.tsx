@@ -109,7 +109,7 @@ const PARA_LEINN = [
     icono: Upload,
     titulo: "Lo de Clockify se trae",
     texto:
-      "Sin empezar de cero ni perder el año pasado. Y el campo cliente vuelve a ser el cliente, no un filtro improvisado.",
+      "Sin empezar de cero ni perder el año pasado. Cada rama del informe entra como área, y las horas se quedan donde estaban.",
   },
   {
     icono: BarChart3,
@@ -225,7 +225,6 @@ function MaquetaColumnas() {
   const columnas = [
     "Fecha",
     "Persona",
-    "Cliente",
     "Categoría",
     "Subcategoría",
     "Proyecto",
@@ -384,7 +383,7 @@ export default async function Portada() {
           <Seccion
             rotulo="Cómo se organiza"
             titulo="Vuestra estructura, no la de una herramienta"
-            texto="En LEINN el tiempo no se reparte por clientes: se reparte entre backoffice, conocimiento y empresa, y dentro por equipos y por tipo de trabajo. Aquí eso es de primera clase, y no un campo apañado para poder filtrar."
+            texto="En LEINN el tiempo se reparte entre backoffice, conocimiento y empresa, y dentro por equipos y por tipo de trabajo. Aquí eso es de primera clase, y no un campo apañado para poder filtrar."
           />
 
           <div className="mt-8 grid grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-12">
@@ -405,8 +404,8 @@ export default async function Portada() {
                 </h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
                   El proyecto cuelga de una rama, pero sigue siendo del espacio:
-                  se puede mirar por categoría, por subcategoría, por cliente o
-                  por persona sin mover nada de sitio.
+                  se puede mirar por área, por categoría o por persona sin
+                  mover nada de sitio.
                 </p>
               </div>
               <div>

@@ -19,8 +19,6 @@ import {
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { SelectorColor } from "@/components/selector-color"
-import { SelectorCliente } from "@/components/selector-cliente"
-import { useAvisos } from "@/components/avisos"
 import { caminoDe, ramas, SIN_CATEGORIA } from "@/lib/categorias"
 import { agrupar, totales } from "@/lib/informes"
 import {
@@ -33,11 +31,10 @@ import { DialogoEntrada } from "@/components/dialogo-entrada"
 import type {
   Catalogo,
   Categoria,
-  Cliente,
   Edicion,
   EntradaVista,
   Miembro,
-  ProyectoConCliente,
+  Proyecto,
   Tarea,
 } from "@/lib/tipos"
 import {
@@ -45,7 +42,6 @@ import {
   type Resultado,
 } from "@/components/resultados-proyecto"
 import { TarjetasEdicion } from "@/components/tarjetas-edicion"
-import { ClientesProyecto } from "@/components/clientes-proyecto"
 import { cn } from "@/lib/utils"
 
 /** Los cuatro tipos de trabajo del equipo, cada uno se cierra a su ritmo. */
@@ -58,14 +54,11 @@ const TIPOS = [
 
 export function DetalleProyecto({
   proyecto,
-  clientes,
   categorias,
   tareas,
   ediciones,
   entradas,
   resultados,
-  clientesDelProyecto,
-  clientesDeEdiciones,
   catalogo,
   miembros,
   objetivoHora,
@@ -73,17 +66,12 @@ export function DetalleProyecto({
   puedeGestionar,
   puedeVerImportes,
 }: {
-  proyecto: ProyectoConCliente
-  clientes: Cliente[]
+  proyecto: Proyecto
   categorias: Categoria[]
   tareas: Tarea[]
   ediciones: Edicion[]
   entradas: EntradaVista[]
   resultados: Resultado[]
-  /** Los clientes de este proyecto. Pueden ser varios. */
-  clientesDelProyecto: string[]
-  /** Que clientes participan en cada edicion. */
-  clientesDeEdiciones: { edition_id: string; client_id: string }[]
   /** Para poder corregir una hora sin salir del proyecto. */
   catalogo: Catalogo
   miembros: Miembro[]
@@ -111,20 +99,6 @@ export function DetalleProyecto({
     () => agrupar(cerradas, (e) => e.user_id, (e) => e.user_name),
     [cerradas],
   )
-
-  /** Para cada cliente, en que ediciones participa: se lee de un vistazo. */
-  const enEdiciones = useMemo(() => {
-    const mapa = new Map<string, string[]>()
-    for (const enlace of clientesDeEdiciones) {
-      const edicion = ediciones.find((e) => e.id === enlace.edition_id)
-      if (!edicion) continue
-      mapa.set(enlace.client_id, [
-        ...(mapa.get(enlace.client_id) ?? []),
-        edicion.name,
-      ])
-    }
-    return mapa
-  }, [clientesDeEdiciones, ediciones])
 
   /* Cuando empezo y cuando acabo, sin escribir una sola fecha: la primera hora
      apuntada -o el dia que se creo- y la ultima. */
@@ -167,19 +141,16 @@ export function DetalleProyecto({
               )}
             </h1>
             <p className="truncate text-sm text-muted">
-              {proyecto.clients?.name ?? "Sin cliente"}
-              {proyecto.billable_default && " · facturable por defecto"}
+              {proyecto.billable_default
+                ? "Facturable por defecto"
+                : "No facturable por defecto"}
               {proyecto.archived && " · archivado"}
             </p>
           </div>
         </div>
 
         {puedeGestionar && (
-          <EditarProyecto
-            proyecto={proyecto}
-            clientes={clientes}
-            categorias={categorias}
-          />
+          <EditarProyecto proyecto={proyecto} categorias={categorias} />
         )}
       </div>
 
@@ -234,24 +205,12 @@ export function DetalleProyecto({
       </div>
 
 
-      <ClientesProyecto
-        espacioId={espacioId}
-        proyectoId={proyecto.id}
-        clientes={clientes}
-        puestos={clientesDelProyecto}
-        enEdiciones={enEdiciones}
-        puedeGestionar={puedeGestionar}
-      />
-
       <TarjetasEdicion
         espacioId={espacioId}
         proyectoId={proyecto.id}
-        clientesDelProyecto={clientesDelProyecto}
-        clientesDeEdiciones={clientesDeEdiciones}
         ediciones={ediciones}
         entradas={cerradas}
         resultados={resultados}
-        clientes={clientes}
         objetivoHora={objetivoHora}
         predeterminada={proyecto.default_edition_id}
         puedeGestionar={puedeGestionar}
@@ -635,11 +594,9 @@ function UltimasEntradas({
 
 function EditarProyecto({
   proyecto,
-  clientes,
   categorias,
 }: {
-  proyecto: ProyectoConCliente
-  clientes: Cliente[]
+  proyecto: Proyecto
   categorias: Categoria[]
 }) {
   const router = useRouter()
@@ -668,7 +625,7 @@ function EditarProyecto({
         category_id: categoriaId || null,
         color,
         billable_default: facturable,
-        kind: (tipo || null) as ProyectoConCliente["kind"],
+        kind: (tipo || null) as Proyecto["kind"],
       })
       .eq("id", proyecto.id)
 

@@ -32,8 +32,7 @@ type Resultado = {
   duplicadas: number
   omitidas: number
   creados: {
-    clientes: number
-    categorias: number
+    areas: number
     proyectos: number
     tareas: number
     etiquetas: number
@@ -64,11 +63,6 @@ export function ImportadorClockify({
   const [analisis, setAnalisis] = useState<Analisis | null>(null)
   const [asignacion, setAsignacion] = useState<Record<string, string>>({})
   const [crearFaltantes, setCrearFaltantes] = useState(true)
-  /* En Clockify el campo "cliente" se usaba a menudo como filtro -TLT, Care
-     team...-, que aqui es la categorizacion. Se elige que es cada cosa. */
-  const [campoCliente, setCampoCliente] = useState<"cliente" | "categoria">(
-    "cliente",
-  )
   const [progreso, setProgreso] = useState<number | null>(null)
   const [resultado, setResultado] = useState<Resultado | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -127,12 +121,14 @@ export function ImportadorClockify({
     const fechas = seleccionadas.map((f) => f.inicio.slice(0, 10)).sort()
     const segundos = seleccionadas.reduce((s, f) => s + f.segundos, 0)
 
-    const nuevosClientes = new Set<string>()
+    const nuevasAreas = new Set<string>()
     const nuevosProyectos = new Set<string>()
     const nuevasTareas = new Set<string>()
     const nuevasEtiquetas = new Set<string>()
 
-    const clientesExistentes = new Set(catalogo.clientes.map((c) => clave(c.name)))
+    const areasExistentes = new Set(
+      catalogo.categorias.filter((c) => !c.parent_id).map((c) => clave(c.name)),
+    )
     const proyectosExistentes = new Set(catalogo.proyectos.map((p) => clave(p.name)))
     const tareasExistentes = new Set(
       catalogo.tareas.map((t) => `${t.project_id}|${clave(t.name)}`),
@@ -140,8 +136,8 @@ export function ImportadorClockify({
     const etiquetasExistentes = new Set(catalogo.etiquetas.map((t) => clave(t.name)))
 
     for (const fila of seleccionadas) {
-      if (fila.cliente && !clientesExistentes.has(clave(fila.cliente)))
-        nuevosClientes.add(clave(fila.cliente))
+      if (fila.area && !areasExistentes.has(clave(fila.area)))
+        nuevasAreas.add(clave(fila.area))
       if (fila.proyecto && !proyectosExistentes.has(clave(fila.proyecto)))
         nuevosProyectos.add(clave(fila.proyecto))
       if (fila.tarea) {
@@ -163,7 +159,7 @@ export function ImportadorClockify({
       desde: fechas[0],
       hasta: fechas[fechas.length - 1],
       segundos,
-      nuevosClientes: nuevosClientes.size,
+      nuevasAreas: nuevasAreas.size,
       nuevosProyectos: nuevosProyectos.size,
       nuevasTareas: nuevasTareas.size,
       nuevasEtiquetas: nuevasEtiquetas.size,
@@ -178,8 +174,7 @@ export function ImportadorClockify({
 
     const supabase = createClient()
     const creados = {
-      clientes: 0,
-      categorias: 0,
+      areas: 0,
       proyectos: 0,
       tareas: 0,
       etiquetas: 0,
@@ -187,7 +182,6 @@ export function ImportadorClockify({
 
     try {
       /* ------------------------------------------------ catalogo que falta */
-      const clientes = new Map(catalogo.clientes.map((c) => [clave(c.name), c.id]))
       const proyectos = new Map(catalogo.proyectos.map((p) => [clave(p.name), p.id]))
       const tareas = new Map(
         catalogo.tareas.map((t) => [`${t.project_id}|${clave(t.name)}`, t.id]),
@@ -195,67 +189,42 @@ export function ImportadorClockify({
       const etiquetas = new Map(catalogo.etiquetas.map((t) => [clave(t.name), t.id]))
 
       if (crearFaltantes) {
-        /* Si el campo cliente es en realidad la rama del equipo, se crea como
-           categoria de primer nivel y los proyectos cuelgan de ella. */
-        const categorias = new Map(
+        /* La columna «Client» del informe es, en LEINN, la rama del equipo
+           -TLT, Care team...-: aqui entra como area y los proyectos cuelgan
+           de ella. */
+        const areas = new Map(
           catalogo.categorias
             .filter((c) => !c.parent_id)
             .map((c) => [clave(c.name), c.id]),
         )
-        if (campoCliente === "categoria") {
-          const faltanRamas = [
-            ...new Set(
-              seleccionadas
-                .map((f) => f.cliente.trim())
-                .filter((n) => n && !categorias.has(clave(n))),
-            ),
-          ]
-          if (faltanRamas.length > 0) {
-            const { data, error: err } = await supabase
-              .from("categories")
-              .insert(faltanRamas.map((name) => ({ workspace_id: espacioId, name })))
-              .select("id, name")
-            if (err) throw err
-            for (const fila of data ?? []) categorias.set(clave(fila.name), fila.id)
-            creados.categorias = data?.length ?? 0
-          }
-        }
-
-        const faltanClientes = campoCliente === "categoria" ? [] : [
+        const faltanAreas = [
           ...new Set(
             seleccionadas
-              .map((f) => f.cliente.trim())
-              .filter((n) => n && !clientes.has(clave(n))),
+              .map((f) => f.area.trim())
+              .filter((n) => n && !areas.has(clave(n))),
           ),
         ]
-        if (faltanClientes.length > 0) {
+        if (faltanAreas.length > 0) {
           const { data, error: err } = await supabase
-            .from("clients")
-            .insert(faltanClientes.map((name) => ({ workspace_id: espacioId, name })))
+            .from("categories")
+            .insert(faltanAreas.map((name) => ({ workspace_id: espacioId, name })))
             .select("id, name")
           if (err) throw err
-          for (const fila of data ?? []) clientes.set(clave(fila.name), fila.id)
-          creados.clientes = data?.length ?? 0
+          for (const fila of data ?? []) areas.set(clave(fila.name), fila.id)
+          creados.areas = data?.length ?? 0
         }
 
         const faltanProyectos = new Map<
           string,
-          { name: string; client_id: string | null; category_id: string | null }
+          { name: string; category_id: string | null }
         >()
         for (const fila of seleccionadas) {
           const nombre = fila.proyecto.trim()
           if (!nombre || proyectos.has(clave(nombre))) continue
-          const suClave = fila.cliente ? clave(fila.cliente) : null
+          const suClave = fila.area ? clave(fila.area) : null
           faltanProyectos.set(clave(nombre), {
             name: nombre,
-            client_id:
-              suClave && campoCliente === "cliente"
-                ? (clientes.get(suClave) ?? null)
-                : null,
-            category_id:
-              suClave && campoCliente === "categoria"
-                ? (categorias.get(suClave) ?? null)
-                : null,
+            category_id: suClave ? (areas.get(suClave) ?? null) : null,
           })
         }
         if (faltanProyectos.size > 0) {
@@ -507,8 +476,7 @@ export function ImportadorClockify({
 
             {resumen && crearFaltantes && (
               <p className="mt-3 text-xs text-muted">
-                Se crearán {resumen.nuevosClientes}{" "}
-                {campoCliente === "categoria" ? "categorías" : "clientes"},{" "}
+                Se crearán {resumen.nuevasAreas} áreas,{" "}
                 {resumen.nuevosProyectos} proyectos, {resumen.nuevasTareas} tareas
                 y {resumen.nuevasEtiquetas} etiquetas que no existen aún.
               </p>
@@ -531,32 +499,14 @@ export function ImportadorClockify({
                 checked={crearFaltantes}
                 onChange={(e) => setCrearFaltantes(e.target.checked)}
               />
-              Crear los clientes, proyectos, tareas y etiquetas que falten
+              Crear las áreas, proyectos, tareas y etiquetas que falten
             </label>
 
-            <div className="mt-3">
-              <label className="label" htmlFor="campo-cliente">
-                El campo «Cliente» del informe es…
-              </label>
-              <select
-                id="campo-cliente"
-                className="field w-auto"
-                value={campoCliente}
-                onChange={(e) =>
-                  setCampoCliente(e.target.value as "cliente" | "categoria")
-                }
-              >
-                <option value="cliente">Un cliente de verdad: quien paga</option>
-                <option value="categoria">
-                  La rama del equipo: Backoffice, TLT, Eventos…
-                </option>
-              </select>
-              <p className="mt-1.5 text-xs text-muted">
-                En Clockify muchos equipos usaban «cliente» para poder filtrar.
-                Si era vuestro caso, elige la segunda: cada nombre se crea como
-                categoría y los proyectos cuelgan de ella.
-              </p>
-            </div>
+            <p className="mt-3 text-xs text-muted">
+              La columna «Client» del informe entra como área: cada nombre
+              -Backoffice, TLT, Eventos…- se crea arriba del todo y los
+              proyectos cuelgan de ella.
+            </p>
           </section>
 
           <section className="card p-4">
@@ -624,8 +574,7 @@ export function ImportadorClockify({
                     {resultado.duplicadas} ya estaban de una importacion anterior
                     {resultado.omitidas > 0 &&
                       `, ${resultado.omitidas} omitidas por no tener persona asignada`}
-                    . Se crearon {resultado.creados.clientes} clientes,{" "}
-                    {resultado.creados.categorias} categorías,{" "}
+                    . Se crearon {resultado.creados.areas} áreas,{" "}
                     {resultado.creados.proyectos} proyectos,{" "}
                     {resultado.creados.tareas} tareas y{" "}
                     {resultado.creados.etiquetas} etiquetas.

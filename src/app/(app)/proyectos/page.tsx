@@ -26,7 +26,6 @@ export default async function PaginaProyectos() {
       proyectos={catalogo.proyectos}
       tareas={catalogo.tareas}
       categorias={catalogo.categorias}
-      clientes={catalogo.clientes}
       resumen={(resumen.data ?? []) as ResumenProyecto[]}
       gestor={gestor}
     />

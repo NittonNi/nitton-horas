@@ -13,18 +13,11 @@ export async function cargarCatalogo(
 ): Promise<Catalogo> {
   const supabase = await createClient()
 
-  const [clientes, proyectos, tareas, etiquetas, categorias, ediciones] =
+  const [proyectos, tareas, etiquetas, categorias, ediciones] =
     await Promise.all([
       supabase
-        .from("clients")
-        .select("*")
-        .eq("workspace_id", espacioId)
-        .order("name"),
-      supabase
         .from("projects")
-        /* `!projects_client_id_fkey`: desde que hay tabla puente de clientes hay
-           dos caminos de proyecto a cliente y hay que decir cual. */
-        .select("*, clients!projects_client_id_fkey(id, name)")
+        .select("*")
         .eq("workspace_id", espacioId)
         .order("name"),
       supabase.from("tasks").select("*").eq("workspace_id", espacioId).order("name"),
@@ -47,8 +40,7 @@ export async function cargarCatalogo(
     (filas ?? []).filter((f) => incluirArchivados || !f.archived)
 
   return {
-    clientes: vivo(clientes.data),
-    proyectos: vivo(proyectos.data) as Catalogo["proyectos"],
+    proyectos: vivo(proyectos.data),
     tareas: vivo(tareas.data),
     etiquetas: vivo(etiquetas.data),
     categorias: vivo(categorias.data),

@@ -33,7 +33,6 @@ type Fila = {
   edition_id: string | null
   descripcion: string
   proyecto: string
-  cliente: string | null
   color: string | null
   facturable: boolean
   porDia: Record<string, EntradaVista[]>
@@ -102,7 +101,6 @@ export function TablaSemana({
           task_id: entrada.task_id,
           descripcion: entrada.description,
           proyecto: entrada.project_name ?? "Sin proyecto",
-          cliente: entrada.client_name,
           color: entrada.project_color,
           facturable: entrada.billable,
           porDia: {},
@@ -127,7 +125,6 @@ export function TablaSemana({
             ? `${proyecto.name} · ${tarea.name}`
             : proyecto.name
           : "Sin proyecto",
-        cliente: proyecto?.clients?.name ?? null,
         color: proyecto?.color ?? null,
         facturable: proyecto?.billable_default ?? false,
         porDia: {},
@@ -360,7 +357,6 @@ export function TablaSemana({
                       <p className="truncate text-sm font-medium">{fila.proyecto}</p>
                       <p className="truncate text-xs text-muted">
                         {fila.descripcion || "Sin descripción"}
-                        {fila.cliente && ` · ${fila.cliente}`}
                       </p>
                     </div>
                   </div>

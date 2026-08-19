@@ -33,7 +33,7 @@ export default async function PaginaProyecto({
   const gestor = veTodo(rol)
 
   const supabase = await createClient()
-  const [catalogo, entradas, resultados, delProyecto, miembros] =
+  const [catalogo, entradas, resultados, miembros] =
     await Promise.all([
     cargarCatalogo(espacio.id, true),
     cargarEntradas({
@@ -48,7 +48,6 @@ export default async function PaginaProyecto({
       .select("id, edition_id, label, starts_on, ends_on, income, expenses, notes")
       .eq("project_id", id)
       .order("starts_on", { ascending: false }),
-    supabase.from("project_clients").select("client_id").eq("project_id", id),
     cargarMiembros(espacio.id),
   ])
 
@@ -56,21 +55,10 @@ export default async function PaginaProyecto({
   if (!proyecto) notFound()
 
   const ediciones = catalogo.ediciones.filter((e) => e.project_id === id)
-  const deEdiciones =
-    ediciones.length > 0
-      ? await supabase
-          .from("edition_clients")
-          .select("edition_id, client_id")
-          .in(
-            "edition_id",
-            ediciones.map((e) => e.id),
-          )
-      : { data: [] }
 
   return (
     <DetalleProyecto
       proyecto={proyecto}
-      clientes={catalogo.clientes}
       categorias={catalogo.categorias}
       tareas={catalogo.tareas.filter((t) => t.project_id === id)}
       ediciones={ediciones}
@@ -78,11 +66,6 @@ export default async function PaginaProyecto({
       resultados={(resultados.data ?? []) as Resultado[]}
       catalogo={catalogo}
       miembros={miembros.filter((m) => m.active)}
-      clientesDelProyecto={(delProyecto.data ?? []).map((f) => f.client_id)}
-      clientesDeEdiciones={(deEdiciones.data ?? []) as {
-        edition_id: string
-        client_id: string
-      }[]}
       objetivoHora={espacio.target_hourly_rate}
       espacioId={espacio.id}
       puedeGestionar={gestor}

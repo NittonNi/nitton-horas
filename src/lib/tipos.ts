@@ -15,7 +15,6 @@ export type Sesion = {
   espacios: Pertenencia[]
 }
 
-export type Cliente = Tables<"clients">
 export type Proyecto = Tables<"projects">
 export type Tarea = Tables<"tasks">
 export type Categoria = Tables<"categories">
@@ -46,8 +45,6 @@ export type EntradaVista = {
   project_id: string | null
   project_name: string | null
   project_color: string | null
-  client_id: string | null
-  client_name: string | null
   category_id: string | null
   category_name: string | null
   subcategory_name: string | null
@@ -78,14 +75,9 @@ export type EntradaVista = {
 /** Una propuesta se manda, y la otra persona la acepta o la rechaza. */
 export type EstadoPropuesta = "pendiente" | "aceptada" | "rechazada"
 
-export type ProyectoConCliente = Proyecto & {
-  clients: Pick<Cliente, "id" | "name"> | null
-}
-
 /** Catalogo que necesita el selector de proyecto/tarea/etiqueta. */
 export type Catalogo = {
-  clientes: Cliente[]
-  proyectos: ProyectoConCliente[]
+  proyectos: Proyecto[]
   tareas: Tarea[]
   etiquetas: Etiqueta[]
   /** Arbol de dos niveles: las de primer nivel llevan parent_id nulo. */
@@ -111,7 +103,7 @@ export type EntradaEnMarcha = {
   description: string
   start_at: string
   billable: boolean
-  proyecto: { id: string; name: string; color: string; cliente: string | null } | null
+  proyecto: { id: string; name: string; color: string } | null
   tarea: { id: string; name: string } | null
   tagIds: string[]
 }

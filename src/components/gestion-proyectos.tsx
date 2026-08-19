@@ -18,15 +18,14 @@ import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import {
   COLORES_PROYECTO,
-  type Cliente,
-  type ProyectoConCliente,
+  type Categoria,
+  type Proyecto,
   type Tarea,
 } from "@/lib/tipos"
 import { cn } from "@/lib/utils"
 
 type Borrador = {
   name: string
-  client_id: string
   color: string
   billable_default: boolean
   budget_hours: string
@@ -34,7 +33,6 @@ type Borrador = {
 
 const VACIO: Borrador = {
   name: "",
-  client_id: "",
   color: COLORES_PROYECTO[0],
   billable_default: true,
   budget_hours: "",
@@ -43,17 +41,17 @@ const VACIO: Borrador = {
 export function GestionProyectos({
   espacioId,
   proyectos,
-  clientes,
+  categorias,
   tareas,
 }: {
   espacioId: string
-  proyectos: ProyectoConCliente[]
-  clientes: Cliente[]
+  proyectos: Proyecto[]
+  categorias: Categoria[]
   tareas: Tarea[]
 }) {
   const router = useRouter()
   const [creando, setCreando] = useState(false)
-  const [editando, setEditando] = useState<ProyectoConCliente | null>(null)
+  const [editando, setEditando] = useState<Proyecto | null>(null)
   const [abierto, setAbierto] = useState<string | null>(null)
   const [verArchivados, setVerArchivados] = useState(false)
   const [ocupado, setOcupado] = useState(false)
@@ -62,12 +60,20 @@ export function GestionProyectos({
   const visibles = proyectos.filter((p) => verArchivados || !p.archived)
   const archivados = proyectos.filter((p) => p.archived).length
 
-  // Agrupados por cliente, y los sueltos al final
+  // Agrupados por area -el escalon de arriba-, y los sueltos al final
   const grupos = useMemo(() => {
-    const mapa = new Map<string, { titulo: string; filas: ProyectoConCliente[] }>()
+    const porId = new Map(categorias.map((c) => [c.id, c]))
+    const area = (proyecto: Proyecto) => {
+      const suya = proyecto.category_id ? porId.get(proyecto.category_id) : null
+      if (!suya) return null
+      return suya.parent_id ? (porId.get(suya.parent_id) ?? suya) : suya
+    }
+
+    const mapa = new Map<string, { titulo: string; filas: Proyecto[] }>()
     for (const proyecto of visibles) {
-      const clave = proyecto.client_id ?? "__sin__"
-      const titulo = proyecto.clients?.name ?? "Sin cliente"
+      const suya = area(proyecto)
+      const clave = suya?.id ?? "__sin__"
+      const titulo = suya?.name ?? "Sin área"
       if (!mapa.has(clave)) mapa.set(clave, { titulo, filas: [] })
       mapa.get(clave)!.filas.push(proyecto)
     }
@@ -76,9 +82,9 @@ export function GestionProyectos({
         a[0] === "__sin__" ? 1 : b[0] === "__sin__" ? -1 : a[1].titulo.localeCompare(b[1].titulo),
       )
       .map(([, grupo]) => grupo)
-  }, [visibles])
+  }, [visibles, categorias])
 
-  async function archivar(proyecto: ProyectoConCliente) {
+  async function archivar(proyecto: Proyecto) {
     setOcupado(true)
     setError(null)
     const supabase = createClient()
@@ -127,7 +133,6 @@ export function GestionProyectos({
       {creando && (
         <FormularioProyecto
           espacioId={espacioId}
-          clientes={clientes}
           onHecho={() => setCreando(false)}
           onCancelar={() => setCreando(false)}
         />
@@ -256,7 +261,6 @@ export function GestionProyectos({
             </div>
             <FormularioProyecto
               espacioId={espacioId}
-              clientes={clientes}
               proyecto={editando}
               onHecho={() => setEditando(null)}
               onCancelar={() => setEditando(null)}
@@ -270,14 +274,12 @@ export function GestionProyectos({
 
 function FormularioProyecto({
   espacioId,
-  clientes,
   proyecto,
   onHecho,
   onCancelar,
 }: {
   espacioId: string
-  clientes: Cliente[]
-  proyecto?: ProyectoConCliente
+  proyecto?: Proyecto
   onHecho: () => void
   onCancelar: () => void
 }) {
@@ -286,7 +288,6 @@ function FormularioProyecto({
     proyecto
       ? {
           name: proyecto.name,
-          client_id: proyecto.client_id ?? "",
           color: proyecto.color,
           billable_default: proyecto.billable_default,
           budget_hours:
@@ -296,8 +297,6 @@ function FormularioProyecto({
   )
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const activos = clientes.filter((c) => !c.archived || c.id === valores.client_id)
 
   async function guardar() {
     const nombre = valores.name.trim()
@@ -316,7 +315,6 @@ function FormularioProyecto({
     const supabase = createClient()
     const fila = {
       name: nombre,
-      client_id: valores.client_id || null,
       color: valores.color,
       billable_default: valores.billable_default,
       budget_hours: horas ? Number(horas) : null,
@@ -347,38 +345,18 @@ function FormularioProyecto({
         !proyecto && "mb-3 rounded-lg border border-line bg-surface-2 p-3",
       )}
     >
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div>
-          <label className="label" htmlFor="proyecto-nombre">
-            Nombre
-          </label>
-          <input
-            id="proyecto-nombre"
-            autoFocus
-            className="field"
-            value={valores.name}
-            onChange={(e) => setValores({ ...valores, name: e.target.value })}
-            placeholder="Nombre del proyecto"
-          />
-        </div>
-        <div>
-          <label className="label" htmlFor="proyecto-cliente">
-            Cliente
-          </label>
-          <select
-            id="proyecto-cliente"
-            className="field"
-            value={valores.client_id}
-            onChange={(e) => setValores({ ...valores, client_id: e.target.value })}
-          >
-            <option value="">Sin cliente</option>
-            {activos.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div>
+        <label className="label" htmlFor="proyecto-nombre">
+          Nombre
+        </label>
+        <input
+          id="proyecto-nombre"
+          autoFocus
+          className="field"
+          value={valores.name}
+          onChange={(e) => setValores({ ...valores, name: e.target.value })}
+          placeholder="Nombre del proyecto"
+        />
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
@@ -461,7 +439,7 @@ function TareasProyecto({
   tareas,
 }: {
   espacioId: string
-  proyecto: ProyectoConCliente
+  proyecto: Proyecto
   tareas: Tarea[]
 }) {
   const router = useRouter()

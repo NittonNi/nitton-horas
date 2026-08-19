@@ -8,23 +8,19 @@ import { Loader2, Plus, X } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { SelectorColor } from "@/components/selector-color"
-import { SelectorCliente } from "@/components/selector-cliente"
 import { ramas, SIN_CATEGORIA } from "@/lib/categorias"
-import { COLORES_PROYECTO, type Categoria, type Cliente } from "@/lib/tipos"
+import { COLORES_PROYECTO, type Categoria } from "@/lib/tipos"
 
 export function NuevoProyecto({
   espacioId,
-  clientes,
   categorias,
 }: {
   espacioId: string
-  clientes: Cliente[]
   categorias: Categoria[]
 }) {
   const router = useRouter()
   const [abierto, setAbierto] = useState(false)
   const [nombre, setNombre] = useState("")
-  const [clienteId, setClienteId] = useState("")
   const [categoriaId, setCategoriaId] = useState("")
   const [color, setColor] = useState<string>(COLORES_PROYECTO[0])
   const [guardando, setGuardando] = useState(false)
@@ -45,7 +41,6 @@ export function NuevoProyecto({
       .insert({
         workspace_id: espacioId,
         name: limpio,
-        client_id: clienteId || null,
         category_id: categoriaId || null,
         color,
       })
@@ -60,7 +55,6 @@ export function NuevoProyecto({
 
     setAbierto(false)
     setNombre("")
-    setClienteId("")
     setCategoriaId("")
     router.push(`/proyectos/${data.id}`)
   }
@@ -107,19 +101,6 @@ export function NuevoProyecto({
             </div>
 
             <div>
-              <label className="label" htmlFor="np-cliente">
-                Cliente
-              </label>
-              <SelectorCliente
-                id="np-cliente"
-                espacioId={espacioId}
-                clientes={clientes}
-                valor={clienteId}
-                onChange={setClienteId}
-              />
-            </div>
-
-            <div>
               <label className="label" htmlFor="np-categoria">
                 Categoría
               </label>
@@ -139,7 +120,8 @@ export function NuevoProyecto({
                 )}
               </select>
               <p className="mt-1.5 text-xs text-muted">
-                Cómo se organiza el equipo. El cliente, si lo hay, va arriba.
+                Cómo se organiza el equipo: el área arriba y la categoría
+                debajo.
               </p>
             </div>
 

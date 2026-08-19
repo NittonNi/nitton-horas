@@ -8,7 +8,7 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { ramas, SIN_CATEGORIA } from "@/lib/categorias"
-import type { Categoria, ProyectoConCliente } from "@/lib/tipos"
+import type { Categoria, Proyecto as TipoProyecto } from "@/lib/tipos"
 
 /**
  * Los proyectos del espacio vistos por la categorizacion: cada rama con lo que
@@ -20,7 +20,7 @@ export function ProyectosPorCategoria({
   proyectos,
 }: {
   categorias: Categoria[]
-  proyectos: ProyectoConCliente[]
+  proyectos: TipoProyecto[]
 }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
@@ -44,7 +44,7 @@ export function ProyectosPorCategoria({
     router.refresh()
   }
 
-  function Selector({ proyecto }: { proyecto: ProyectoConCliente }) {
+  function Selector({ proyecto }: { proyecto: TipoProyecto }) {
     return (
       <select
         value={proyecto.category_id ?? ""}
@@ -65,7 +65,7 @@ export function ProyectosPorCategoria({
     )
   }
 
-  function Proyecto({ proyecto }: { proyecto: ProyectoConCliente }) {
+  function Proyecto({ proyecto }: { proyecto: TipoProyecto }) {
     return (
       <li className="flex flex-wrap items-center gap-x-2 gap-y-1 py-1.5">
         <span
@@ -78,9 +78,6 @@ export function ProyectosPorCategoria({
           className="min-w-0 flex-1 truncate text-sm transition hover:text-accent"
         >
           {proyecto.name}
-          {proyecto.clients && (
-            <span className="text-muted"> · {proyecto.clients.name}</span>
-          )}
         </Link>
         <Selector proyecto={proyecto} />
       </li>

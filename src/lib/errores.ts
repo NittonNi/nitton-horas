@@ -14,8 +14,7 @@ export function mensajeError(error: unknown): string {
     if (raw.includes("one_running_per_user")) {
       return "Ya tienes un cronómetro en marcha."
     }
-    if (raw.includes("clients_name_unique")) return "Ya existe un cliente con ese nombre."
-    if (raw.includes("projects_name_per_client")) return "Ese cliente ya tiene un proyecto con ese nombre."
+    if (raw.includes("projects_name_unique")) return "Ya existe un proyecto con ese nombre."
     if (raw.includes("tasks_name_per_project")) return "Ese proyecto ya tiene una tarea con ese nombre."
     if (raw.includes("tags_name_unique")) return "Ya existe una etiqueta con ese nombre."
     if (raw.includes("rates_scope_unique")) return "Ya hay una tarifa para ese ambito y esa fecha."

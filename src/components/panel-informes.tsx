@@ -55,7 +55,6 @@ export function PanelInformes({
   const { espacio } = useSesion()
   const [persona, setPersona] = useState("")
   const [categoria, setCategoria] = useState("")
-  const [cliente, setCliente] = useState("")
   const [proyecto, setProyecto] = useState("")
   const [etiqueta, setEtiqueta] = useState("")
   const [facturable, setFacturable] = useState<Facturable>("todo")
@@ -83,7 +82,6 @@ export function PanelInformes({
     return entradas.filter((entrada) => {
       if (!entrada.end_at) return false
       if (persona && entrada.user_id !== persona) return false
-      if (cliente && entrada.client_id !== cliente) return false
       if (categoria && entrada.category_id !== categoria) return false
       if (proyecto && entrada.project_id !== proyecto) return false
       if (etiqueta && !entrada.tags.includes(etiqueta)) return false
@@ -92,7 +90,7 @@ export function PanelInformes({
       if (cierre === "cerradas" && !entrada.locked) return false
       if (cierre === "abiertas" && entrada.locked) return false
       if (texto) {
-        const donde = `${entrada.description} ${entrada.project_name ?? ""} ${entrada.task_name ?? ""} ${entrada.client_name ?? ""}`
+        const donde = `${entrada.description} ${entrada.project_name ?? ""} ${entrada.task_name ?? ""}`
         if (!donde.toLowerCase().includes(texto)) return false
       }
       return true
@@ -100,7 +98,6 @@ export function PanelInformes({
   }, [
     entradas,
     persona,
-    cliente,
     categoria,
     proyecto,
     etiqueta,
@@ -119,15 +116,6 @@ export function PanelInformes({
         (e) => e.project_id ?? "sin",
         (e) => e.project_name ?? "Sin proyecto",
         (e) => e.project_color,
-      ),
-    [filtradas],
-  )
-  const porCliente = useMemo(
-    () =>
-      agrupar(
-        filtradas,
-        (e) => e.client_id ?? "sin",
-        (e) => e.client_name ?? "Sin cliente",
       ),
     [filtradas],
   )
@@ -236,7 +224,6 @@ export function PanelInformes({
         columnas: [
           "Fecha",
           "Persona",
-          "Cliente",
           "Proyecto",
           "Descripción",
           "Horas",
@@ -245,7 +232,6 @@ export function PanelInformes({
         filas: paraDescargar.map((entrada) => [
           formatDateShort(entrada.local_date),
           entrada.user_name,
-          entrada.client_name ?? "",
           entrada.project_name ?? "",
           entrada.description,
           formatHoursDecimal(entrada.duration_seconds),
@@ -351,20 +337,6 @@ export function PanelInformes({
 
           <select
             className="field w-full py-1 sm:w-auto"
-            value={cliente}
-            onChange={(e) => setCliente(e.target.value)}
-            aria-label="Cliente"
-          >
-            <option value="">Todos los clientes</option>
-            {catalogo.clientes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-
-          <select
-            className="field w-full py-1 sm:w-auto"
             value={categoria}
             onChange={(e) => setCategoria(e.target.value)}
             aria-label="Categoría"
@@ -384,13 +356,11 @@ export function PanelInformes({
             aria-label="Proyecto"
           >
             <option value="">Todos los proyectos</option>
-            {catalogo.proyectos
-              .filter((p) => !cliente || p.client_id === cliente)
-              .map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
+            {catalogo.proyectos.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
           </select>
 
           <select
@@ -595,17 +565,10 @@ export function PanelInformes({
           total={suma.segundos}
           conImporte={puedeVerImportes}
         />
-        {miembros.length > 0 ? (
+        {miembros.length > 0 && (
           <Desglose
             titulo="Por persona"
             grupos={porPersona}
-            total={suma.segundos}
-            conImporte={puedeVerImportes}
-          />
-        ) : (
-          <Desglose
-            titulo="Por cliente"
-            grupos={porCliente}
             total={suma.segundos}
             conImporte={puedeVerImportes}
           />
@@ -618,22 +581,13 @@ export function PanelInformes({
           conImporte={puedeVerImportes}
         />
 
-        {porEdicion.length > 0 ? (
+        {porEdicion.length > 0 && (
           <Desglose
             titulo="Por edición"
             grupos={porEdicion}
             total={suma.segundos}
             conImporte={puedeVerImportes}
           />
-        ) : (
-          miembros.length > 0 && (
-            <Desglose
-              titulo="Por cliente"
-              grupos={porCliente}
-              total={suma.segundos}
-              conImporte={puedeVerImportes}
-            />
-          )
         )}
       </div>
 

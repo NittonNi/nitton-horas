@@ -37,7 +37,6 @@ export function exportarCsv(entradas: EntradaVista[], nombre: string) {
   const filas = entradas.map((entrada) => ({
     Fecha: formatDateShort(entrada.local_date),
     Persona: entrada.user_name,
-    Cliente: entrada.client_name ?? "",
     Categoría: entrada.category_name ?? "",
     Subcategoría: entrada.subcategory_name ?? "",
     Proyecto: entrada.project_name ?? "",
@@ -90,7 +89,6 @@ export async function exportarExcel(
   const columnas = [
     { column: "Fecha", width: 12 },
     { column: "Persona", width: 22 },
-    { column: "Cliente", width: 22 },
     { column: "Categoría", width: 20 },
     { column: "Subcategoría", width: 20 },
     { column: "Proyecto", width: 26 },
@@ -110,7 +108,6 @@ export async function exportarExcel(
       const fila: Row = [
         { value: fromDateKey(entrada.local_date), type: Date, format: "dd/mm/yyyy" },
         { value: entrada.user_name, type: String },
-        { value: entrada.client_name ?? "", type: String },
         { value: entrada.category_name ?? "", type: String },
         { value: entrada.subcategory_name ?? "", type: String },
         { value: entrada.project_name ?? "", type: String },

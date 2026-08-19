@@ -23,7 +23,7 @@ import { SelectorColor } from "@/components/selector-color"
 import {
   COLORES_PROYECTO,
   type Catalogo,
-  type ProyectoConCliente,
+  type Proyecto,
   type Tarea,
 } from "@/lib/tipos"
 import { cn } from "@/lib/utils"
@@ -84,7 +84,7 @@ export function SelectorProyecto({
    * instante en volver; hasta entonces se pinta de esta lista.
    */
   const [reciente, setReciente] = useState<{
-    proyectos: ProyectoConCliente[]
+    proyectos: Proyecto[]
     tareas: Tarea[]
   }>({ proyectos: [], tareas: [] })
 
@@ -92,11 +92,7 @@ export function SelectorProyecto({
     const vistos = new Set(catalogo.proyectos.map((p) => p.id))
     return [...catalogo.proyectos, ...reciente.proyectos.filter((p) => !vistos.has(p.id))]
       .filter((p) => !p.archived)
-      .sort((a, b) => {
-        const ca = a.clients?.name ?? ""
-        const cb = b.clients?.name ?? ""
-        return ca.localeCompare(cb, "es") || a.name.localeCompare(b.name, "es")
-      })
+      .sort((a, b) => a.name.localeCompare(b.name, "es"))
   }, [catalogo.proyectos, reciente.proyectos])
 
   const tareas = useMemo(() => {
@@ -116,9 +112,7 @@ export function SelectorProyecto({
         const suyas = tareas.filter((t) => t.project_id === proyecto.id)
         if (!q) return { proyecto, tareas: suyas, coincide: true }
 
-        const textoProyecto = sinAcentos(
-          `${proyecto.clients?.name ?? ""} ${proyecto.name}`,
-        )
+        const textoProyecto = sinAcentos(proyecto.name)
         const proyectoEncaja = textoProyecto.includes(q)
         const tareasQueEncajan = suyas.filter((t) => sinAcentos(t.name).includes(q))
         return {
@@ -136,7 +130,7 @@ export function SelectorProyecto({
    * escalon de la categorizacion; lo que no tiene, al final.
    */
   const grupos = useMemo(() => {
-    const areaDe = (proyecto: ProyectoConCliente) => {
+    const areaDe = (proyecto: Proyecto) => {
       const suya = catalogo.categorias.find((c) => c.id === proyecto.category_id)
       if (!suya) return null
       return suya.parent_id
@@ -327,7 +321,6 @@ export function SelectorProyecto({
           {vista === "nuevo" ? (
             <FormularioProyecto
               espacioId={espacio.id}
-              clientes={catalogo.clientes.filter((c) => !c.archived)}
               nombreSugerido={consulta}
               cuantos={proyectos.length}
               onVolver={() => setVista("lista")}
@@ -399,11 +392,6 @@ export function SelectorProyecto({
                             style={{ background: proyecto.color }}
                           />
                           <span className="min-w-0 flex-1 truncate">
-                            {proyecto.clients?.name && (
-                              <span className="text-muted">
-                                {proyecto.clients.name} ·{" "}
-                              </span>
-                            )}
                             {/* Del color del proyecto, como en las tarjetas de
                                 horas: se reconoce sin leerlo */}
                             <span
@@ -654,21 +642,18 @@ function CampoNuevaTarea({
 
 function FormularioProyecto({
   espacioId,
-  clientes,
   nombreSugerido,
   cuantos,
   onVolver,
   onCreado,
 }: {
   espacioId: string
-  clientes: Catalogo["clientes"]
   nombreSugerido: string
   cuantos: number
   onVolver: () => void
-  onCreado: (proyecto: ProyectoConCliente) => void
+  onCreado: (proyecto: Proyecto) => void
 }) {
   const [nombre, setNombre] = useState(nombreSugerido)
-  const [clienteId, setClienteId] = useState("")
   const [color, setColor] = useState<string>(
     COLORES_PROYECTO[cuantos % COLORES_PROYECTO.length],
   )
@@ -690,10 +675,9 @@ function FormularioProyecto({
       .insert({
         workspace_id: espacioId,
         name: limpio,
-        client_id: clienteId || null,
         color,
       })
-      .select("*, clients!projects_client_id_fkey(id, name)")
+      .select("*")
       .single()
 
     setGuardando(false)
@@ -701,7 +685,7 @@ function FormularioProyecto({
       setError(mensajeError(err))
       return
     }
-    onCreado(data as ProyectoConCliente)
+    onCreado(data)
   }
 
   return (
@@ -737,25 +721,6 @@ function FormularioProyecto({
             }}
             placeholder="Rediseño de la web"
           />
-        </div>
-
-        <div>
-          <label className="label" htmlFor="sp-cliente">
-            Cliente
-          </label>
-          <select
-            id="sp-cliente"
-            className="field"
-            value={clienteId}
-            onChange={(e) => setClienteId(e.target.value)}
-          >
-            <option value="">Sin cliente</option>
-            {clientes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
         </div>
 
         <div>

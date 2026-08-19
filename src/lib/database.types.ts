@@ -70,41 +70,6 @@ export type Database = {
           },
         ]
       }
-      clients: {
-        Row: {
-          archived: boolean
-          created_at: string
-          id: string
-          name: string
-          updated_at: string
-          workspace_id: string
-        }
-        Insert: {
-          archived?: boolean
-          created_at?: string
-          id?: string
-          name: string
-          updated_at?: string
-          workspace_id: string
-        }
-        Update: {
-          archived?: boolean
-          created_at?: string
-          id?: string
-          name?: string
-          updated_at?: string
-          workspace_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "clients_workspace_id_fkey"
-            columns: ["workspace_id"]
-            isOneToOne: false
-            referencedRelation: "workspaces"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       entry_invitations: {
         Row: {
           billable: boolean
@@ -259,48 +224,6 @@ export type Database = {
         }
         Relationships: []
       }
-      project_clients: {
-        Row: {
-          client_id: string
-          created_at: string
-          project_id: string
-          workspace_id: string
-        }
-        Insert: {
-          client_id: string
-          created_at?: string
-          project_id: string
-          workspace_id: string
-        }
-        Update: {
-          client_id?: string
-          created_at?: string
-          project_id?: string
-          workspace_id?: string
-        }
-        Relationships: []
-      }
-      edition_clients: {
-        Row: {
-          client_id: string
-          created_at: string
-          edition_id: string
-          workspace_id: string
-        }
-        Insert: {
-          client_id: string
-          created_at?: string
-          edition_id: string
-          workspace_id: string
-        }
-        Update: {
-          client_id?: string
-          created_at?: string
-          edition_id?: string
-          workspace_id?: string
-        }
-        Relationships: []
-      }
       project_favorites: {
         Row: {
           created_at: string
@@ -326,7 +249,6 @@ export type Database = {
         Row: {
           archived: boolean
           budget_hours: number | null
-          client_id: string | null
           created_at: string
           ends_on: string | null
           id: string
@@ -340,7 +262,6 @@ export type Database = {
         Insert: {
           archived?: boolean
           budget_hours?: number | null
-          client_id?: string | null
           created_at?: string
           ends_on?: string | null
           id?: string
@@ -354,7 +275,6 @@ export type Database = {
         Update: {
           archived?: boolean
           budget_hours?: number | null
-          client_id?: string | null
           created_at?: string
           ends_on?: string | null
           id?: string
@@ -421,7 +341,6 @@ export type Database = {
           billable_default: boolean
           budget_hours: number | null
           category_id: string | null
-          client_id: string | null
           color: string
           created_at: string
           default_edition_id: string | null
@@ -436,7 +355,6 @@ export type Database = {
           billable_default?: boolean
           budget_hours?: number | null
           category_id?: string | null
-          client_id?: string | null
           color?: string
           created_at?: string
           default_edition_id?: string | null
@@ -451,7 +369,6 @@ export type Database = {
           billable_default?: boolean
           budget_hours?: number | null
           category_id?: string | null
-          client_id?: string | null
           color?: string
           created_at?: string
           default_edition_id?: string | null
@@ -467,13 +384,6 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "projects_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
           {
@@ -947,10 +857,8 @@ export type Database = {
         Row: {
           amount: number | null
           billable: boolean | null
-          client_id: string | null
           category_id: string | null
           category_name: string | null
-          client_name: string | null
           compartida_con: Json | null
           description: string | null
           edition_id: string | null
@@ -977,13 +885,6 @@ export type Database = {
           workspace_id: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "projects_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "time_entries_project_id_fkey"
             columns: ["project_id"]

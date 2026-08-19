@@ -212,13 +212,24 @@ export function SelectorProyecto({
    * Se elige de una vez: proyecto, y dentro la edicion o la tarea. Cambiar de
    * proyecto tira la edicion y la tarea, que eran de otro.
    */
+  /**
+   * Elegir no cierra: una hora suele llevar proyecto, edicion y tarea, y
+   * cerrar despues de cada clic obligaba a abrir el desplegable tres veces.
+   * Se cierra cuando uno dice que ha terminado, con Listo, Escape o pinchando
+   * fuera.
+   */
   function elegir(
     project_id: string | null,
     task_id: string | null,
     edition_id: string | null = null,
   ) {
     onChange({ project_id, task_id, edition_id })
-    cerrar()
+    // Al elegir proyecto se abre solo: la edicion y las tareas estan ahi dentro
+    if (project_id) {
+      setDesplegados((previos) =>
+        previos.includes(project_id) ? previos : [...previos, project_id],
+      )
+    }
   }
 
   function alternar(id: string) {
@@ -474,8 +485,18 @@ export function SelectorProyecto({
                                 <button
                                   key={edicion.id}
                                   type="button"
+                                  /* Vuelta a pulsar, se quita: es una
+                                     casilla, no un camino de ida */
                                   onClick={() =>
-                                    elegir(proyecto.id, valor.task_id, edicion.id)
+                                    elegir(
+                                      proyecto.id,
+                                      valor.project_id === proyecto.id
+                                        ? valor.task_id
+                                        : null,
+                                      valor.edition_id === edicion.id
+                                        ? null
+                                        : edicion.id,
+                                    )
                                   }
                                   className={cn(
                                     "flex w-full items-center gap-2 py-1.5 pl-3 pr-2 text-left text-sm transition hover:bg-surface-2",
@@ -507,7 +528,7 @@ export function SelectorProyecto({
                               onClick={() =>
                                 elegir(
                                   proyecto.id,
-                                  tarea.id,
+                                  valor.task_id === tarea.id ? null : tarea.id,
                                   valor.project_id === proyecto.id
                                     ? valor.edition_id
                                     : null,
@@ -582,6 +603,29 @@ export function SelectorProyecto({
                   Crear nuevo proyecto
                 </button>
               )}
+
+              {/* Como ya no se cierra al elegir, hace falta decir que has
+                  terminado. Tambien vale Escape o pinchar fuera. */}
+              <div className="flex items-center justify-between gap-2 border-t border-line px-3 py-2">
+                <span className="min-w-0 flex-1 truncate text-xs text-muted">
+                  {proyectoElegido ? (
+                    <>
+                      {proyectoElegido.name}
+                      {edicionElegida && ` · ${edicionElegida.name}`}
+                      {tareaElegida && ` · ${tareaElegida.name}`}
+                    </>
+                  ) : (
+                    "Sin proyecto"
+                  )}
+                </span>
+                <button
+                  type="button"
+                  onClick={cerrar}
+                  className="btn btn-primary h-7 shrink-0 px-2.5 text-xs"
+                >
+                  Listo
+                </button>
+              </div>
             </>
           )}
         </Popover.Content>

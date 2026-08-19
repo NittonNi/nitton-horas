@@ -481,9 +481,14 @@ export function RejillaCalendario({
                     hace que se encuentre de un vistazo en una tira estrecha */}
                 <p
                   className={cn(
-                    "cifra mx-auto grid h-7 w-7 place-items-center text-lg font-semibold leading-none",
-                    esHoy && "rounded-full bg-live-fill text-white",
-                    !esHoy && dia === diaVisto && "rounded-full bg-surface-3",
+                    "cifra text-lg font-semibold",
+                    // El circulo es cosa del movil, donde la tira es lo que
+                    // guia; en escritorio se queda como estaba
+                    esMovil
+                      ? "mx-auto grid h-7 w-7 place-items-center leading-none"
+                      : "leading-tight",
+                    esHoy && (esMovil ? "rounded-full bg-live-fill text-white" : "text-live"),
+                    esMovil && !esHoy && dia === diaVisto && "rounded-full bg-surface-3",
                   )}
                 >
                   {fecha.getDate()}

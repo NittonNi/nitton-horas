@@ -359,6 +359,7 @@ export type Database = {
           color: string
           created_at: string
           id: string
+          kind: Database["public"]["Enums"]["project_kind"] | null
           name: string
           updated_at: string
           workspace_id: string
@@ -372,6 +373,7 @@ export type Database = {
           color?: string
           created_at?: string
           id?: string
+          kind?: Database["public"]["Enums"]["project_kind"] | null
           name: string
           updated_at?: string
           workspace_id: string
@@ -385,6 +387,7 @@ export type Database = {
           color?: string
           created_at?: string
           id?: string
+          kind?: Database["public"]["Enums"]["project_kind"] | null
           name?: string
           updated_at?: string
           workspace_id?: string
@@ -412,6 +415,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      project_results: {
+        Row: {
+          created_at: string
+          edition_id: string | null
+          ends_on: string
+          expenses: number
+          id: string
+          income: number
+          label: string
+          notes: string
+          project_id: string
+          starts_on: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          edition_id?: string | null
+          ends_on: string
+          expenses?: number
+          id?: string
+          income?: number
+          label?: string
+          notes?: string
+          project_id: string
+          starts_on: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          edition_id?: string | null
+          ends_on?: string
+          expenses?: number
+          id?: string
+          income?: number
+          label?: string
+          notes?: string
+          project_id?: string
+          starts_on?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: []
       }
       rates: {
         Row: {
@@ -775,6 +823,7 @@ export type Database = {
           require_project: boolean
           slug: string
           tag_mode: string
+          target_hourly_rate: number | null
           text_case: string
           timezone: string
           updated_at: string
@@ -791,6 +840,7 @@ export type Database = {
           require_project?: boolean
           slug: string
           tag_mode?: string
+          target_hourly_rate?: number | null
           text_case?: string
           timezone?: string
           updated_at?: string
@@ -807,6 +857,7 @@ export type Database = {
           require_project?: boolean
           slug?: string
           tag_mode?: string
+          target_hourly_rate?: number | null
           text_case?: string
           timezone?: string
           updated_at?: string
@@ -1106,6 +1157,7 @@ export type Database = {
       }
     }
     Enums: {
+      project_kind: "evento" | "b2b" | "oportunidad" | "b2c"
       user_role: "admin" | "manager" | "member"
     }
     CompositeTypes: Record<never, never>

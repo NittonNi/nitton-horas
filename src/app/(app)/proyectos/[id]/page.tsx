@@ -3,6 +3,8 @@ import { notFound } from "next/navigation"
 import { getSesion } from "@/lib/sesion"
 import { veTodo } from "@/lib/roles"
 import { cargarCatalogo, cargarEntradas } from "@/lib/datos"
+import { createClient } from "@/lib/supabase/server"
+import type { Resultado } from "@/components/resultados-proyecto"
 import { DetalleProyecto } from "@/components/detalle-proyecto"
 import { todayKey } from "@/lib/time"
 
@@ -30,7 +32,8 @@ export default async function PaginaProyecto({
   const { espacio, rol } = await getSesion()
   const gestor = veTodo(rol)
 
-  const [catalogo, entradas] = await Promise.all([
+  const supabase = await createClient()
+  const [catalogo, entradas, resultados] = await Promise.all([
     cargarCatalogo(espacio.id, true),
     cargarEntradas({
       espacioId: espacio.id,
@@ -39,6 +42,11 @@ export default async function PaginaProyecto({
       projectId: id,
       limite: 2000,
     }),
+    supabase
+      .from("project_results")
+      .select("id, edition_id, label, starts_on, ends_on, income, expenses, notes")
+      .eq("project_id", id)
+      .order("starts_on", { ascending: false }),
   ])
 
   const proyecto = catalogo.proyectos.find((p) => p.id === id)
@@ -52,6 +60,8 @@ export default async function PaginaProyecto({
       tareas={catalogo.tareas.filter((t) => t.project_id === id)}
       ediciones={catalogo.ediciones.filter((e) => e.project_id === id)}
       entradas={entradas}
+      resultados={(resultados.data ?? []) as Resultado[]}
+      objetivoHora={espacio.target_hourly_rate}
       espacioId={espacio.id}
       puedeGestionar={gestor}
       puedeVerImportes={gestor}

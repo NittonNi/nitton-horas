@@ -37,6 +37,10 @@ import type {
   ProyectoConCliente,
   Tarea,
 } from "@/lib/tipos"
+import {
+  ResultadosProyecto,
+  type Resultado,
+} from "@/components/resultados-proyecto"
 import { cn } from "@/lib/utils"
 
 export function DetalleProyecto({
@@ -46,6 +50,8 @@ export function DetalleProyecto({
   tareas,
   ediciones,
   entradas,
+  resultados,
+  objetivoHora,
   espacioId,
   puedeGestionar,
   puedeVerImportes,
@@ -56,6 +62,9 @@ export function DetalleProyecto({
   tareas: Tarea[]
   ediciones: Edicion[]
   entradas: EntradaVista[]
+  resultados: Resultado[]
+  /** Facturacion por hora a la que aspira el equipo. */
+  objetivoHora: number | null
   espacioId: string
   puedeGestionar: boolean
   puedeVerImportes: boolean
@@ -152,6 +161,18 @@ export function DetalleProyecto({
           pie={consumido !== null ? `${Math.round(consumido)}% consumido` : undefined}
         />
       </div>
+
+      {puedeVerImportes && (
+        <ResultadosProyecto
+          espacioId={espacioId}
+          proyectoId={proyecto.id}
+          ediciones={ediciones}
+          entradas={entradas}
+          resultados={resultados}
+          objetivoHora={objetivoHora}
+          puedeGestionar={puedeGestionar}
+        />
+      )}
 
       {consumido !== null && (
         <div className="card p-4">

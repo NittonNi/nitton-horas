@@ -803,6 +803,7 @@ export type Database = {
           join_code: string | null
           name: string
           require_project: boolean
+          require_description: boolean
           slug: string
           tag_mode: string
           target_hourly_rate: number | null
@@ -820,6 +821,7 @@ export type Database = {
           join_code?: string | null
           name: string
           require_project?: boolean
+          require_description?: boolean
           slug: string
           tag_mode?: string
           target_hourly_rate?: number | null
@@ -837,6 +839,7 @@ export type Database = {
           join_code?: string | null
           name?: string
           require_project?: boolean
+          require_description?: boolean
           slug?: string
           tag_mode?: string
           target_hourly_rate?: number | null
@@ -1013,6 +1016,10 @@ export type Database = {
       normalizar_texto_existente: {
         Args: { p_workspace: string }
         Returns: number
+      }
+      renombrar_miembro: {
+        Args: { p_nombre: string; p_user: string; p_workspace: string }
+        Returns: string
       }
       resumen_proyectos: {
         Args: { p_workspace: string }

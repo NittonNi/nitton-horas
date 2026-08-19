@@ -60,7 +60,7 @@ export function BarraCronometro({
   const [borrador, setBorrador] = useState<BorradorEntrada>(BORRADOR_VACIO)
   const [guardando, setGuardando] = useState(false)
   // Cuando el espacio no deja parar sin proyecto, hay que decirlo aquí mismo
-  const [faltaProyecto, setFaltaProyecto] = useState(false)
+  const [falta, setFalta] = useState<"proyecto" | "descripcion" | null>(null)
   // A quien mas le cuentan estas horas. No se les apunta: se les propone.
   const [compartidos, setCompartidos] = useState<string[]>([])
   const [avisoCompartir, setAvisoCompartir] = useState<string | null>(null)
@@ -128,7 +128,7 @@ export function BarraCronometro({
   /** Al elegir proyecto, hereda su marca de facturable si no se ha tocado. */
   function elegirProyecto(sel: Seleccion) {
     const proyecto = catalogo.proyectos.find((p) => p.id === sel.project_id)
-    if (sel.project_id) setFaltaProyecto(false)
+    if (sel.project_id) setFalta((f) => (f === "proyecto" ? null : f))
     cambiar({
       ...sel,
       ...(proyecto && !enMarcha ? { billable: proyecto.billable_default } : {}),
@@ -212,9 +212,14 @@ export function BarraCronometro({
 
   async function alPulsarPrincipal() {
     if (enMarcha) {
-      // Nada de horas huérfanas: si el espacio lo exige, no se para sin proyecto
+      /* Nada de horas huerfanas: si el espacio lo exige, no se para sin
+         proyecto ni sin decir en que se ha ido el rato. */
       if (espacio.require_project && !enMarcha.project_id) {
-        setFaltaProyecto(true)
+        setFalta("proyecto")
+        return
+      }
+      if (espacio.require_description && !enMarcha.description.trim()) {
+        setFalta("descripcion")
         return
       }
       setAvisoCompartir(null)
@@ -260,7 +265,12 @@ export function BarraCronometro({
         )}
         <input
           value={descripcionLocal}
-          onChange={(e) => setDescripcionLocal(e.target.value)}
+          onChange={(e) => {
+            setDescripcionLocal(e.target.value)
+            if (e.target.value.trim()) {
+              setFalta((f) => (f === "descripcion" ? null : f))
+            }
+          }}
           onBlur={() => {
             if (enMarcha && descripcionLocal !== enMarcha.description) {
               void actualizarEnMarcha({ description: descripcionLocal })
@@ -457,9 +467,11 @@ export function BarraCronometro({
         </p>
       )}
 
-      {faltaProyecto && (
+      {falta && (
         <p className="mt-2 rounded-[var(--radio-sm)] border border-live-line bg-live-soft px-3 py-2 text-sm text-live">
-          Elige un proyecto para poder parar. Así no quedan horas sueltas.
+          {falta === "proyecto"
+            ? "Elige un proyecto para poder parar. Así no quedan horas sueltas."
+            : "Escribe en qué se ha ido el rato para poder parar."}
         </p>
       )}
     </div>

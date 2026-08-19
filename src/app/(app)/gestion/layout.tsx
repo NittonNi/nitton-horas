@@ -19,6 +19,7 @@ export default async function LayoutGestion({
     { href: "/gestion/equipo", etiqueta: "Equipo" },
     { href: "/gestion/tarifas", etiqueta: "Tarifas", soloAdmin: true },
     { href: "/gestion/importar", etiqueta: "Importar" },
+    { href: "/gestion/ajustes", etiqueta: "Ajustes", soloAdmin: true },
   ].filter((e) => !e.soloAdmin || rol === "admin")
 
   return (
@@ -26,7 +27,8 @@ export default async function LayoutGestion({
       <div>
         <h1 className="text-lg font-semibold tracking-tight">Gestión</h1>
         <p className="mt-0.5 text-sm text-muted">
-          Proyectos, categorización, equipo y tarifas.
+          Proyectos, categorización, equipo, tarifas y los ajustes del
+          espacio.
         </p>
       </div>
       <SubNav enlaces={enlaces} />

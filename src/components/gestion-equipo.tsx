@@ -2,19 +2,13 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Loader2, Mail, Plus, Trash2 } from "lucide-react"
+import { Check, Loader2, Mail, Pencil, Plus, Trash2, X } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
-import { formatObjetivo, parseObjetivo } from "@/lib/categorias"
 import { formatDateShort } from "@/lib/time"
 import { NOMBRE_ROL, type Rol } from "@/lib/roles"
-import {
-  ZONAS_HORARIAS,
-  type Espacio,
-  type Invitacion,
-  type Miembro,
-} from "@/lib/tipos"
+import type { Espacio, Invitacion, Miembro } from "@/lib/tipos"
 import { cn } from "@/lib/utils"
 
 const ROLES: { valor: Rol; ayuda: string }[] = [
@@ -54,7 +48,6 @@ export function GestionEquipo({
           pendientes={pendientes}
           esAdmin={esAdmin}
         />
-        {esAdmin && <Ajustes espacio={espacio} />}
       </div>
     </div>
   )
@@ -76,6 +69,32 @@ function Miembros({
   const router = useRouter()
   const [ocupado, setOcupado] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [renombrando, setRenombrando] = useState<string | null>(null)
+  const [nombre, setNombre] = useState("")
+
+  /**
+   * El perfil es de cada uno, pero los nombres entran mal: al importar, al
+   * unirse con prisa. Quien administra lo arregla sin tener que pedirselo,
+   * y por una funcion que comprueba que esa persona es de este espacio.
+   */
+  async function renombrar(id: string) {
+    const limpio = nombre.trim()
+    if (!limpio) return
+    setOcupado(id)
+    setError(null)
+    const { error: err } = await createClient().rpc("renombrar_miembro", {
+      p_workspace: espacioId,
+      p_user: id,
+      p_nombre: limpio,
+    })
+    setOcupado(null)
+    if (err) {
+      setError(mensajeError(err))
+      return
+    }
+    setRenombrando(null)
+    router.refresh()
+  }
 
   async function cambiar(id: string, cambios: { role?: Rol; active?: boolean }) {
     setOcupado(id)
@@ -123,10 +142,67 @@ function Miembros({
               )}
             >
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">
-                  {miembro.full_name}
-                  {soyYo && <span className="ml-1.5 text-xs text-muted">(tu)</span>}
-                </p>
+                {renombrando === miembro.id ? (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      void renombrar(miembro.id)
+                    }}
+                    className="flex items-center gap-1.5"
+                  >
+                    <input
+                      autoFocus
+                      className="field h-8 py-0 text-sm"
+                      value={nombre}
+                      onChange={(e) => setNombre(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") setRenombrando(null)
+                      }}
+                      aria-label={"Nombre de " + miembro.full_name}
+                    />
+                    <button
+                      type="submit"
+                      disabled={ocupado === miembro.id || !nombre.trim()}
+                      className="btn btn-primary h-8 px-2"
+                      aria-label="Guardar el nombre"
+                    >
+                      {ocupado === miembro.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="h-4 w-4" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRenombrando(null)}
+                      className="btn h-8 px-2"
+                      aria-label="Dejarlo como estaba"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </form>
+                ) : (
+                  <p className="flex min-w-0 items-center gap-1.5">
+                    <span className="truncate text-sm font-medium">
+                      {miembro.full_name}
+                    </span>
+                    {soyYo && <span className="text-xs text-muted">(tu)</span>}
+                    {esAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNombre(miembro.full_name)
+                          setRenombrando(miembro.id)
+                        }}
+                        title="Cambiar el nombre"
+                        aria-label={"Cambiar el nombre de " + miembro.full_name}
+                        className="shrink-0 rounded-[3px] p-1 text-muted transition hover:bg-surface-2 hover:text-ink"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                    )}
+                  </p>
+                )}
                 <p className="truncate text-xs text-muted">{miembro.email}</p>
               </div>
 
@@ -341,275 +417,6 @@ function Invitaciones({
           </li>
         ))}
       </ul>
-    </section>
-  )
-}
-
-/* ------------------------------------------------------------------- ajustes */
-
-function Ajustes({ espacio }: { espacio: Espacio }) {
-  const router = useRouter()
-  const [nombre, setNombre] = useState(espacio.name)
-  const [zona, setZona] = useState(espacio.timezone)
-  const [dominios, setDominios] = useState(espacio.allowed_domains.join(", "))
-  const [estiloTexto, setEstiloTexto] = useState(espacio.text_case)
-  const [modoEtiquetas, setModoEtiquetas] = useState(espacio.tag_mode)
-  const [exigeProyecto, setExigeProyecto] = useState(espacio.require_project)
-  const [objDia, setObjDia] = useState(formatObjetivo(espacio.goal_daily_minutes))
-  const [objSemana, setObjSemana] = useState(
-    formatObjetivo(espacio.goal_weekly_minutes),
-  )
-  const [guardando, setGuardando] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [guardado, setGuardado] = useState(false)
-  const [normalizando, setNormalizando] = useState(false)
-  const [normalizado, setNormalizado] = useState<number | null>(null)
-
-  /** Reescribe en mayusculas lo que ya estaba apuntado. */
-  async function normalizar() {
-    setNormalizando(true)
-    setError(null)
-    const supabase = createClient()
-    const { data, error: err } = await supabase.rpc("normalizar_texto_existente", {
-      p_workspace: espacio.id,
-    })
-    setNormalizando(false)
-    if (err) {
-      setError(mensajeError(err))
-      return
-    }
-    setNormalizado(data ?? 0)
-    router.refresh()
-  }
-
-  async function guardar() {
-    setGuardando(true)
-    setError(null)
-    setGuardado(false)
-
-    const lista = dominios
-      .split(/[,\s]+/)
-      .map((d) => d.trim().toLowerCase().replace(/^@/, ""))
-      .filter(Boolean)
-
-    const dia = objDia.trim() ? parseObjetivo(objDia) : null
-    const semana = objSemana.trim() ? parseObjetivo(objSemana) : null
-    if ((objDia.trim() && dia === null) || (objSemana.trim() && semana === null)) {
-      setGuardando(false)
-      setError("No entiendo esas horas. Prueba con 8, 8h o 7:30.")
-      return
-    }
-
-    const supabase = createClient()
-    const { error: err } = await supabase
-      .from("workspaces")
-      .update({
-        name: nombre.trim() || espacio.name,
-        timezone: zona,
-        allowed_domains: lista,
-        text_case: estiloTexto,
-        tag_mode: modoEtiquetas,
-        require_project: exigeProyecto,
-        goal_daily_minutes: dia,
-        goal_weekly_minutes: semana,
-      })
-      .eq("id", espacio.id)
-
-    setGuardando(false)
-    if (err) {
-      setError(mensajeError(err))
-      return
-    }
-    setGuardado(true)
-    router.refresh()
-  }
-
-  return (
-    <section className="card p-4">
-      <h2 className="mb-3 text-sm font-semibold">Este espacio</h2>
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          void guardar()
-        }}
-        className="space-y-3"
-      >
-        <div>
-          <label className="label" htmlFor="ws-nombre">
-            Nombre
-          </label>
-          <input
-            id="ws-nombre"
-            className="field"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className="label" htmlFor="ws-zona">
-            Zona horaria
-          </label>
-          <select
-            id="ws-zona"
-            className="field"
-            value={zona}
-            onChange={(e) => setZona(e.target.value)}
-          >
-            {[...new Set([espacio.timezone, ...ZONAS_HORARIAS])].map((z) => (
-              <option key={z} value={z}>
-                {z.replace(/_/g, " ")}
-              </option>
-            ))}
-          </select>
-          <p className="mt-1 text-xs text-muted">
-            Decide a que dia cuenta cada hora. Cambiarla no recalcula lo ya
-            registrado.
-          </p>
-        </div>
-
-        <div>
-          <label className="label" htmlFor="ws-dominios">
-            Alta automática por dominio
-          </label>
-          <input
-            id="ws-dominios"
-            className="field"
-            value={dominios}
-            onChange={(e) => setDominios(e.target.value)}
-            placeholder="miempresa.com, otra.com"
-          />
-          <p className="mt-1 text-xs text-muted">
-            Quien entre con un correo de estos dominios podra unirse solo, como
-            miembro. Dejalo vacio para exigir invitación.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div>
-            <label className="label" htmlFor="ws-objetivo-dia">
-              Objetivo al día
-            </label>
-            <input
-              id="ws-objetivo-dia"
-              className="field cifra"
-              value={objDia}
-              onChange={(e) => setObjDia(e.target.value)}
-              placeholder="Sin objetivo"
-            />
-          </div>
-          <div>
-            <label className="label" htmlFor="ws-objetivo-semana">
-              Objetivo a la semana
-            </label>
-            <input
-              id="ws-objetivo-semana"
-              className="field cifra"
-              value={objSemana}
-              onChange={(e) => setObjSemana(e.target.value)}
-              placeholder="Sin objetivo"
-            />
-          </div>
-        </div>
-        <p className="-mt-1 text-xs text-muted">
-          Horas por persona: lo mismo para todo el equipo. Se ven en el
-          cronómetro, restando lo que falta. Los objetivos por rama van en
-          Categorización, y los de un proyecto dentro del proyecto.
-        </p>
-
-        <div>
-          <label className="label" htmlFor="ws-etiquetas">
-            Etiquetas por entrada
-          </label>
-          <select
-            id="ws-etiquetas"
-            className="field"
-            value={modoEtiquetas}
-            onChange={(e) => setModoEtiquetas(e.target.value)}
-          >
-            <option value="varias">Se pueden poner varias</option>
-            <option value="una">Solo una por entrada</option>
-          </select>
-        </div>
-
-        <label className="flex items-start gap-2.5 rounded-[var(--radio-sm)] border border-line bg-surface-2/60 p-3">
-          <input
-            type="checkbox"
-            checked={exigeProyecto}
-            onChange={(e) => setExigeProyecto(e.target.checked)}
-            className="mt-0.5 h-4 w-4 accent-[color:var(--accent)]"
-          />
-          <span>
-            <span className="block text-sm font-medium">
-              No dejar parar el cronómetro sin proyecto
-            </span>
-            <span className="mt-0.5 block text-xs text-muted">
-              Así no quedan horas sueltas que luego nadie sabe dónde meter.
-            </span>
-          </span>
-        </label>
-
-        <div>
-          <label className="label" htmlFor="ws-texto">
-            Como se escribe el texto
-          </label>
-          <select
-            id="ws-texto"
-            className="field"
-            value={estiloTexto}
-            onChange={(e) => setEstiloTexto(e.target.value)}
-          >
-            <option value="libre">Tal cual lo escriba cada uno</option>
-            <option value="mayusculas">Siempre en MAYUSCULAS</option>
-          </select>
-          <p className="mt-1 text-xs text-muted">
-            Se aplica al guardar, a las descripciones y a los nombres de
-            proyectos, tareas y etiquetas. Vale también para lo que
-            entra por el importador, así que nadie tiene que acordarse.
-          </p>
-        </div>
-
-        {error && (
-          <p className="rounded-[var(--radio-sm)] bg-danger-soft p-2 text-sm text-danger">
-            {error}
-          </p>
-        )}
-
-        <div className="flex items-center gap-2">
-          <button type="submit" disabled={guardando} className="btn btn-primary">
-            {guardando && <Loader2 className="h-4 w-4 animate-spin" />}
-            Guardar
-          </button>
-          {guardado && <span className="text-xs text-billable">Guardado</span>}
-        </div>
-      </form>
-
-      {espacio.text_case === "mayusculas" && (
-        <div className="mt-4 border-t border-line pt-4">
-          <p className="text-sm font-medium">Lo que ya estaba escrito</p>
-          <p className="mt-0.5 text-xs text-muted">
-            El cambio solo afecta a lo nuevo. Esto pasa a mayusculas lo que ya
-            hay apuntado, y no tiene vuelta atras.
-          </p>
-          <button
-            type="button"
-            onClick={() => void normalizar()}
-            disabled={normalizando}
-            className="btn mt-2"
-          >
-            {normalizando && <Loader2 className="h-4 w-4 animate-spin" />}
-            Pasar lo anterior a mayusculas
-          </button>
-          {normalizado !== null && (
-            <p className="mt-2 text-xs text-billable">
-              {normalizado === 0
-                ? "Ya estaba todo en mayusculas."
-                : `${normalizado} registros actualizados.`}
-            </p>
-          )}
-        </div>
-      )}
     </section>
   )
 }

@@ -1,6 +1,12 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react"
 import { useRouter } from "next/navigation"
 import * as Dialog from "@radix-ui/react-dialog"
 import {
@@ -59,6 +65,25 @@ type Arrastre =
 type Nuevo = { dia: string; desde: number; hasta: number }
 
 const Minimo = 15
+
+/**
+ * En un movil no caben siete columnas: cada dia se queda en cuarenta pixeles y
+ * los ratos son astillas. Ahi se enseña un dia entero y se salta entre dias con
+ * la tira de arriba, como el calendario del telefono.
+ */
+const ANCHO_MOVIL = "(max-width: 767px)"
+
+function useEsMovil() {
+  return useSyncExternalStore(
+    (avisar) => {
+      const consulta = window.matchMedia(ANCHO_MOVIL)
+      consulta.addEventListener("change", avisar)
+      return () => consulta.removeEventListener("change", avisar)
+    },
+    () => window.matchMedia(ANCHO_MOVIL).matches,
+    () => false,
+  )
+}
 
 /** Las propuestas se pintan en la rejilla; se reconocen por el id. */
 const MARCA = "propuesta:"
@@ -133,6 +158,8 @@ export function RejillaCalendario({
   const [nuevo, setNuevo] = useState<Nuevo | null>(null)
   const [editando, setEditando] = useState<EntradaVista | null>(null)
   const [contestando, setContestando] = useState<Propuesta | null>(null)
+  const esMovil = useEsMovil()
+  const [diaMovil, setDiaMovil] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [ahora, setAhora] = useState(() => new Date())
 
@@ -326,6 +353,12 @@ export function RejillaCalendario({
 
   const totalSemana = entradas.reduce((s, e) => s + (e.duration_seconds ?? 0), 0)
 
+  /* En movil se ve la semana entera, como el calendario del telefono: siete
+     columnas estrechas y la tira de dias arriba. Tocando un dia se abre solo
+     ese, a lo ancho; tocandolo otra vez se vuelve a la semana. */
+  const diaVisto = diaMovil && dias.includes(diaMovil) ? diaMovil : null
+  const diasPintados = esMovil && diaVisto ? [diaVisto] : dias
+
   /* ---------------------------------------------------------------- vista */
 
   return (
@@ -408,8 +441,15 @@ export function RejillaCalendario({
 
       <div className="card overflow-hidden">
         {/* cabecera de dias */}
-        <div className="grid grid-cols-[3.25rem_repeat(7,minmax(0,1fr))] border-b border-line">
-          <div />
+        <div
+          className={cn(
+            "grid border-b border-line",
+            esMovil
+              ? "grid-cols-7"
+              : "grid-cols-[3.25rem_repeat(7,minmax(0,1fr))]",
+          )}
+        >
+          {!esMovil && <div />}
           {dias.map((dia) => {
             const fecha = fromDateKey(dia)
             const esHoy = dia === hoy
@@ -419,35 +459,62 @@ export function RejillaCalendario({
               .filter((e) => e.local_date === dia)
               .reduce((s, e) => s + (e.duration_seconds ?? 0), 0)
             return (
-              <div
+              <button
                 key={dia}
+                type="button"
+                onClick={() => setDiaMovil((antes) => (antes === dia ? null : dia))}
+                aria-current={dia === diaVisto ? "date" : undefined}
+                title={
+                  dia === diaVisto ? "Volver a la semana" : "Ver solo este día"
+                }
                 className={cn(
-                  "border-l border-line px-2 py-2 text-center",
+                  "border-l border-line px-1 py-2 text-center transition sm:px-2",
                   esHoy && "bg-live-soft",
+                  dia === diaVisto && "bg-surface-2",
+                  esMovil ? "cursor-pointer" : "cursor-default",
                 )}
               >
                 <p className="rotulo">
                   {fecha.toLocaleDateString("es-ES", { weekday: "short" }).replace(".", "")}
                 </p>
+                {/* El numero del dia, en circulo cuando es hoy: es lo que
+                    hace que se encuentre de un vistazo en una tira estrecha */}
                 <p
                   className={cn(
-                    "cifra text-lg font-semibold leading-tight",
-                    esHoy && "text-live",
+                    "cifra mx-auto grid h-7 w-7 place-items-center text-lg font-semibold leading-none",
+                    esHoy && "rounded-full bg-live-fill text-white",
+                    !esHoy && dia === diaVisto && "rounded-full bg-surface-3",
                   )}
                 >
                   {fecha.getDate()}
                 </p>
-                <p className="cifra text-[11px] text-muted">
+                {/* En la tira del movil no cabe 01:00:00: solo un punto que
+                    dice que ese dia tiene horas */}
+                <p className="cifra hidden text-[11px] text-muted sm:block">
                   {segundos > 0 ? formatDurationShort(segundos) : "-"}
                 </p>
-              </div>
+                <span
+                  aria-hidden
+                  className={cn(
+                    "mx-auto mt-1 block h-1 w-1 rounded-full sm:hidden",
+                    segundos > 0 ? "bg-line-strong" : "bg-transparent",
+                  )}
+                />
+              </button>
             )
           })}
         </div>
 
         {/* rejilla */}
         <div ref={refScroll} className="scroll-thin max-h-[70vh] overflow-y-auto">
-          <div className="grid grid-cols-[3.25rem_repeat(7,minmax(0,1fr))]">
+          <div
+            className={cn(
+              "grid",
+              esMovil
+                ? "grid-cols-[3.25rem_1fr]"
+                : "grid-cols-[3.25rem_repeat(7,minmax(0,1fr))]",
+            )}
+          >
             {/* columna de horas */}
             <div className="relative" style={{ height: alto }}>
               {Array.from(
@@ -468,10 +535,14 @@ export function RejillaCalendario({
             {/* columnas de dias */}
             <div
               ref={refColumnas}
-              className="col-span-7 grid grid-cols-7"
+              className={cn(
+                "grid",
+                esMovil && diaVisto ? "grid-cols-1" : "grid-cols-7",
+                !esMovil && "col-span-7",
+              )}
               style={{ height: alto }}
             >
-              {dias.map((dia) => (
+              {diasPintados.map((dia) => (
                 <ColumnaDia
                   key={dia}
                   dia={dia}
@@ -850,9 +921,11 @@ function ColumnaDia({
               borderLeftColor: color,
             }}
           >
+            {/* En el movil las columnas son estrechas: el texto se parte en
+                varias lineas en vez de quedarse en una letra y puntos */}
             <p
               className={cn(
-                "truncate text-[11px] font-medium leading-tight",
+                "line-clamp-3 break-all text-[11px] font-medium leading-tight md:truncate md:break-normal",
                 bloque.entrada.billable && "pr-3.5",
               )}
             >

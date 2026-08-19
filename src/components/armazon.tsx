@@ -179,7 +179,9 @@ export function Armazon({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-[90rem] flex-1 px-4 py-5 pb-24 lg:px-8 lg:py-7 lg:pb-7">
+        {/* `min-w-0`: sin esto, una tabla ancha estira toda la pagina y el movil
+            se va de lado en vez de dejar que la tabla ruede por dentro */}
+        <main className="mx-auto w-full min-w-0 max-w-[90rem] flex-1 px-4 py-5 pb-24 lg:px-8 lg:py-7 lg:pb-7">
           {children}
         </main>
 

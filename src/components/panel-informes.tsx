@@ -538,7 +538,7 @@ export function PanelInformes({
       </section>
 
       {/* ------------------------------------------------------------ grafico */}
-      <section className="card p-4">
+      <section className="card min-w-0 p-4">
         <h2 className="mb-3 text-sm font-semibold">Horas por día</h2>
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -636,7 +636,7 @@ export function PanelInformes({
       </div>
 
       {/* ------------------------------------------------------------ detalle */}
-      <section className="card p-4">
+      <section className="card min-w-0 p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold">
             Detalle <span className="text-muted">({filtradas.length})</span>
@@ -860,7 +860,7 @@ function Desglose({
   conImporte: boolean
 }) {
   return (
-    <section className="card p-4">
+    <section className="card min-w-0 p-4">
       <h2 className="mb-3 text-sm font-semibold">{titulo}</h2>
 
       {grupos.length === 0 ? (

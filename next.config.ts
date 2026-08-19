@@ -42,6 +42,22 @@ const CABECERAS = [
 ]
 
 const nextConfig: NextConfig = {
+  /**
+   * En desarrollo, Next bloquea los recursos suyos si la peticion llega desde
+   * otra direccion que no sea localhost. Al abrir la aplicacion desde el movil
+   * -por la IP del portatil en la wifi- la pagina se pinta pero el JavaScript
+   * se queda en un 403: los botones no responden y no sale ningun aviso.
+   *
+   * Aqui van las direcciones desde las que se prueba. Si cambia la IP del
+   * portatil, se cambia aqui. En produccion esto no pinta nada.
+   */
+  allowedDevOrigins: [
+    "192.168.0.13",
+    "192.168.0.*",
+    "192.168.1.*",
+    "10.0.0.*",
+  ],
+
   // Que no vaya diciendo por ahi con que esta hecho
   poweredByHeader: false,
   async headers() {

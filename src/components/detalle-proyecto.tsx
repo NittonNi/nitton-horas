@@ -42,7 +42,7 @@ import {
   resumenDeResultados,
   type Resultado,
 } from "@/components/resultados-proyecto"
-import { ObjetivoHora } from "@/components/objetivo-hora"
+import { ObjetivoDelProyecto } from "@/components/objetivo-hora"
 import { ResumenProyecto } from "@/components/resumen-proyecto"
 import { TarjetasEdicion } from "@/components/tarjetas-edicion"
 import { cn } from "@/lib/utils"
@@ -83,7 +83,7 @@ export function DetalleProyecto({
   resultados,
   catalogo,
   miembros,
-  objetivoHora,
+  objetivoDelEquipo,
   espacioId,
   puedeGestionar,
   puedeVerImportes,
@@ -97,8 +97,8 @@ export function DetalleProyecto({
   /** Para poder corregir una hora sin salir del proyecto. */
   catalogo: Catalogo
   miembros: Miembro[]
-  /** Facturacion por hora a la que aspira el equipo. */
-  objetivoHora: number | null
+  /** Facturacion por hora a la que aspira el equipo, si no la pisa el proyecto. */
+  objetivoDelEquipo: number | null
   espacioId: string
   puedeGestionar: boolean
   puedeVerImportes: boolean
@@ -138,6 +138,9 @@ export function DetalleProyecto({
       ),
     [cerradas],
   )
+  /* El proyecto puede tener el suyo: no todo se mide con la misma vara. */
+  const objetivoHora = proyecto.target_hourly_rate ?? objetivoDelEquipo
+
   const dinero = useMemo(
     () => resumenDeResultados(entradas, resultados),
     [entradas, resultados],
@@ -303,8 +306,7 @@ export function DetalleProyecto({
         <AjustesProyecto
           proyecto={proyecto}
           categorias={categorias}
-          espacioId={espacioId}
-          objetivoHora={objetivoHora}
+          objetivoDelEquipo={objetivoDelEquipo}
         />
       )}
 
@@ -695,14 +697,12 @@ function HorasDelProyecto({
 function AjustesProyecto({
   proyecto,
   categorias,
-  espacioId,
-  objetivoHora,
+  objetivoDelEquipo,
 }: {
   proyecto: Proyecto
   categorias: Categoria[]
-  espacioId: string
-  /** Del espacio, no del proyecto: se cambia aqui pero vale para todos. */
-  objetivoHora: number | null
+  /** El de casa, contra el que se mide si el proyecto no tiene el suyo. */
+  objetivoDelEquipo: number | null
 }) {
   const router = useRouter()
   const { rol } = useSesion()
@@ -898,11 +898,12 @@ function AjustesProyecto({
       </section>
 
       <div className="space-y-5">
-        {/* El objetivo es del espacio entero, pero se cambia desde aquí: es
-            donde se está mirando cuando uno se pregunta contra qué mide. */}
-        <ObjetivoHora
-          espacioId={espacioId}
-          valor={objetivoHora}
+        {/* Aquí se elige contra qué se mide este proyecto: el de casa o uno
+            suyo. El del equipo se cambia en Tarifas. */}
+        <ObjetivoDelProyecto
+          proyectoId={proyecto.id}
+          propio={proyecto.target_hourly_rate}
+          delEquipo={objetivoDelEquipo}
           puedeCambiar={esAdmin(rol)}
         />
 

@@ -347,6 +347,7 @@ export type Database = {
           id: string
           kind: Database["public"]["Enums"]["project_kind"] | null
           name: string
+          target_hourly_rate: number | null
           updated_at: string
           workspace_id: string
         }
@@ -361,6 +362,7 @@ export type Database = {
           id?: string
           kind?: Database["public"]["Enums"]["project_kind"] | null
           name: string
+          target_hourly_rate?: number | null
           updated_at?: string
           workspace_id: string
         }
@@ -375,6 +377,7 @@ export type Database = {
           id?: string
           kind?: Database["public"]["Enums"]["project_kind"] | null
           name?: string
+          target_hourly_rate?: number | null
           updated_at?: string
           workspace_id?: string
         }

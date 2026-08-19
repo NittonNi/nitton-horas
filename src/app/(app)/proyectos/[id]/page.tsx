@@ -66,7 +66,7 @@ export default async function PaginaProyecto({
       resultados={(resultados.data ?? []) as Resultado[]}
       catalogo={catalogo}
       miembros={miembros.filter((m) => m.active)}
-      objetivoHora={espacio.target_hourly_rate}
+      objetivoDelEquipo={espacio.target_hourly_rate}
       espacioId={espacio.id}
       puedeGestionar={gestor}
       puedeVerImportes={gestor}

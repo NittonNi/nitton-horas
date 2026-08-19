@@ -2,10 +2,14 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Euro, Loader2, X } from "lucide-react"
+import { Euro, Loader2, Trash2, X } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
+import { useAvisos } from "@/components/avisos"
+import { SelectorPersonas } from "@/components/selector-personas"
+import { proponerHoras } from "@/lib/compartir"
+import { useSesion } from "@/components/proveedor-sesion"
 import { SelectorProyecto } from "@/components/selector-proyecto"
 import { SelectorEtiquetas } from "@/components/selector-etiquetas"
 import {
@@ -14,19 +18,26 @@ import {
   parseDurationToSeconds,
   toClockInput,
 } from "@/lib/time"
-import type { Catalogo, EntradaVista } from "@/lib/tipos"
+import type { Catalogo, EntradaVista, Miembro } from "@/lib/tipos"
 import { cn } from "@/lib/utils"
 
 export function DialogoEntrada({
   entrada,
   catalogo,
+  miembros = [],
   onCerrar,
 }: {
   entrada: EntradaVista
   catalogo: Catalogo
+  /** El resto del equipo: para contarle estas horas a quien tambien estuvo. */
+  miembros?: Miembro[]
   onCerrar: () => void
 }) {
   const router = useRouter()
+  const { avisar } = useAvisos()
+  const { perfil, espacio } = useSesion()
+  // A quien mas le cuentan estas horas: se les propone al guardar
+  const [compartidos, setCompartidos] = useState<string[]>([])
   const [descripcion, setDescripcion] = useState(entrada.description)
   const [proyecto, setProyecto] = useState({
     project_id: entrada.project_id,
@@ -82,6 +93,53 @@ export function DialogoEntrada({
     )
   }
 
+  /** Igual que en la lista: se guarda la fila antes de irse, para poder volver. */
+  async function borrar() {
+    setGuardando(true)
+    setError(null)
+    const supabase = createClient()
+
+    const [{ data: fila }, { data: etiquetasPuestas }] = await Promise.all([
+      supabase.from("time_entries").select("*").eq("id", entrada.id).single(),
+      supabase
+        .from("time_entry_tags")
+        .select("entry_id, tag_id")
+        .eq("entry_id", entrada.id),
+    ])
+
+    const { error: err } = await supabase
+      .from("time_entries")
+      .delete()
+      .eq("id", entrada.id)
+
+    if (err) {
+      setGuardando(false)
+      setError(mensajeError(err))
+      return
+    }
+
+    router.refresh()
+    onCerrar()
+    avisar(
+      "Hora borrada.",
+      fila
+        ? async () => {
+            const cliente = createClient()
+            const { duration_seconds: _fuera, ...devolver } = fila
+            const { error: errVolver } = await cliente
+              .from("time_entries")
+              .insert(devolver)
+            if (errVolver) throw new Error(mensajeError(errVolver))
+            if (etiquetasPuestas && etiquetasPuestas.length > 0) {
+              await cliente.from("time_entry_tags").insert(etiquetasPuestas)
+            }
+            router.refresh()
+            return "Recuperada."
+          }
+        : undefined,
+    )
+  }
+
   async function guardar() {
     setError(null)
     const segs = parseDurationToSeconds(duracion)
@@ -116,6 +174,28 @@ export function DialogoEntrada({
           .from("time_entry_tags")
           .insert(tagIds.map((tag_id) => ({ entry_id: entrada.id, tag_id })))
         if (errTags) throw errTags
+      }
+
+      if (compartidos.length > 0) {
+        const { error: errCompartir } = await proponerHoras(supabase, {
+          espacioId: entrada.workspace_id,
+          entradaId: entrada.id,
+          deQuien: perfil.id,
+          aQuienes: compartidos,
+          project_id: proyecto.project_id,
+          edition_id: proyecto.edition_id,
+          task_id: proyecto.task_id,
+          description: descripcion,
+          start_at,
+          end_at,
+          billable: facturable,
+        })
+        if (errCompartir) throw errCompartir
+        avisar(
+          compartidos.length === 1
+            ? "Propuesta enviada. Hasta que la acepte no se le apunta nada."
+            : "Propuestas enviadas. Hasta que las acepten no se les apunta nada.",
+        )
       }
 
       router.refresh()
@@ -266,6 +346,30 @@ export function DialogoEntrada({
             </button>
           </div>
 
+          <div>
+            <span className="label">También cuenta para</span>
+            {miembros.length > 0 ? (
+              <>
+                <SelectorPersonas
+                  miembros={miembros.filter((m) => m.id !== entrada.user_id)}
+                  seleccionadas={compartidos}
+                  onChange={setCompartidos}
+                />
+                {compartidos.length > 0 && (
+                  <p className="mt-1.5 text-xs text-muted">
+                    Al guardar les llegará como propuesta: hasta que la acepten
+                    no se les apunta nada.
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="text-xs text-muted">
+                Cuando haya más gente en {espacio.name} podrás contarle estas
+                horas a quien también estuvo.
+              </p>
+            )}
+          </div>
+
           {error && (
             <p className="rounded-lg bg-danger-soft p-2.5 text-sm text-danger">
               {error}
@@ -273,7 +377,19 @@ export function DialogoEntrada({
           )}
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-line px-4 py-3">
+        <div className="flex items-center justify-end gap-2 border-t border-line px-4 py-3">
+          {/* Borrar desde aqui: al abrir una hora para corregirla, a veces lo
+              que quieres es que no exista. Con vuelta atras. */}
+          <button
+            type="button"
+            onClick={() => void borrar()}
+            disabled={guardando || entrada.locked}
+            className="btn btn-danger mr-auto"
+          >
+            <Trash2 className="h-4 w-4" />
+            Borrar
+          </button>
+
           <button type="button" onClick={onCerrar} className="btn">
             Cancelar
           </button>

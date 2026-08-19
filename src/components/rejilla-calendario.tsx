@@ -398,6 +398,7 @@ export function RejillaCalendario({
         <DialogoEntrada
           entrada={editando}
           catalogo={catalogo}
+          miembros={miembros}
           onCerrar={() => setEditando(null)}
         />
       )}
@@ -552,15 +553,12 @@ function ColumnaDia({
             </p>
             <p className="cifra truncate text-[10px] leading-tight text-muted">
               {comoHora(desde)}-{comoHora(hasta)}
-              {/* Como en Clockify: el +1 pequeño avisa de que cambia el día */}
+              {/* El tiempo solo va hacia delante: el +1 avisa de que el rato
+                  termina al dia siguiente. La continuacion no lleva marca; se
+                  reconoce por el corte de puntos de arriba. */}
               {bloque.sigueManana && (
                 <sup className="ml-0.5 font-semibold text-live" title="Sigue al día siguiente">
                   +1
-                </sup>
-              )}
-              {bloque.vieneDeAyer && (
-                <sup className="ml-0.5 font-semibold text-live" title="Viene del día anterior">
-                  ‑1
                 </sup>
               )}
             </p>

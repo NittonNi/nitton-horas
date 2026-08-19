@@ -1,6 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Euro, ListPlus, Loader2, Play, Square, Timer, Trash2 } from "lucide-react"
 
@@ -347,9 +348,17 @@ export function BarraCronometro({
         </div>
       </div>
 
-      {/* Horas compartidas. Estando solo en el espacio no pinta nada aqui: se
-          cuenta en la guia y aparece en cuanto haya alguien mas. */}
-      {miembros.length > 0 && (
+      {/* Horas compartidas. Estando solo en el espacio no hay a quien
+          proponerselas, pero si conviene saber que existe. */}
+      {miembros.length === 0 ? (
+        <p className="mt-2 border-t border-line pt-2 text-xs text-muted">
+          Una reunión se apunta una vez y se le propone al resto.{" "}
+          <Link href="/gestion/equipo" className="text-accent">
+            Trae a tu equipo
+          </Link>{" "}
+          y aparecerá aquí a quién más le cuentan estas horas.
+        </p>
+      ) : (
         <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-line pt-2">
           <span className="rotulo shrink-0">También cuenta para</span>
           <div className="w-56">

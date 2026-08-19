@@ -813,6 +813,7 @@ export function PanelInformes({
         <DialogoEntrada
           entrada={editando}
           catalogo={catalogo}
+          miembros={miembros}
           onCerrar={() => setEditando(null)}
         />
       )}

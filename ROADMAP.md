@@ -61,15 +61,25 @@ resumen del cronometro con tres huecos a gusto de cada uno; informes con
 filtro y desgloses por categoria y por edicion y descarga completa; tildes y
 enes; menu lateral con la gestion desplegada.
 
+Repasada tambien la seguridad el 19-ago: cerrado el redirect abierto de
+`?volver=` y `?next=`, contestar una propuesta se queda en manos de quien la
+recibe, revocado el permiso de ejecutar las funciones a quien no ha entrado y
+los disparadores a todo el mundo, y cabeceras puestas -nosniff, marcos
+denegados, HSTS y politica de contenido en produccion-. Icono propio en su
+sitio.
+
 **Pendiente**:
 
-1. **Horas compartidas, tercera vuelta**: proponerlas tambien desde la hoja
+1. **En el panel de Supabase, a mano**: activar la proteccion de contrasenas
+   filtradas (Auth > Passwords > *leaked password protection*) y subir el
+   minimo a 8 caracteres, que es lo que ya pide el formulario. Son dos
+   interruptores y el aviso desaparece.
+2. **Horas compartidas, tercera vuelta**: proponerlas tambien desde la hoja
    semanal, y avisar a quien ya acepto si luego cambia la hora o se borra.
-2. **Identidad**: logo y favicon propios, y renombrar el repositorio, que
-   sigue siendo `nitton-horas`.
 3. **Despliegue**: Vercel, dominio y las URLs de Google con el dominio real.
    Sin esto no lo puede usar ningun otro equipo de LEINN.
-4. **Ojo con las tildes**: rutas e identificadores SIN tilde -son URLs y
+4. **Renombrar el repositorio**, que sigue siendo `nitton-horas`.
+5. **Ojo con las tildes**: rutas e identificadores SIN tilde -son URLs y
    carpetas- y textos CON ella. Un `href="/gestión"` da 404; ya paso.
 
 ## Siguiente

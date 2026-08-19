@@ -106,6 +106,9 @@ export function PanelProyectos({
     [categorias],
   )
 
+  /* Las categorias salen siempre, no solo despues de elegir area: obligar a
+     un clic previo para poder filtrar es un peaje. Si hay areas marcadas, se
+     quedan las suyas. */
   const hijas = useMemo(
     () =>
       categorias
@@ -113,7 +116,8 @@ export function PanelProyectos({
           (c) =>
             !c.archived &&
             c.parent_id &&
-            categoriasElegidas.includes(c.parent_id),
+            (categoriasElegidas.length === 0 ||
+              categoriasElegidas.includes(c.parent_id)),
         )
         .sort((a, b) => a.position - b.position || a.name.localeCompare(b.name)),
     [categorias, categoriasElegidas],
@@ -208,7 +212,7 @@ export function PanelProyectos({
         <select
           value={estado}
           onChange={(e) => setEstado(e.target.value as typeof estado)}
-          className="field w-auto py-1.5"
+          className="field w-auto rounded-[3px] py-1.5"
           aria-label="Estado"
         >
           <option value="activos">Activos</option>
@@ -231,10 +235,10 @@ export function PanelProyectos({
 
         {padres.length > 0 && (
           <FiltroMultiple
-            etiqueta="Categoría"
-            todos="Todas las categorías"
+            etiqueta="Área"
+            todos="Todas las áreas"
             opciones={[
-              { id: SIN_RAMA, nombre: "Sin categoría" },
+              { id: SIN_RAMA, nombre: "Sin área" },
               ...padres.map((c) => ({ id: c.id, nombre: c.name })),
             ]}
             elegidas={categoriasElegidas}
@@ -251,12 +255,12 @@ export function PanelProyectos({
           />
         )}
 
-        {/* La subcategoria solo aparece cuando hay donde elegir: si no, es un
-            desplegable vacio pidiendo que lo mires. */}
+        {/* Sale siempre que el espacio tenga categorias, sin esperar a que se
+            elija un area antes. */}
         {hijas.length > 0 && (
           <FiltroMultiple
-            etiqueta="Subcategoría"
-            todos="Toda la categoría"
+            etiqueta="Categoría"
+            todos="Todas las categorías"
             opciones={hijas.map((c) => ({ id: c.id, nombre: c.name }))}
             elegidas={subcategoriasElegidas}
             onChange={setSubcategoriasElegidas}
@@ -271,7 +275,7 @@ export function PanelProyectos({
           <input
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="field py-1.5 pl-8"
+            className="field rounded-[3px] py-1.5 pl-8"
             placeholder="Buscar por nombre, cliente o categoría"
             type="search"
             aria-label="Buscar un proyecto"
@@ -363,7 +367,7 @@ function FiltroMultiple({
       <DropdownMenu.Trigger
         aria-label={etiqueta}
         className={cn(
-          "flex h-[2.125rem] shrink-0 items-center gap-1.5 rounded-[var(--radio-sm)] border px-2.5 text-sm transition",
+          "flex h-[2.125rem] shrink-0 items-center gap-1.5 rounded-[3px] border px-2.5 text-sm transition",
           puestas.length > 0
             ? "border-accent bg-accent-soft text-accent"
             : "border-line-strong bg-surface hover:bg-surface-2",
@@ -441,7 +445,7 @@ function BotonVista({ vista }: { vista: Vista }) {
     <div
       role="group"
       aria-label="Cómo se ven los proyectos"
-      className="flex shrink-0 rounded-lg border border-line bg-surface-2 p-0.5"
+      className="flex shrink-0 rounded-[4px] border border-line bg-surface-2 p-0.5"
     >
       {(
         [
@@ -457,7 +461,7 @@ function BotonVista({ vista }: { vista: Vista }) {
           aria-label={texto}
           aria-pressed={vista === clave}
           className={cn(
-            "rounded-md p-1.5 transition",
+            "rounded-[2px] p-1.5 transition",
             vista === clave
               ? "bg-surface text-ink shadow-sm"
               : "text-muted hover:text-ink",

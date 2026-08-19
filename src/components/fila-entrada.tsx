@@ -32,6 +32,7 @@ import {
 } from "@/lib/time"
 import type { TablesUpdate } from "@/lib/database.types"
 import type { Catalogo, EntradaVista, Miembro } from "@/lib/tipos"
+import { useEsMovil } from "@/lib/pantalla"
 import { cn } from "@/lib/utils"
 
 /**
@@ -68,7 +69,9 @@ export function FilaEntrada({
   const { arrancar } = useCronometro()
   const { avisar } = useAvisos()
   const [campo, setCampo] = useState<Campo>(null)
-  // En movil la fila abre la tarjeta entera: editar por celdas ahi no funciona
+  /* En el movil una hora se edita en su tarjeta entera: los campos sueltos de
+     la fila son de setenta pixeles y no se pulsan con el pulgar. */
+  const esMovil = useEsMovil()
   const [abierta, setAbierta] = useState(false)
   const [ocupado, setOcupado] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -257,7 +260,7 @@ export function FilaEntrada({
         ocupado && "opacity-50",
       )}
     >
-      <div className="flex items-center gap-2 py-2.5 md:gap-3">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 py-2 md:flex-nowrap md:gap-3 md:py-2.5">
         {/* -------------------------------------------------- descripcion */}
         <div className="min-w-0 flex-1 md:w-[30%] md:flex-none">
           {campo === "descripcion" ? (
@@ -280,7 +283,7 @@ export function FilaEntrada({
             <button
               type="button"
               disabled={bloqueada}
-              onClick={() => setCampo("descripcion")}
+              onClick={() => (esMovil ? setAbierta(true) : setCampo("descripcion"))}
               className={cn(pulsable, "block w-full truncate text-[0.9375rem]")}
             >
               {entrada.description || (
@@ -454,7 +457,7 @@ export function FilaEntrada({
             <button
               type="button"
               disabled={bloqueada}
-              onClick={() => setCampo("duracion")}
+              onClick={() => (esMovil ? setAbierta(true) : setCampo("duracion"))}
               className={cn(
                 "caja-horas w-full text-[0.9375rem] font-semibold transition",
                 !bloqueada && "hover:border-line-strong hover:bg-surface-2",
@@ -465,68 +468,9 @@ export function FilaEntrada({
           )}
         </div>
 
-        {/* ---------------------------------------------------- acciones */}
-        {/* Continuar: arranca ahora mismo con lo mismo de esta entrada */}
-        <button
-          type="button"
-          title="Continuar con esto ahora"
-          onClick={() =>
-            void arrancar({
-              project_id: entrada.project_id,
-              edition_id: entrada.edition_id,
-              task_id: entrada.task_id,
-              description: entrada.description,
-              billable: entrada.billable,
-              tagIds: etiquetasPuestas,
-            })
-          }
-          /* Naranja, que en esta casa es el color de lo que corre: el play es lo
-            unico de la fila que pone el cronometro en marcha */
-          className="flex shrink-0 items-center gap-1 rounded-[6px] px-2 py-1.5 text-[0.8125rem] font-medium text-live transition hover:bg-live-soft"
-        >
-          <Play className="h-3.5 w-3.5 fill-current" />
-        </button>
-
-        {/* Duplicar y borrar juntos y pequeños se confunden: van detrás de los
-            tres puntos, que es donde los busca todo el mundo. */}
-        <div className="flex w-8 shrink-0 items-center justify-end">
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger
-              disabled={ocupado}
-              title="Más"
-              aria-label="Más cosas para esta hora"
-              className="btn btn-ghost p-1.5 text-muted hover:text-ink"
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </DropdownMenu.Trigger>
-
-            <DropdownMenu.Portal>
-              <DropdownMenu.Content
-                align="end"
-                sideOffset={4}
-                className="z-50 w-44 overflow-hidden rounded-[var(--radio)] border border-line bg-surface p-1"
-                style={{ boxShadow: "var(--shadow-lg)" }}
-              >
-                <DropdownMenu.Item
-                  onSelect={() => void duplicar()}
-                  className="flex cursor-pointer items-center gap-2 rounded-[var(--radio-sm)] px-2 py-1.5 text-sm outline-none data-highlighted:bg-surface-2"
-                >
-                  <Copy className="h-3.5 w-3.5 text-muted" />
-                  Duplicar
-                </DropdownMenu.Item>
-                <DropdownMenu.Item
-                  disabled={bloqueada}
-                  onSelect={() => void borrar()}
-                  className="flex cursor-pointer items-center gap-2 rounded-[var(--radio-sm)] px-2 py-1.5 text-sm text-danger outline-none data-disabled:opacity-40 data-highlighted:bg-danger-soft"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Borrar
-                </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Portal>
-          </DropdownMenu.Root>
-        </div>
-      </div>
+        {/* En movil parte aqui la fila: arriba lo que hiciste y cuanto, y
+            abajo el proyecto, el horario y los botones. */}
+        <span className="basis-full md:hidden" aria-hidden />
 
           {/* En un movil no caben las columnas de al lado, asi que lo esencial
               -proyecto y horario- va debajo de la descripcion. Al pulsarlo se
@@ -534,7 +478,7 @@ export function FilaEntrada({
           <button
             type="button"
             onClick={() => setAbierta(true)}
-            className="-mt-1 flex w-full items-center gap-1.5 truncate pb-1.5 pl-1.5 text-left text-xs text-muted md:hidden"
+            className="flex min-w-0 flex-1 items-center gap-1.5 truncate py-0.5 pl-1.5 text-left text-xs text-muted md:hidden"
           >
             {entrada.project_name ? (
               <>
@@ -572,6 +516,70 @@ export function FilaEntrada({
               <Users className="h-3 w-3 shrink-0" aria-hidden />
             )}
           </button>
+
+        {/* ---------------------------------------------------- acciones */}
+        {/* Continuar: arranca ahora mismo con lo mismo de esta entrada */}
+        <button
+          type="button"
+          title="Continuar con esto ahora"
+          onClick={() =>
+            void arrancar({
+              project_id: entrada.project_id,
+              edition_id: entrada.edition_id,
+              task_id: entrada.task_id,
+              description: entrada.description,
+              billable: entrada.billable,
+              tagIds: etiquetasPuestas,
+            })
+          }
+          /* Naranja, que en esta casa es el color de lo que corre: el play es lo
+            unico de la fila que pone el cronometro en marcha */
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] text-live transition hover:bg-live-soft md:h-auto md:w-auto md:px-2 md:py-1.5"
+        >
+          <Play className="h-3.5 w-3.5 fill-current" />
+        </button>
+
+        {/* Duplicar y borrar juntos y pequeños se confunden: van detrás de los
+            tres puntos, que es donde los busca todo el mundo. */}
+        <div className="flex w-10 shrink-0 items-center justify-end md:w-8">
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger
+              disabled={ocupado}
+              title="Más"
+              aria-label="Más cosas para esta hora"
+              className="btn btn-ghost h-10 w-10 p-0 text-muted hover:text-ink md:h-auto md:w-auto md:p-1.5"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </DropdownMenu.Trigger>
+
+            <DropdownMenu.Portal>
+              <DropdownMenu.Content
+                align="end"
+                sideOffset={4}
+                className="z-50 w-44 overflow-hidden rounded-[var(--radio)] border border-line bg-surface p-1"
+                style={{ boxShadow: "var(--shadow-lg)" }}
+              >
+                <DropdownMenu.Item
+                  onSelect={() => void duplicar()}
+                  className="flex cursor-pointer items-center gap-2 rounded-[var(--radio-sm)] px-2 py-1.5 text-sm outline-none data-highlighted:bg-surface-2"
+                >
+                  <Copy className="h-3.5 w-3.5 text-muted" />
+                  Duplicar
+                </DropdownMenu.Item>
+                <DropdownMenu.Item
+                  disabled={bloqueada}
+                  onSelect={() => void borrar()}
+                  className="flex cursor-pointer items-center gap-2 rounded-[var(--radio-sm)] px-2 py-1.5 text-sm text-danger outline-none data-disabled:opacity-40 data-highlighted:bg-danger-soft"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Borrar
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Root>
+        </div>
+      </div>
+
 
       {error && (
         <p className="pb-2 pl-1.5 text-xs text-danger">{error}</p>

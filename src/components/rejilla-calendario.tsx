@@ -1,12 +1,6 @@
 "use client"
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import * as Dialog from "@radix-ui/react-dialog"
 import {
@@ -53,6 +47,7 @@ import {
 } from "@/lib/time"
 import type { Catalogo, EntradaVista, Miembro } from "@/lib/tipos"
 import type { Propuesta } from "@/components/propuestas-pendientes"
+import { useEsMovil } from "@/lib/pantalla"
 import { cn } from "@/lib/utils"
 
 type Arrastre =
@@ -65,25 +60,6 @@ type Arrastre =
 type Nuevo = { dia: string; desde: number; hasta: number }
 
 const Minimo = 15
-
-/**
- * En un movil no caben siete columnas: cada dia se queda en cuarenta pixeles y
- * los ratos son astillas. Ahi se enseña un dia entero y se salta entre dias con
- * la tira de arriba, como el calendario del telefono.
- */
-const ANCHO_MOVIL = "(max-width: 767px)"
-
-function useEsMovil() {
-  return useSyncExternalStore(
-    (avisar) => {
-      const consulta = window.matchMedia(ANCHO_MOVIL)
-      consulta.addEventListener("change", avisar)
-      return () => consulta.removeEventListener("change", avisar)
-    },
-    () => window.matchMedia(ANCHO_MOVIL).matches,
-    () => false,
-  )
-}
 
 /** Las propuestas se pintan en la rejilla; se reconocen por el id. */
 const MARCA = "propuesta:"

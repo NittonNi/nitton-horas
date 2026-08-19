@@ -357,7 +357,7 @@ function FilaGrupo({
     >
       <div
         className={cn(
-          "group flex items-center gap-2 px-2.5 py-2.5 transition md:gap-3",
+          "group flex flex-wrap items-center gap-x-2 gap-y-0.5 px-2.5 py-2 transition md:flex-nowrap md:gap-3 md:py-2.5",
         )}
       >
         {/* ------------------------------------------- contador y descripcion */}
@@ -369,7 +369,7 @@ function FilaGrupo({
             onClick={() => setAbierto((v) => !v)}
             aria-expanded={abierto}
             title={abierto ? "Juntar los ratos" : `Ver los ${cuantos} ratos`}
-            className="flex shrink-0 items-center gap-1 rounded-[6px] py-1 pl-0.5 pr-1 text-muted transition hover:bg-surface-3/70 hover:text-ink"
+            className="flex h-9 shrink-0 items-center gap-1 rounded-[6px] py-1 pl-1 pr-1.5 text-muted transition hover:bg-surface-3/70 hover:text-ink md:h-auto md:pl-0.5 md:pr-1"
           >
             <ChevronRight
               className={cn(
@@ -614,32 +614,12 @@ function FilaGrupo({
           </p>
         </div>
 
-        <button
-          type="button"
-          title="Continuar con esto ahora"
-          onClick={() =>
-            void arrancar({
-              project_id: primera.project_id,
-              edition_id: primera.edition_id,
-              task_id: tarea === null ? null : primera.task_id,
-              description: descripcion ?? "",
-              billable: facturable === true,
-              tagIds: mismasEtiquetas ? etiquetasPuestas : [],
-            })
-          }
-          /* Naranja, que en esta casa es el color de lo que corre: el play es lo
-            unico de la fila que pone el cronometro en marcha */
-          className="flex shrink-0 items-center gap-1 rounded-[6px] px-2 py-1.5 text-[0.8125rem] font-medium text-live transition hover:bg-live-soft"
-        >
-          <Play className="h-3.5 w-3.5 fill-current" />
-        </button>
-
-        {/* Hueco de los tres puntos: cada rato tiene los suyos dentro */}
-        <span className="w-8 shrink-0" aria-hidden />
-      </div>
+        {/* En movil la fila parte aqui: arriba el grupo y su total, abajo el
+            proyecto, el horario y el play. */}
+        <span className="basis-full md:hidden" aria-hidden />
 
           {/* En movil, debajo: de que es el grupo y de cuando a cuando */}
-          <p className="-mt-1 flex items-center gap-1.5 truncate pb-1.5 pl-11 pr-2.5 text-xs text-muted md:hidden">
+          <p className="flex min-w-0 flex-1 items-center gap-1.5 truncate py-0.5 pl-1.5 text-xs text-muted md:hidden">
             {primera.project_name ? (
               <>
                 <span
@@ -662,6 +642,31 @@ function FilaGrupo({
               {acabaOtroDia && <sup className="ml-0.5 text-live">+1</sup>}
             </span>
           </p>
+
+        <button
+          type="button"
+          title="Continuar con esto ahora"
+          onClick={() =>
+            void arrancar({
+              project_id: primera.project_id,
+              edition_id: primera.edition_id,
+              task_id: tarea === null ? null : primera.task_id,
+              description: descripcion ?? "",
+              billable: facturable === true,
+              tagIds: mismasEtiquetas ? etiquetasPuestas : [],
+            })
+          }
+          /* Naranja, que en esta casa es el color de lo que corre: el play es lo
+            unico de la fila que pone el cronometro en marcha */
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] text-live transition hover:bg-live-soft md:h-auto md:w-auto md:px-2 md:py-1.5"
+        >
+          <Play className="h-3.5 w-3.5 fill-current" />
+        </button>
+
+        {/* Hueco de los tres puntos: cada rato tiene los suyos dentro */}
+        <span className="w-10 shrink-0 md:w-8" aria-hidden />
+      </div>
+
 
       {error && <p className="px-2.5 pb-2 text-xs text-danger">{error}</p>}
 

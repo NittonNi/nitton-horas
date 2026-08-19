@@ -366,21 +366,31 @@ export function FilaEntrada({
               {entrada.tags.length > 1 && (
                 <span className="chip shrink-0">+{entrada.tags.length - 1}</span>
               )}
-              {compartida.length > 0 && (
-                <span
-                  className="chip shrink-0 gap-1"
-                  title={compartida
-                    .map((c) => c.nombre + ": " + c.estado)
-                    .join(", ")}
-                >
-                  <Users className="h-3 w-3" aria-hidden />
-                  {compartida.length}
-                  {compartida.some((c) => c.estado === "pendiente") && (
-                    <span className="text-live">·</span>
-                  )}
-                </span>
-              )}
             </button>
+          )}
+        </div>
+
+        {/* ------------------------------------------------- compartida con */}
+        {/* Su propio sitio: dentro de las etiquetas parecia una etiqueta mas
+            y no lo es -son personas, y algunas sin contestar todavia. El
+            hueco se reserva siempre para que las columnas cuadren. */}
+        <div className="hidden w-7 shrink-0 justify-center sm:flex">
+          {compartida.length > 0 && (
+            <span
+              className={cn(
+                "flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[0.6875rem] font-medium",
+                compartida.some((c) => c.estado === "pendiente")
+                  ? "border-live-line bg-live-soft text-live"
+                  : "border-line bg-surface-2 text-muted",
+              )}
+              title={
+                "Estas horas también cuentan para " +
+                compartida.map((c) => `${c.nombre} (${c.estado})`).join(", ")
+              }
+            >
+              <Users className="h-3 w-3" aria-hidden />
+              {compartida.length}
+            </span>
           )}
         </div>
 

@@ -551,6 +551,9 @@ function FilaGrupo({
           )}
         </div>
 
+        {/* Hueco del "compartida con": cada rato lleva el suyo dentro */}
+        <div className="hidden w-7 shrink-0 sm:block" aria-hidden />
+
         {/* -------------------------------------------------- facturable */}
         <button
           type="button"

@@ -230,3 +230,23 @@ para poder buscar por ellas. Falta decidir:
 - si se filtra por etiqueta desde cualquier pantalla, y no solo desde informes;
 - si tienen ficha propia, como los proyectos, con sus horas;
 - si conviene que una entrada pueda llevar varias, o solo una.
+
+## Horas compartidas: lo que queda (19-ago-2026)
+
+- **Propuestas en el calendario.** Ahora solo se ven en el panel. Tienen que
+  salir tambien en la rejilla, con formato de invitacion: bloque **sin
+  rellenar**, borde punteado del color del proyecto, texto en gris. No se
+  arrastra, no suma en el total del dia -no es tuya hasta que dices que si- y
+  al pulsarla se abre una tarjeta con quien te la manda y Aceptar / Rechazar.
+  Al aceptar se rellena y ya cuenta.
+  Es a proposito la convencion de Google Calendar: cuando llegue la
+  integracion, un evento externo pendiente se pinta igual y solo cambia el
+  icono de la esquina (reloj = horas propuestas, calendario = evento).
+- **Editar con quien esta compartida una hora ya creada.** El contador de
+  personas de la fila ya esta fuera de las etiquetas, pero solo informa.
+  Falta que se pulse y deje cambiar la lista: añadir gente crea propuestas
+  nuevas; quitar solo puede retirar las que sigan **pendientes**, porque una
+  aceptada ya es una hora suya y no se le puede borrar por la espalda.
+- **Terminar la prueba con el usuario Ane** (`ane.prueba@clockleinn.test`,
+  plaza PERSONA 2): crear desde su cuenta una hora que cuente para Nicolas y
+  recorrer el circuito entero con los formatos nuevos.

@@ -1,5 +1,5 @@
 import { getSesion } from "@/lib/sesion"
-import { veTodo } from "@/lib/roles"
+import { esAdmin, veTodo } from "@/lib/roles"
 import { cargarCatalogo, cargarEntradas, cargarMiembros } from "@/lib/datos"
 import { PanelInformes } from "@/components/panel-informes"
 import { toDateKey, todayKey } from "@/lib/time"
@@ -41,7 +41,8 @@ export default async function PaginaInformes({
       <div className="no-print">
         <h1 className="text-lg font-semibold tracking-tight">Informes</h1>
         <p className="mt-0.5 text-sm text-muted">
-          Filtra, exporta y comparte las horas del periodo.
+          Filtra, exporta y corrige las horas del periodo. Pulsa una para
+          cambiarla, o elige varias para arreglarlas de golpe.
         </p>
       </div>
 
@@ -52,6 +53,8 @@ export default async function PaginaInformes({
         desde={desde}
         hasta={hasta}
         puedeVerImportes={gestor}
+        perfilId={perfil.id}
+        puedeEditarTodo={esAdmin(rol)}
       />
     </div>
   )

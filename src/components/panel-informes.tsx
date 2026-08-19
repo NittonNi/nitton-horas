@@ -18,6 +18,8 @@ import { mensajeError } from "@/lib/errores"
 import { useSesion } from "@/components/proveedor-sesion"
 import { categoriasRaiz, SIN_CATEGORIA } from "@/lib/categorias"
 import { exportarCsv, exportarExcel, exportarPdf } from "@/lib/exportar"
+import { AccionesInforme } from "@/components/acciones-informe"
+import { DialogoEntrada } from "@/components/dialogo-entrada"
 import { agrupar, porDia, rangos, totales } from "@/lib/informes"
 import {
   formatDateShort,
@@ -38,6 +40,8 @@ export function PanelInformes({
   desde,
   hasta,
   puedeVerImportes,
+  perfilId,
+  puedeEditarTodo,
 }: {
   entradas: EntradaVista[]
   catalogo: Catalogo
@@ -45,6 +49,10 @@ export function PanelInformes({
   desde: string
   hasta: string
   puedeVerImportes: boolean
+  /** Quien esta mirando: sus horas siempre las puede tocar. */
+  perfilId: string
+  /** Un administrador puede corregir las de cualquiera. */
+  puedeEditarTodo: boolean
 }) {
   const router = useRouter()
   const { espacio } = useSesion()
@@ -60,6 +68,10 @@ export function PanelInformes({
     null,
   )
   const [errorDescarga, setErrorDescarga] = useState<string | null>(null)
+  // Corregir desde aqui: una a una o varias a la vez
+  const [elegidas, setElegidas] = useState<string[]>([])
+  const [editando, setEditando] = useState<EntradaVista | null>(null)
+  const [aviso, setAviso] = useState<string | null>(null)
 
   function cambiarRango(nuevoDesde: string, nuevoHasta: string) {
     router.push(`/informes?desde=${nuevoDesde}&hasta=${nuevoHasta}`)
@@ -239,6 +251,32 @@ export function PanelInformes({
   }
 
   const visibles = verTodo ? filtradas : filtradas.slice(0, 50)
+
+  /**
+   * Las tuyas siempre; las de los demas, solo si administras. Una hora cerrada
+   * solo la toca quien administra, que es quien la cerro.
+   */
+  function puedeEditar(entrada: EntradaVista) {
+    if (entrada.locked) return puedeEditarTodo
+    return puedeEditarTodo || entrada.user_id === perfilId
+  }
+
+  const editables = visibles.filter(puedeEditar)
+  const seleccionadas = filtradas.filter((e) => elegidas.includes(e.id))
+  const todasElegidas =
+    editables.length > 0 && editables.every((e) => elegidas.includes(e.id))
+
+  function alternar(id: string) {
+    setAviso(null)
+    setElegidas((previas) =>
+      previas.includes(id) ? previas.filter((x) => x !== id) : [...previas, id],
+    )
+  }
+
+  function alternarTodas() {
+    setAviso(null)
+    setElegidas(todasElegidas ? [] : editables.map((e) => e.id))
+  }
 
   return (
     <div className="space-y-5">
@@ -586,6 +624,22 @@ export function PanelInformes({
           )}
         </div>
 
+        {aviso && (
+          <p className="no-print mb-3 rounded-[var(--radio-sm)] border border-line bg-surface-2 px-3 py-2 text-sm text-ink-soft">
+            {aviso}
+          </p>
+        )}
+
+        {seleccionadas.length > 0 && (
+          <AccionesInforme
+            seleccionadas={seleccionadas}
+            catalogo={catalogo}
+            puedeBloquear={puedeEditarTodo}
+            onListo={setAviso}
+            onLimpiar={() => setElegidas([])}
+          />
+        )}
+
         {filtradas.length === 0 ? (
           <p className="py-3 text-sm text-muted">
             No hay horas con estos filtros.
@@ -595,6 +649,17 @@ export function PanelInformes({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
+                  {editables.length > 0 && (
+                    <th className="no-print w-8 py-2 pr-2">
+                      <input
+                        type="checkbox"
+                        checked={todasElegidas}
+                        onChange={alternarTodas}
+                        aria-label="Elegir todas las que puedo editar"
+                        className="h-3.5 w-3.5 accent-[color:var(--accent)]"
+                      />
+                    </th>
+                  )}
                   <th className="py-2 pr-3 font-semibold">Fecha</th>
                   <th className="py-2 pr-3 font-semibold">Persona</th>
                   <th className="py-2 pr-3 font-semibold">Proyecto</th>
@@ -607,11 +672,37 @@ export function PanelInformes({
               </thead>
               <tbody className="divide-y divide-line">
                 {visibles.map((entrada) => (
-                  <tr key={entrada.id}>
+                  <tr
+                    key={entrada.id}
+                    onClick={() => puedeEditar(entrada) && setEditando(entrada)}
+                    className={cn(
+                      elegidas.includes(entrada.id) && "bg-accent-soft",
+                      puedeEditar(entrada) && "cursor-pointer hover:bg-surface-2",
+                    )}
+                    title={puedeEditar(entrada) ? "Pulsa para corregirla" : undefined}
+                  >
+                    {editables.length > 0 && (
+                      <td className="no-print py-2 pr-2" onClick={(e) => e.stopPropagation()}>
+                        {puedeEditar(entrada) && (
+                          <input
+                            type="checkbox"
+                            checked={elegidas.includes(entrada.id)}
+                            onChange={() => alternar(entrada.id)}
+                            aria-label={"Elegir la hora de " + entrada.user_name}
+                            className="h-3.5 w-3.5 accent-[color:var(--accent)]"
+                          />
+                        )}
+                      </td>
+                    )}
                     <td className="tabular whitespace-nowrap py-2 pr-3 text-muted">
                       {formatDateShort(entrada.local_date)}
                     </td>
-                    <td className="whitespace-nowrap py-2 pr-3">{entrada.user_name}</td>
+                    <td className="whitespace-nowrap py-2 pr-3">
+                      {entrada.user_name}
+                      {entrada.locked && (
+                        <span className="chip ml-1.5">cerrada</span>
+                      )}
+                    </td>
                     <td className="py-2 pr-3">
                       <span className="flex items-center gap-1.5">
                         <span
@@ -651,6 +742,14 @@ export function PanelInformes({
           </div>
         )}
       </section>
+
+      {editando && (
+        <DialogoEntrada
+          entrada={editando}
+          catalogo={catalogo}
+          onCerrar={() => setEditando(null)}
+        />
+      )}
     </div>
   )
 }

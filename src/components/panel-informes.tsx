@@ -330,10 +330,12 @@ export function PanelInformes({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        {/* En movil, dos columnas: siete desplegables uno debajo de otro son
+            media pantalla de filtros antes de ver un solo dato. */}
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           {miembros.length > 0 && (
             <select
-              className="field w-auto py-1"
+              className="field w-full py-1 sm:w-auto"
               value={persona}
               onChange={(e) => setPersona(e.target.value)}
               aria-label="Persona"
@@ -348,7 +350,7 @@ export function PanelInformes({
           )}
 
           <select
-            className="field w-auto py-1"
+            className="field w-full py-1 sm:w-auto"
             value={cliente}
             onChange={(e) => setCliente(e.target.value)}
             aria-label="Cliente"
@@ -362,7 +364,7 @@ export function PanelInformes({
           </select>
 
           <select
-            className="field w-auto py-1"
+            className="field w-full py-1 sm:w-auto"
             value={categoria}
             onChange={(e) => setCategoria(e.target.value)}
             aria-label="Categoría"
@@ -376,7 +378,7 @@ export function PanelInformes({
           </select>
 
           <select
-            className="field w-auto py-1"
+            className="field w-full py-1 sm:w-auto"
             value={proyecto}
             onChange={(e) => setProyecto(e.target.value)}
             aria-label="Proyecto"
@@ -392,7 +394,7 @@ export function PanelInformes({
           </select>
 
           <select
-            className="field w-auto py-1"
+            className="field w-full py-1 sm:w-auto"
             value={etiqueta}
             onChange={(e) => setEtiqueta(e.target.value)}
             aria-label="Etiqueta"
@@ -406,7 +408,7 @@ export function PanelInformes({
           </select>
 
           <select
-            className="field w-auto py-1"
+            className="field w-full py-1 sm:w-auto"
             value={facturable}
             onChange={(e) => setFacturable(e.target.value as Facturable)}
             aria-label="Facturable"
@@ -417,7 +419,7 @@ export function PanelInformes({
           </select>
 
           <select
-            className="field w-auto py-1"
+            className="field w-full py-1 sm:w-auto"
             value={cierre}
             onChange={(e) =>
               setCierre(e.target.value as "todo" | "abiertas" | "cerradas")
@@ -438,7 +440,7 @@ export function PanelInformes({
           />
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           <button
             type="button"
             onClick={() => void excel()}
@@ -466,12 +468,6 @@ export function PanelInformes({
             <FileText className="h-4 w-4" />
             {generando === "pdf" ? "Generando..." : "PDF"}
           </button>
-          {seleccionadas.length > 0 && (
-            <span className="self-center text-xs text-muted">
-              Se descargan las {seleccionadas.length} elegidas
-            </span>
-          )}
-
           <button
             type="button"
             onClick={() => window.print()}
@@ -488,11 +484,17 @@ export function PanelInformes({
             onClick={() => void todoElHistorico()}
             disabled={generando !== null}
             title="Un Excel con todas las horas del espacio, sin filtros ni fechas"
-            className="btn py-1.5"
+            className="btn col-span-2 py-1.5 sm:col-span-1"
           >
             <FileSpreadsheet className="h-4 w-4" />
             {generando === "todo" ? "Generando..." : "Todo, desde el principio"}
           </button>
+
+          {seleccionadas.length > 0 && (
+            <span className="col-span-2 self-center text-xs text-muted sm:col-span-1">
+              Se descargan las {seleccionadas.length} elegidas
+            </span>
+          )}
         </div>
 
         {errorDescarga && (
@@ -727,12 +729,18 @@ export function PanelInformes({
                     </th>
                   )}
                   <th className="py-2 pr-3 font-semibold">Fecha</th>
-                  <th className="py-2 pr-3 font-semibold">Persona</th>
+                  <th className="hidden py-2 pr-3 font-semibold sm:table-cell">
+                    Persona
+                  </th>
                   <th className="py-2 pr-3 font-semibold">Proyecto</th>
-                  <th className="py-2 pr-3 font-semibold">Descripción</th>
+                  <th className="hidden py-2 pr-3 font-semibold sm:table-cell">
+                    Descripción
+                  </th>
                   <th className="py-2 pr-3 text-right font-semibold">Horas</th>
                   {puedeVerImportes && (
-                    <th className="py-2 text-right font-semibold">Importe</th>
+                    <th className="hidden py-2 text-right font-semibold sm:table-cell">
+                      Importe
+                    </th>
                   )}
                 </tr>
               </thead>
@@ -760,16 +768,21 @@ export function PanelInformes({
                         )}
                       </td>
                     )}
-                    <td className="tabular whitespace-nowrap py-2 pr-3 text-muted">
-                      {formatDateShort(entrada.local_date)}
+                    <td className="tabular whitespace-nowrap py-2 pr-2 align-top text-muted sm:pr-3">
+                      <span className="sm:hidden">
+                        {formatDateShort(entrada.local_date).slice(0, 5)}
+                      </span>
+                      <span className="hidden sm:inline">
+                        {formatDateShort(entrada.local_date)}
+                      </span>
                     </td>
-                    <td className="whitespace-nowrap py-2 pr-3">
+                    <td className="hidden whitespace-nowrap py-2 pr-3 sm:table-cell">
                       {entrada.user_name}
                       {entrada.locked && (
                         <span className="chip ml-1.5">cerrada</span>
                       )}
                     </td>
-                    <td className="py-2 pr-3">
+                    <td className="w-full max-w-0 py-2 pr-3">
                       <span className="flex items-center gap-1.5">
                         <span
                           className="h-2 w-2 shrink-0 rounded-full"
@@ -782,8 +795,15 @@ export function PanelInformes({
                           {entrada.task_name && ` · ${entrada.task_name}`}
                         </span>
                       </span>
+                      {/* En movil no hay columna para la descripcion ni para
+                          la persona: van aqui debajo, en pequeño */}
+                      <span className="mt-0.5 block truncate text-xs text-muted sm:hidden">
+                        {entrada.description || "Sin descripción"}
+                        {" · "}
+                        {entrada.user_name}
+                      </span>
                     </td>
-                    <td className="max-w-[22rem] truncate py-2 pr-3 text-muted">
+                    <td className="hidden max-w-[22rem] truncate py-2 pr-3 text-muted sm:table-cell">
                       {entrada.description || "-"}
                     </td>
                     <td
@@ -795,7 +815,7 @@ export function PanelInformes({
                       {formatHoursDecimal(entrada.duration_seconds)}
                     </td>
                     {puedeVerImportes && (
-                      <td className="tabular py-2 text-right">
+                      <td className="tabular hidden py-2 text-right sm:table-cell">
                         {entrada.amount != null
                           ? formatMoney(Number(entrada.amount))
                           : "-"}

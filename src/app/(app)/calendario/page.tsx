@@ -13,7 +13,7 @@ export const metadata = { title: "Calendario" }
 export default async function PaginaCalendario({
   searchParams,
 }: {
-  searchParams: Promise<{ semana?: string; persona?: string }>
+  searchParams: Promise<{ semana?: string }>
 }) {
   const parametros = await searchParams
   const { perfil, espacio } = await getSesion()
@@ -23,8 +23,8 @@ export default async function PaginaCalendario({
     : toDateKey(startOfWeek(new Date()))
   const domingo = toDateKey(addDays(fromDateKey(lunes), 6))
 
-  // Cualquiera puede mirar -y corregir- la semana de cualquiera del espacio
-  const personaId = parametros.persona || perfil.id
+  /* El calendario es personal: siempre las horas de quien mira. Las de otra
+     gente se revisan en informes, que es donde eso hace falta. */
 
   const [catalogo, entradas, miembros, propuestas] = await Promise.all([
     cargarCatalogo(espacio.id),
@@ -32,7 +32,7 @@ export default async function PaginaCalendario({
       espacioId: espacio.id,
       desde: lunes,
       hasta: domingo,
-      userId: personaId,
+      userId: perfil.id,
     }),
     cargarMiembros(espacio.id),
     cargarPropuestas(espacio.id),
@@ -40,13 +40,10 @@ export default async function PaginaCalendario({
 
   /* Las propuestas son mias, asi que solo pintan cuando miro mi semana, y solo
      las de esta semana: en otra no habria donde ponerlas. */
-  const propuestasDeLaSemana =
-    personaId === perfil.id
-      ? propuestas.filter((p) => {
-          const dia = toDateKey(new Date(p.start_at))
-          return dia >= lunes && dia <= domingo
-        })
-      : []
+  const propuestasDeLaSemana = propuestas.filter((p) => {
+    const dia = toDateKey(new Date(p.start_at))
+    return dia >= lunes && dia <= domingo
+  })
 
   return (
     <div className="space-y-4">
@@ -64,7 +61,6 @@ export default async function PaginaCalendario({
         lunes={lunes}
         espacioId={espacio.id}
         yoId={perfil.id}
-        personaId={personaId}
         miembros={miembros.filter((m) => m.active)}
       />
     </div>

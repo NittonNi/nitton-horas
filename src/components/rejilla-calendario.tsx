@@ -112,7 +112,6 @@ export function RejillaCalendario({
   lunes,
   espacioId,
   yoId,
-  personaId,
   miembros,
 }: {
   entradas: EntradaVista[]
@@ -122,7 +121,6 @@ export function RejillaCalendario({
   lunes: string
   espacioId: string
   yoId: string
-  personaId: string
   miembros: Miembro[]
 }) {
   const router = useRouter()
@@ -137,9 +135,9 @@ export function RejillaCalendario({
   const [error, setError] = useState<string | null>(null)
   const [ahora, setAhora] = useState(() => new Date())
 
-  /* Las horas del equipo las corrige cualquiera: si ves un fallo en la semana
-     de otro, lo arreglas. Lo que cambia es el tono de los avisos. */
-  const mias = personaId === yoId
+  /* El calendario es de uso personal: siempre son tus horas. Para mirar -o
+     corregir- las de otra persona estan los informes, que es donde eso tiene
+     sentido. */
   const hoy = todayKey()
 
   const dias = useMemo(
@@ -322,8 +320,7 @@ export function RejillaCalendario({
   }
 
   function irA(nuevoLunes: string) {
-    const persona = personaId !== yoId ? `&persona=${personaId}` : ""
-    router.push(`/calendario?semana=${nuevoLunes}${persona}`)
+    router.push(`/calendario?semana=${nuevoLunes}`)
   }
 
   const totalSemana = entradas.reduce((s, e) => s + (e.duration_seconds ?? 0), 0)
@@ -396,25 +393,6 @@ export function RejillaCalendario({
 
         <span className="chip">{formatDurationShort(totalSemana)}</span>
 
-        {miembros.length > 0 && (
-          <select
-            className="field ml-auto w-52 py-1"
-            value={personaId}
-            onChange={(e) => {
-              const destino = e.target.value
-              router.push(
-                `/calendario?semana=${lunes}${destino !== yoId ? `&persona=${destino}` : ""}`,
-              )
-            }}
-            aria-label="Persona"
-          >
-            {miembros.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.id === yoId ? `${m.full_name} (tu)` : m.full_name}
-              </option>
-            ))}
-          </select>
-        )}
       </div>
 
       {error && (
@@ -539,18 +517,16 @@ export function RejillaCalendario({
       </div>
 
       <p className="no-print text-xs text-muted">
-        {mias
-          ? "Arrastra sobre un hueco para apuntar horas. Mueve un bloque para cambiarlo de sitio, o estira su borde de abajo para alargarlo."
-          : "Estás en la semana de otra persona: puedes corregir lo que veas mal, y queda apuntado que lo tocaste tú."}
+        Arrastra sobre un hueco para apuntar horas. Mueve un bloque para
+        cambiarlo de sitio, o estira su borde de abajo para alargarlo.
       </p>
 
       {nuevo && (
         <DialogoNuevaEntrada
           espacioId={espacioId}
-          userId={personaId}
+          userId={yoId}
           catalogo={catalogo}
-          // Compartir solo tiene sentido cuando apuntas tus propias horas
-          miembros={mias ? miembros.filter((m) => m.id !== yoId) : []}
+          miembros={miembros.filter((m) => m.id !== yoId)}
           nuevo={nuevo}
           onCerrar={() => setNuevo(null)}
         />

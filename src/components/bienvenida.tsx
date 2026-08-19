@@ -42,6 +42,8 @@ export function Bienvenida({
 }) {
   const [nombre, setNombre] = useState("")
   const [zona, setZona] = useState(zonaPorDefecto)
+  // Casi todos los equipos quieren la estructura de siempre; el que no, la quita
+  const [conPlantilla, setConPlantilla] = useState(true)
   const [ocupado, setOcupado] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [, empezarTransicion] = useTransition()
@@ -65,6 +67,7 @@ export function Bienvenida({
     const { data, error: err } = await supabase.rpc("create_workspace", {
       p_name: limpio,
       p_timezone: zona,
+      p_plantilla: conPlantilla,
     })
 
     if (err || !data) {
@@ -214,6 +217,26 @@ export function Bienvenida({
               Decide a que dia cuenta cada hora. Se puede cambiar después.
             </p>
           </div>
+
+          <label className="flex items-start gap-2.5 rounded-[var(--radio-sm)] border border-line bg-surface-2/60 p-3">
+            <input
+              type="checkbox"
+              checked={conPlantilla}
+              onChange={(e) => setConPlantilla(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-[color:var(--accent)]"
+            />
+            <span>
+              <span className="block text-sm font-medium">
+                Empezar con la estructura de LEINN
+              </span>
+              <span className="mt-0.5 block text-xs text-muted">
+                Backoffice —con TLT, Care, Financial y Legal—, Conocimiento y
+                Proyectos —con Eventos, Proyectos y Oportunidades—. Se cambia,
+                se borra y se añade lo que queráis; sin marcar, empiezas en
+                blanco.
+              </span>
+            </span>
+          </label>
 
           {error && (
             <p className="rounded-lg bg-danger-soft p-2.5 text-sm text-danger">

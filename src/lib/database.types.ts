@@ -118,6 +118,7 @@ export type Database = {
           origin_entry_id: string | null
           project_id: string | null
           responded_at: string | null
+          separated_at: string | null
           start_at: string
           status: string
           task_id: string | null
@@ -136,6 +137,7 @@ export type Database = {
           origin_entry_id?: string | null
           project_id?: string | null
           responded_at?: string | null
+          separated_at?: string | null
           start_at: string
           status?: string
           task_id?: string | null
@@ -154,6 +156,7 @@ export type Database = {
           origin_entry_id?: string | null
           project_id?: string | null
           responded_at?: string | null
+          separated_at?: string | null
           start_at?: string
           status?: string
           task_id?: string | null
@@ -850,6 +853,7 @@ export type Database = {
           task_name: string | null
           user_id: string | null
           user_name: string | null
+          venida_de: string | null
           workspace_id: string | null
         }
         Relationships: [
@@ -1010,6 +1014,7 @@ export type Database = {
           origin_entry_id: string | null
           project_id: string | null
           responded_at: string | null
+          separated_at: string | null
           start_at: string
           status: string
           task_id: string | null

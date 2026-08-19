@@ -37,6 +37,10 @@ export function CompartirCon({
 
   const compartida = entrada.compartida_con ?? []
   const pendiente = compartida.some((c) => c.estado === "pendiente")
+  /* Este rato vino de otra persona y lo aceptaste. Mientras ninguno de los dos
+     cambie nada de fondo sigue siendo el mismo rato; en cuanto se toca, cada
+     uno sigue por su lado y esto desaparece. */
+  const vinoDe = entrada.venida_de
   // Con quién se puede compartir: todo el equipo menos la persona de la hora
   const otros = miembros.filter((m) => m.id !== entrada.user_id)
 
@@ -153,18 +157,22 @@ export function CompartirCon({
     >
       <Popover.Trigger
         title={
-          compartida.length === 0
-            ? "Compartir estas horas con alguien más"
-            : "También cuenta para " +
-              compartida.map((c) => `${c.nombre} (${c.estado})`).join(", ")
+          vinoDe
+            ? `Este rato lo apuntó ${vinoDe} y lo aceptaste: seguís teniendo el mismo. Si cambias algo, se separan.`
+            : compartida.length === 0
+              ? "Compartir estas horas con alguien más"
+              : "También cuenta para " +
+                compartida.map((c) => `${c.nombre} (${c.estado})`).join(", ")
         }
         className={cn(
           "flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[0.6875rem] font-medium transition",
-          compartida.length === 0
-            ? "border-transparent text-muted hover:border-line hover:bg-surface-2"
-            : pendiente
-              ? "border-live-line bg-live-soft text-live hover:brightness-95"
-              : "border-line bg-surface-2 text-muted hover:border-line-strong",
+          vinoDe
+            ? "border-accent-soft bg-accent-soft text-accent hover:brightness-95"
+            : compartida.length === 0
+              ? "border-transparent text-muted hover:border-line hover:bg-surface-2"
+              : pendiente
+                ? "border-live-line bg-live-soft text-live hover:brightness-95"
+                : "border-line bg-surface-2 text-muted hover:border-line-strong",
         )}
       >
         <Users className="h-3 w-3" aria-hidden />
@@ -178,6 +186,17 @@ export function CompartirCon({
           className="card z-50 w-64 p-1"
           style={{ boxShadow: "var(--shadow-lg)" }}
         >
+          {vinoDe && (
+            <p className="border-b border-line px-2 pb-2 pt-1.5 text-xs text-ink-soft">
+              Este rato lo apuntó <span className="font-medium">{vinoDe}</span> y
+              lo aceptaste: es el mismo para los dos.
+              <span className="mt-1 block text-muted">
+                Si cambias la hora, el proyecto o el texto, deja de serlo y cada
+                uno sigue con el suyo.
+              </span>
+            </p>
+          )}
+
           <p className="rotulo px-2 py-1.5">También cuenta para</p>
 
           {otros.length === 0 && (

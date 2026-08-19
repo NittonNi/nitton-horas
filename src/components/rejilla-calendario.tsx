@@ -101,6 +101,7 @@ function propuestaComoEntrada(p: Propuesta): EntradaVista {
     locked: true,
     tags: [],
     compartida_con: [],
+    venida_de: null,
     amount: null,
   }
 }

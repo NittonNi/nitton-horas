@@ -66,6 +66,12 @@ export type EntradaVista = {
   tags: string[]
   /** A quien mas le cuentan estas horas, y como lo lleva cada uno. */
   compartida_con: { nombre: string; estado: EstadoPropuesta }[]
+  /**
+   * De quien vino este rato, si es una propuesta que aceptaste y sigue siendo
+   * el mismo: mismo dia, misma hora, mismo proyecto y mismo texto. En cuanto
+   * uno de los dos lo cambia deja de ser el mismo rato y esto se queda vacio.
+   */
+  venida_de: string | null
   amount: number | null
 }
 

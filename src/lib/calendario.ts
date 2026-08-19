@@ -105,10 +105,20 @@ export const DIA_ENTERO = { desde: 0, hasta: 24 * 60 }
  * A que hora conviene dejar el scroll al abrir: una hora antes de lo más
  * temprano que haya, y si no hay nada, a las siete.
  */
+/**
+ * Por donde abrir la semana. Una sola hora apuntada de madrugada no puede
+ * mandar a todo el mundo a las 00:00: solo se baja hasta ahi si la mitad de la
+ * semana es de madrugada de verdad.
+ */
 export function horaParaEmpezar(bloques: Bloque[]): number {
   if (bloques.length === 0) return 7 * 60
+
   const primera = Math.min(...bloques.map((b) => b.desde))
-  return Math.max(0, Math.floor((primera - 60) / 60) * 60)
+  const unaHoraAntes = Math.max(0, Math.floor((primera - 60) / 60) * 60)
+  if (primera >= 6 * 60) return unaHoraAntes
+
+  const madrugadores = bloques.filter((b) => b.desde < 6 * 60).length
+  return madrugadores * 2 >= bloques.length ? unaHoraAntes : 6 * 60
 }
 
 /** "09:30" -> 570. Devuelve null si el campo esta a medias. */

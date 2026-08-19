@@ -347,26 +347,29 @@ export function BarraCronometro({
         </div>
       </div>
 
-      {/* --------------------------------------------- horas compartidas */}
-      <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-line pt-2">
-        <span className="rotulo shrink-0">También cuenta para</span>
-        <div className="w-56">
-          <SelectorPersonas
-            miembros={miembros}
-            seleccionadas={compartidos}
-            onChange={(ids) => {
-              setCompartidos(ids)
-              setAvisoCompartir(null)
-            }}
-          />
+      {/* Horas compartidas. Estando solo en el espacio no pinta nada aqui: se
+          cuenta en la guia y aparece en cuanto haya alguien mas. */}
+      {miembros.length > 0 && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-line pt-2">
+          <span className="rotulo shrink-0">También cuenta para</span>
+          <div className="w-56">
+            <SelectorPersonas
+              miembros={miembros}
+              seleccionadas={compartidos}
+              onChange={(ids) => {
+                setCompartidos(ids)
+                setAvisoCompartir(null)
+              }}
+            />
+          </div>
+          {compartidos.length > 0 && (
+            <span className="text-xs text-muted">
+              Al parar les llegará como propuesta: hasta que la acepten no se
+              les apunta nada.
+            </span>
+          )}
         </div>
-        {compartidos.length > 0 && (
-          <span className="text-xs text-muted">
-            Al parar les llegará como propuesta: hasta que la acepten no se les
-            apunta nada.
-          </span>
-        )}
-      </div>
+      )}
 
       {avisoCompartir && (
         <p className="mt-2 rounded-[var(--radio-sm)] border border-line bg-surface-2 px-3 py-2 text-sm text-ink-soft">
@@ -406,6 +409,8 @@ function EntradaManual({
     end_at: string
   }) => void | Promise<void>
 }) {
+  // Se apunta a mano cuando ya ha pasado: casi siempre hoy, a veces ayer
+  const [fecha, setFecha] = useState(todayKey())
   const [inicio, setInicio] = useState("09:00")
   const [fin, setFin] = useState("10:00")
   const [duracion, setDuracion] = useState("1:00")
@@ -441,8 +446,7 @@ function EntradaManual({
 
     setGuardando(true)
     const supabase = createClient()
-    const hoy = todayKey()
-    const start_at = combineDateAndTime(hoy, inicio)
+    const start_at = combineDateAndTime(fecha, inicio)
     const end_at = new Date(new Date(start_at).getTime() + segs * 1000).toISOString()
 
     try {
@@ -478,6 +482,15 @@ function EntradaManual({
 
   return (
     <>
+      <input
+        type="date"
+        value={fecha}
+        max={todayKey()}
+        onChange={(e) => setFecha(e.target.value || todayKey())}
+        className="field h-9 w-[8.5rem] tabular"
+        aria-label="Día"
+        title="Qué día fue"
+      />
       <input
         type="time"
         value={inicio}

@@ -38,7 +38,7 @@ export default async function PaginaSemana({
       <div>
         <h1 className="text-lg font-semibold tracking-tight">Semana</h1>
         <p className="mt-0.5 text-sm text-muted">
-          Rellena las horas por dia. Acepta 1:30, 90m o 1,5.
+          Rellena las horas por día. Acepta 1:30, 1:30:00, 90m o 1,5.
         </p>
       </div>
 

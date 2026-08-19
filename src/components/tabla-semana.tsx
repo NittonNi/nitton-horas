@@ -401,11 +401,20 @@ export function TablaSemana({
               <td className="sticky left-0 z-10 bg-surface-2 px-3 py-2 text-sm">
                 Total
               </td>
-              {dias.map((dia) => (
-                <td key={dia} className="tabular px-2 py-2 text-center text-sm">
-                  {formatDurationShort(totalDia(dia))}
-                </td>
-              ))}
+              {dias.map((dia) => {
+                const total = totalDia(dia)
+                return (
+                  <td
+                    key={dia}
+                    className={cn(
+                      "tabular px-2 py-2 text-center text-sm",
+                      total === 0 && "font-normal text-muted",
+                    )}
+                  >
+                    {total === 0 ? "–" : formatDurationShort(total)}
+                  </td>
+                )
+              })}
               <td className="tabular px-3 py-2 text-right text-sm text-accent">
                 {formatDurationShort(totalSemana)}
               </td>

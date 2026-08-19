@@ -40,8 +40,7 @@ export function PanelInformes({
   desde,
   hasta,
   puedeVerImportes,
-  perfilId,
-  puedeEditarTodo,
+  puedeAbrirCerradas,
 }: {
   entradas: EntradaVista[]
   catalogo: Catalogo
@@ -49,10 +48,8 @@ export function PanelInformes({
   desde: string
   hasta: string
   puedeVerImportes: boolean
-  /** Quien esta mirando: sus horas siempre las puede tocar. */
-  perfilId: string
-  /** Un administrador puede corregir las de cualquiera. */
-  puedeEditarTodo: boolean
+  /** Las horas cerradas solo las vuelve a abrir quien administra. */
+  puedeAbrirCerradas: boolean
 }) {
   const router = useRouter()
   const { espacio } = useSesion()
@@ -266,12 +263,12 @@ export function PanelInformes({
   const visibles = verTodo ? filtradas : filtradas.slice(0, 50)
 
   /**
-   * Las tuyas siempre; las de los demas, solo si administras. Una hora cerrada
-   * solo la toca quien administra, que es quien la cerro.
+   * El equipo trabaja junto: cualquiera puede corregir las horas de cualquiera.
+   * Lo unico intocable son las cerradas, que solo abre quien administra. La
+   * base de datos dice lo mismo, asi que esto es solo lo que se pinta.
    */
   function puedeEditar(entrada: EntradaVista) {
-    if (entrada.locked) return puedeEditarTodo
-    return puedeEditarTodo || entrada.user_id === perfilId
+    return !entrada.locked || puedeAbrirCerradas
   }
 
   const editables = visibles.filter(puedeEditar)
@@ -700,7 +697,7 @@ export function PanelInformes({
           <AccionesInforme
             seleccionadas={seleccionadas}
             catalogo={catalogo}
-            puedeBloquear={puedeEditarTodo}
+            puedeBloquear={puedeAbrirCerradas}
             onListo={(mensaje, volver) => {
               setAviso(mensaje)
               setDeshacer(() => volver ?? null)

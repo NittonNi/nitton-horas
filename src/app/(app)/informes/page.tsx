@@ -26,14 +26,13 @@ export default async function PaginaInformes({
 
   const [catalogo, entradas, miembros] = await Promise.all([
     cargarCatalogo(espacio.id, true),
-    // Un gestor ve a todo el equipo; el resto, solo lo suyo (y la RLS lo respalda)
+    // Las horas del espacio son del espacio: se ven todas y se corrigen todas
     cargarEntradas({
       espacioId: espacio.id,
       desde,
       hasta,
-      userId: gestor ? undefined : perfil.id,
     }),
-    gestor ? cargarMiembros(espacio.id) : Promise.resolve([]),
+    cargarMiembros(espacio.id),
   ])
 
   return (
@@ -53,8 +52,7 @@ export default async function PaginaInformes({
         desde={desde}
         hasta={hasta}
         puedeVerImportes={gestor}
-        perfilId={perfil.id}
-        puedeEditarTodo={esAdmin(rol)}
+        puedeAbrirCerradas={esAdmin(rol)}
       />
     </div>
   )

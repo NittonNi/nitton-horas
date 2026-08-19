@@ -26,15 +26,13 @@ export default async function PaginaEstadisticas() {
 
   const [catalogo, entradas, miembros] = await Promise.all([
     cargarCatalogo(espacio.id, true),
-    // Un gestor ve al equipo; el resto, lo suyo (y la RLS lo respalda)
     cargarEntradas({
       espacioId: espacio.id,
       desde,
       hasta: todayKey(),
-      userId: gestor ? undefined : perfil.id,
       limite: 20000,
     }),
-    gestor ? cargarMiembros(espacio.id) : Promise.resolve([]),
+    cargarMiembros(espacio.id),
   ])
 
   return (

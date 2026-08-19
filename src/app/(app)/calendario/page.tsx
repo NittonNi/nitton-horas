@@ -1,5 +1,4 @@
 import { getSesion } from "@/lib/sesion"
-import { veTodo } from "@/lib/roles"
 import { cargarCatalogo, cargarEntradas, cargarMiembros } from "@/lib/datos"
 import { RejillaCalendario } from "@/components/rejilla-calendario"
 import { addDays, fromDateKey, startOfWeek, toDateKey } from "@/lib/time"
@@ -12,15 +11,15 @@ export default async function PaginaCalendario({
   searchParams: Promise<{ semana?: string; persona?: string }>
 }) {
   const parametros = await searchParams
-  const { perfil, espacio, rol } = await getSesion()
+  const { perfil, espacio } = await getSesion()
 
   const lunes = /^\d{4}-\d{2}-\d{2}$/.test(parametros.semana ?? "")
     ? toDateKey(startOfWeek(fromDateKey(parametros.semana!)))
     : toDateKey(startOfWeek(new Date()))
   const domingo = toDateKey(addDays(fromDateKey(lunes), 6))
 
-  const gestor = veTodo(rol)
-  const personaId = gestor && parametros.persona ? parametros.persona : perfil.id
+  // Cualquiera puede mirar -y corregir- la semana de cualquiera del espacio
+  const personaId = parametros.persona || perfil.id
 
   const [catalogo, entradas, miembros] = await Promise.all([
     cargarCatalogo(espacio.id),
@@ -30,7 +29,7 @@ export default async function PaginaCalendario({
       hasta: domingo,
       userId: personaId,
     }),
-    gestor ? cargarMiembros(espacio.id) : Promise.resolve([]),
+    cargarMiembros(espacio.id),
   ])
 
   return (

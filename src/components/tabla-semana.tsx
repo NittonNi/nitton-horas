@@ -65,7 +65,6 @@ export function TablaSemana({
     [lunes],
   )
 
-  const mias = personaId === yoId
 
   const filas = useMemo(() => {
     const mapa = new Map<string, Fila>()
@@ -345,8 +344,12 @@ export function TablaSemana({
                     (s, e) => s + (e.duration_seconds ?? 0),
                     0,
                   )
+                  /* Se puede escribir en la semana de cualquiera: el equipo
+                     corrige lo suyo y lo de los demas. Lo que sigue sin dejarse
+                     tocar aqui es una celda con varias horas -hay que ir a la
+                     lista- y las horas ya cerradas. */
                   const bloqueada =
-                    !mias || delDia.length > 1 || delDia.some((e) => e.locked)
+                    delDia.length > 1 || delDia.some((e) => e.locked)
                   const cargando = ocupado === `${fila.clave}|${dia}`
 
                   return (
@@ -392,22 +395,21 @@ export function TablaSemana({
         </table>
       </div>
 
-      {mias && (
-        <NuevaFila
-          catalogo={catalogo}
-          onAnadir={(project_id, task_id, descripcion) =>
-            setNuevas((previas) => [
-              ...previas,
-              {
-                clave: claveFila(project_id, task_id, descripcion),
-                project_id,
-                task_id,
-                descripcion,
-              },
-            ])
-          }
-        />
-      )}
+      {/* Anadir una fila que falta, sea tu semana o la de otro */}
+      <NuevaFila
+        catalogo={catalogo}
+        onAnadir={(project_id, task_id, descripcion) =>
+          setNuevas((previas) => [
+            ...previas,
+            {
+              clave: claveFila(project_id, task_id, descripcion),
+              project_id,
+              task_id,
+              descripcion,
+            },
+          ])
+        }
+      />
     </div>
   )
 }

@@ -157,6 +157,17 @@ export function DialogoEntrada({
         </div>
 
         <div className="space-y-4 p-4">
+          <p className="rounded-[var(--radio-sm)] bg-surface-2 px-3 py-2 text-xs text-muted">
+            Horas de <span className="text-ink-soft">{entrada.user_name}</span>
+            {entrada.updated_by_name &&
+              entrada.updated_by !== entrada.user_id && (
+                <>
+                  {" · última corrección de "}
+                  <span className="text-ink-soft">{entrada.updated_by_name}</span>
+                </>
+              )}
+          </p>
+
           <div>
             <label className="label" htmlFor="descripcion">
               Descripción

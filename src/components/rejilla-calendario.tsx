@@ -71,6 +71,8 @@ export function RejillaCalendario({
   const [error, setError] = useState<string | null>(null)
   const [ahora, setAhora] = useState(() => new Date())
 
+  /* Las horas del equipo las corrige cualquiera: si ves un fallo en la semana
+     de otro, lo arreglas. Lo que cambia es el tono de los avisos. */
   const mias = personaId === yoId
   const hoy = todayKey()
 
@@ -342,7 +344,7 @@ export function RejillaCalendario({
                   esHoy={dia === hoy}
                   bloques={porDia.get(dia) ?? []}
                   franja={franja}
-                  editable={mias}
+                  editable
                   arrastre={arrastre}
                   ahora={ahora}
                   onCrear={(minutos) =>
@@ -378,7 +380,7 @@ export function RejillaCalendario({
       <p className="no-print text-xs text-muted">
         {mias
           ? "Arrastra sobre un hueco para apuntar horas. Mueve un bloque para cambiarlo de sitio, o estira su borde de abajo para alargarlo."
-          : "Estás viendo las horas de otra persona: solo lectura."}
+          : "Estás en la semana de otra persona: puedes corregir lo que veas mal, y queda apuntado que lo tocaste tú."}
       </p>
 
       {nuevo && (

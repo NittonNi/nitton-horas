@@ -1,5 +1,4 @@
 import { getSesion } from "@/lib/sesion"
-import { veTodo } from "@/lib/roles"
 import { cargarCatalogo, cargarEntradas, cargarMiembros } from "@/lib/datos"
 import { TablaSemana } from "@/components/tabla-semana"
 import { addDays, fromDateKey, startOfWeek, toDateKey } from "@/lib/time"
@@ -12,7 +11,7 @@ export default async function PaginaSemana({
   searchParams: Promise<{ semana?: string; persona?: string }>
 }) {
   const parametros = await searchParams
-  const { perfil, espacio, rol } = await getSesion()
+  const { perfil, espacio } = await getSesion()
 
   const lunes = /^\d{4}-\d{2}-\d{2}$/.test(parametros.semana ?? "")
     ? toDateKey(startOfWeek(fromDateKey(parametros.semana!)))
@@ -20,8 +19,8 @@ export default async function PaginaSemana({
   const domingo = toDateKey(addDays(fromDateKey(lunes), 6))
 
   // Solo quien ve las horas de todos puede mirar la semana de otra persona
-  const gestor = veTodo(rol)
-  const personaId = gestor && parametros.persona ? parametros.persona : perfil.id
+  // Cualquiera puede mirar -y corregir- la semana de cualquiera del espacio
+  const personaId = parametros.persona || perfil.id
 
   const [catalogo, entradas, miembros] = await Promise.all([
     cargarCatalogo(espacio.id),
@@ -31,7 +30,7 @@ export default async function PaginaSemana({
       hasta: domingo,
       userId: personaId,
     }),
-    gestor ? cargarMiembros(espacio.id) : Promise.resolve([]),
+    cargarMiembros(espacio.id),
   ])
 
   return (

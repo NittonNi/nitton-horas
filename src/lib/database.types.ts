@@ -559,6 +559,7 @@ export type Database = {
           start_at: string
           task_id: string | null
           updated_at: string
+          updated_by: string | null
           user_id: string
           workspace_id: string
         }
@@ -578,6 +579,7 @@ export type Database = {
           start_at: string
           task_id?: string | null
           updated_at?: string
+          updated_by?: string | null
           user_id: string
           workspace_id: string
         }
@@ -597,6 +599,7 @@ export type Database = {
           start_at?: string
           task_id?: string | null
           updated_at?: string
+          updated_by?: string | null
           user_id?: string
           workspace_id?: string
         }
@@ -797,6 +800,8 @@ export type Database = {
           subcategory_name: string | null
           tags: string[] | null
           task_id: string | null
+          updated_by: string | null
+          updated_by_name: string | null
           task_name: string | null
           user_id: string | null
           user_name: string | null

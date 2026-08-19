@@ -40,6 +40,9 @@ export type EntradaVista = {
   workspace_id: string
   user_id: string
   user_name: string
+  /** Quien la toco por ultima vez, si no fue quien la apunto. */
+  updated_by: string | null
+  updated_by_name: string | null
   project_id: string | null
   project_name: string | null
   project_color: string | null

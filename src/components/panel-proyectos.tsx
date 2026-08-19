@@ -2,7 +2,15 @@
 
 import { useMemo, useState, useSyncExternalStore } from "react"
 import Link from "next/link"
-import { ChevronRight, LayoutGrid, List, Search } from "lucide-react"
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu"
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  LayoutGrid,
+  List,
+  Search,
+} from "lucide-react"
 
 import { NuevoProyecto } from "@/components/nuevo-proyecto"
 import { caminoDe } from "@/lib/categorias"
@@ -76,9 +84,9 @@ export function PanelProyectos({
 }) {
   const vista = useSyncExternalStore(suscribir, leerVista, () => "lista" as Vista)
   const [busqueda, setBusqueda] = useState("")
-  const [cliente, setCliente] = useState("")
-  const [categoria, setCategoria] = useState("")
-  const [subcategoria, setSubcategoria] = useState("")
+  const [clientesElegidos, setClientesElegidos] = useState<string[]>([])
+  const [categoriasElegidas, setCategoriasElegidas] = useState<string[]>([])
+  const [subcategoriasElegidas, setSubcategoriasElegidas] = useState<string[]>([])
   const [estado, setEstado] = useState<"activos" | "archivados" | "todos">(
     "activos",
   )
@@ -101,9 +109,14 @@ export function PanelProyectos({
   const hijas = useMemo(
     () =>
       categorias
-        .filter((c) => !c.archived && c.parent_id === categoria)
+        .filter(
+          (c) =>
+            !c.archived &&
+            c.parent_id &&
+            categoriasElegidas.includes(c.parent_id),
+        )
         .sort((a, b) => a.position - b.position || a.name.localeCompare(b.name)),
-    [categorias, categoria],
+    [categorias, categoriasElegidas],
   )
 
   /** Una categoria y todo lo que cuelga de ella. */
@@ -128,16 +141,24 @@ export function PanelProyectos({
       if (estado === "activos" && p.archived) return false
       if (estado === "archivados" && !p.archived) return false
 
-      if (cliente === SIN_CLIENTE && p.client_id) return false
-      if (cliente && cliente !== SIN_CLIENTE && p.client_id !== cliente) return false
+      if (clientesElegidos.length > 0) {
+        if (!clientesElegidos.includes(p.client_id ?? SIN_CLIENTE)) return false
+      }
 
-      if (categoria === SIN_RAMA && p.category_id) return false
-      if (categoria && categoria !== SIN_RAMA) {
-        if (!p.category_id) return false
-        // Con subcategoria elegida, solo esa; sin ella, toda la categoria
-        if (subcategoria) {
-          if (p.category_id !== subcategoria) return false
-        } else if (!conSusHijas.get(categoria)?.has(p.category_id)) {
+      if (categoriasElegidas.length > 0) {
+        /* Con varias categorias marcadas vale con estar en cualquiera de
+           ellas -o en algo que cuelgue de ellas-. */
+        const dentro = categoriasElegidas.some((id) =>
+          id === SIN_RAMA
+            ? !p.category_id
+            : Boolean(p.category_id && conSusHijas.get(id)?.has(p.category_id)),
+        )
+        if (!dentro) return false
+      }
+
+      // Las subcategorias afinan: si hay alguna marcada, tiene que ser una de esas
+      if (subcategoriasElegidas.length > 0) {
+        if (!p.category_id || !subcategoriasElegidas.includes(p.category_id)) {
           return false
         }
       }
@@ -158,14 +179,17 @@ export function PanelProyectos({
     categorias,
     conSusHijas,
     busqueda,
-    cliente,
-    categoria,
-    subcategoria,
+    clientesElegidos,
+    categoriasElegidas,
+    subcategoriasElegidas,
     estado,
   ])
 
   const hayFiltros = Boolean(
-    busqueda || cliente || categoria || estado !== "activos",
+    busqueda ||
+      clientesElegidos.length > 0 ||
+      categoriasElegidas.length > 0 ||
+      estado !== "activos",
   )
 
   return (
@@ -193,58 +217,50 @@ export function PanelProyectos({
         </select>
 
         {clientes.length > 0 && (
-          <select
-            value={cliente}
-            onChange={(e) => setCliente(e.target.value)}
-            className="field w-auto py-1.5"
-            aria-label="Cliente"
-          >
-            <option value="">Todos los clientes</option>
-            <option value={SIN_CLIENTE}>Sin cliente</option>
-            {clientes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <FiltroMultiple
+            etiqueta="Cliente"
+            todos="Todos los clientes"
+            opciones={[
+              { id: SIN_CLIENTE, nombre: "Sin cliente" },
+              ...clientes.map((c) => ({ id: c.id, nombre: c.name })),
+            ]}
+            elegidas={clientesElegidos}
+            onChange={setClientesElegidos}
+          />
         )}
 
         {padres.length > 0 && (
-          <select
-            value={categoria}
-            onChange={(e) => {
-              setCategoria(e.target.value)
-              setSubcategoria("")
+          <FiltroMultiple
+            etiqueta="Categoría"
+            todos="Todas las categorías"
+            opciones={[
+              { id: SIN_RAMA, nombre: "Sin categoría" },
+              ...padres.map((c) => ({ id: c.id, nombre: c.name })),
+            ]}
+            elegidas={categoriasElegidas}
+            onChange={(ids) => {
+              setCategoriasElegidas(ids)
+              // Las subcategorias de una categoria que ya no esta marcada sobran
+              setSubcategoriasElegidas((antes) =>
+                antes.filter((sub) => {
+                  const suya = categorias.find((c) => c.id === sub)
+                  return suya?.parent_id ? ids.includes(suya.parent_id) : false
+                }),
+              )
             }}
-            className="field w-auto py-1.5"
-            aria-label="Categoría"
-          >
-            <option value="">Todas las categorías</option>
-            <option value={SIN_RAMA}>Sin categoría</option>
-            {padres.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          />
         )}
 
         {/* La subcategoria solo aparece cuando hay donde elegir: si no, es un
             desplegable vacio pidiendo que lo mires. */}
         {hijas.length > 0 && (
-          <select
-            value={subcategoria}
-            onChange={(e) => setSubcategoria(e.target.value)}
-            className="field w-auto py-1.5"
-            aria-label="Subcategoría"
-          >
-            <option value="">Toda la categoría</option>
-            {hijas.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <FiltroMultiple
+            etiqueta="Subcategoría"
+            todos="Toda la categoría"
+            opciones={hijas.map((c) => ({ id: c.id, nombre: c.name }))}
+            elegidas={subcategoriasElegidas}
+            onChange={setSubcategoriasElegidas}
+          />
         )}
 
         <div className="relative min-w-[12rem] flex-1">
@@ -315,6 +331,106 @@ export function PanelProyectos({
         </div>
       )}
     </div>
+  )
+}
+
+/* ---------------------------------------------------------- un filtro */
+
+/**
+ * Un filtro de varios a la vez: sin nada marcado no filtra -"Todos los
+ * clientes"- y marcando dos o tres se quedan esos. Es el mismo menu con
+ * casillas que las etiquetas y las personas, para que se use igual en toda
+ * la app.
+ */
+function FiltroMultiple({
+  etiqueta,
+  todos,
+  opciones,
+  elegidas,
+  onChange,
+}: {
+  etiqueta: string
+  /** Lo que pone cuando no hay nada marcado. */
+  todos: string
+  opciones: { id: string; nombre: string }[]
+  elegidas: string[]
+  onChange: (ids: string[]) => void
+}) {
+  const puestas = opciones.filter((o) => elegidas.includes(o.id))
+
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger
+        aria-label={etiqueta}
+        className={cn(
+          "flex h-[2.125rem] shrink-0 items-center gap-1.5 rounded-[var(--radio-sm)] border px-2.5 text-sm transition",
+          puestas.length > 0
+            ? "border-accent bg-accent-soft text-accent"
+            : "border-line-strong bg-surface hover:bg-surface-2",
+        )}
+      >
+        <span className="max-w-[11rem] truncate">
+          {puestas.length === 0
+            ? todos
+            : puestas.length === 1
+              ? puestas[0].nombre
+              : `${etiqueta}: ${puestas.length}`}
+        </span>
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
+      </DropdownMenu.Trigger>
+
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          align="start"
+          sideOffset={6}
+          className="z-50 max-h-72 w-60 overflow-y-auto rounded-[var(--radio)] border border-line bg-surface p-1"
+          style={{ boxShadow: "var(--shadow-lg)" }}
+        >
+          <DropdownMenu.Item
+            onSelect={(e) => {
+              e.preventDefault()
+              onChange([])
+            }}
+            className="flex cursor-pointer items-center gap-2 rounded-[var(--radio-sm)] px-2 py-1.5 text-sm font-medium outline-none transition hover:bg-surface-2 data-highlighted:bg-surface-2"
+          >
+            {todos}
+          </DropdownMenu.Item>
+
+          <div className="my-1 h-px bg-line" />
+
+          {opciones.map((opcion) => {
+            const puesta = elegidas.includes(opcion.id)
+            return (
+              <DropdownMenu.CheckboxItem
+                key={opcion.id}
+                checked={puesta}
+                onCheckedChange={() =>
+                  onChange(
+                    puesta
+                      ? elegidas.filter((id) => id !== opcion.id)
+                      : [...elegidas, opcion.id],
+                  )
+                }
+                onSelect={(e) => e.preventDefault()}
+                className="flex cursor-pointer items-center gap-2 rounded-[var(--radio-sm)] px-2 py-1.5 text-sm outline-none transition hover:bg-surface-2 data-highlighted:bg-surface-2"
+              >
+                <span
+                  className={cn(
+                    "flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border",
+                    puesta ? "border-ink bg-ink" : "border-line-strong",
+                  )}
+                >
+                  {puesta && (
+                    <Check className="h-3 w-3 text-[color:var(--accent-fg)]" />
+                  )}
+                </span>
+                <span className="min-w-0 flex-1 truncate">{opcion.nombre}</span>
+              </DropdownMenu.CheckboxItem>
+            )
+          })}
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   )
 }
 

@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Euro, Loader2, X } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { useSesion } from "@/components/proveedor-sesion"
+import { useAvisos } from "@/components/avisos"
 import { DialogoEntrada } from "@/components/dialogo-entrada"
 import { SelectorPersonas } from "@/components/selector-personas"
 import { SelectorProyecto } from "@/components/selector-proyecto"
@@ -38,7 +39,9 @@ import { cn } from "@/lib/utils"
 type Arrastre =
   | { tipo: "crear"; dia: string; ancla: number; hasta: number }
   | { tipo: "mover"; id: string; dia: string; desde: number; hasta: number; pinza: number }
-  | { tipo: "redim"; id: string; dia: string; desde: number; hasta: number }
+  /* `pinza` es el rabo escondido: lo que va del tirador -que se dibuja a las
+     24:00- al final de verdad. Sin el, estirar un rato de madrugada lo acorta. */
+  | { tipo: "redim"; id: string; dia: string; desde: number; hasta: number; pinza: number }
 
 type Nuevo = { dia: string; desde: number; hasta: number }
 
@@ -62,6 +65,7 @@ export function RejillaCalendario({
   miembros: Miembro[]
 }) {
   const router = useRouter()
+  const { avisar } = useAvisos()
   const refColumnas = useRef<HTMLDivElement>(null)
   const arrastreRef = useRef<Arrastre | null>(null)
 
@@ -147,7 +151,8 @@ export function RejillaCalendario({
       if (previo.tipo === "crear") {
         siguiente = { ...previo, dia, hasta: minutos }
       } else if (previo.tipo === "redim") {
-        siguiente = { ...previo, hasta: Math.max(previo.desde + Minimo, minutos) }
+        const fin = Math.min(36 * 60, minutos + previo.pinza)
+        siguiente = { ...previo, hasta: Math.max(previo.desde + Minimo, fin) }
       } else {
         // mover: se conserva la duracion y se respeta por donde se agarro. El
         // final puede caer en el dia siguiente, que es lo normal de noche.
@@ -167,7 +172,20 @@ export function RejillaCalendario({
       const final = arrastreRef.current
       arrastreRef.current = null
       setArrastre(null)
-      if (final) void confirmar(final)
+      if (!final) return
+
+      /* Un clic seco sobre una hora ya apuntada no es un arrastre: abre la
+         tarjeta y no toca nada. Guardarlo "igual que estaba" es justo lo que
+         recortaba a medianoche los ratos de madrugada. */
+      const quieto =
+        inicial.tipo !== "crear" &&
+        final.tipo !== "crear" &&
+        final.dia === inicial.dia &&
+        final.desde === inicial.desde &&
+        final.hasta === inicial.hasta
+      if (quieto) return
+
+      void confirmar(final)
     }
 
     window.addEventListener("pointermove", mover)
@@ -187,16 +205,29 @@ export function RejillaCalendario({
 
     setError(null)
     const supabase = createClient()
-    const { error: err } = await supabase
+    /* Con `select` se ve si de verdad ha cambiado una fila: sin el, una hora
+       bloqueada o una sesion caducada devuelven "todo bien" sin guardar nada y
+       el bloque se vuelve a su sitio sin decir por que. */
+    const { data, error: err } = await supabase
       .from("time_entries")
       .update({
         start_at: instante(final.dia, final.desde),
         end_at: instante(final.dia, final.hasta),
       })
       .eq("id", final.id)
+      .select("id")
 
     if (err) {
       setError(mensajeError(err))
+      avisar("No se ha podido guardar: " + mensajeError(err))
+      return
+    }
+
+    if (!data || data.length === 0) {
+      const aviso =
+        "Esa hora no se ha guardado. Puede estar cerrada o haberse acabado tu sesión: recarga la página."
+      setError(aviso)
+      avisar(aviso)
       return
     }
     router.refresh()
@@ -353,13 +384,17 @@ export function RejillaCalendario({
                   onCrear={(minutos) =>
                     iniciar({ tipo: "crear", dia, ancla: minutos, hasta: minutos })
                   }
+                  /* Ojo: se arranca del fin de VERDAD, no del dibujado. Si se
+                     cogiera `hasta`, tocar un rato que cruza la medianoche
+                     -moverlo, estirarlo o solo hacerle clic- lo dejaria
+                     acabando a las 24:00 y se perderian las horas de despues. */
                   onMover={(bloque, minutos) =>
                     iniciar({
                       tipo: "mover",
                       id: bloque.entrada.id,
                       dia,
                       desde: bloque.desde,
-                      hasta: bloque.hasta,
+                      hasta: bloque.finReal,
                       pinza: minutos - bloque.desde,
                     })
                   }
@@ -369,7 +404,8 @@ export function RejillaCalendario({
                       id: bloque.entrada.id,
                       dia,
                       desde: bloque.desde,
-                      hasta: bloque.hasta,
+                      hasta: bloque.finReal,
+                      pinza: bloque.finReal - bloque.hasta,
                     })
                   }
                   onAbrir={(entrada) => setEditando(entrada)}

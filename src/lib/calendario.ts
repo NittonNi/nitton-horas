@@ -16,6 +16,13 @@ export type Bloque = {
   /** reparto horizontal cuando varias entradas se pisan */
   columna: number
   columnas: number
+  /**
+   * El final de verdad, contado desde la medianoche de ESTE dia: pasa de 1440
+   * cuando el rato sigue de madrugada. `hasta` es solo lo que se dibuja, que se
+   * para a medianoche; lo que se guarda tiene que salir de aqui o se pierden
+   * las horas de la madrugada.
+   */
+  finReal: number
   /** El rato empezo el dia anterior: este trozo es la continuacion. */
   vieneDeAyer: boolean
   /** El rato sigue despues de medianoche: se pinta un +1. */
@@ -74,11 +81,17 @@ function trozosDelDia(entradas: EntradaVista[], dia: string) {
     const acabaEnMedianoche = fin >= empiezaManana
     const sigueManana = fin > empiezaManana
 
+    // Minutos de reloj mas los dias enteros que se lleve por delante
+    const finReal = vieneDeAyer
+      ? minutosDe(entrada.end_at)
+      : Math.round((fin.getTime() - empiezaElDia.getTime()) / 60000)
+
     return [
       {
         entrada,
         desde: vieneDeAyer ? 0 : minutosDe(entrada.start_at),
         hasta: acabaEnMedianoche ? 24 * 60 : minutosDe(entrada.end_at),
+        finReal,
         columna: 0,
         columnas: 1,
         vieneDeAyer,

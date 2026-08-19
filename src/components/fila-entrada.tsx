@@ -18,7 +18,6 @@ import {
   formatDurationShort,
   parseDurationToSeconds,
   toClockInput,
-  toDateKey,
 } from "@/lib/time"
 import type { TablesUpdate } from "@/lib/database.types"
 import type { Catalogo, EntradaVista } from "@/lib/tipos"
@@ -504,9 +503,14 @@ function PopoverHorario({
     void onGuardar({ start_at, end_at })
   }
 
-  const acabaOtroDia =
-    !!entrada.end_at &&
-    toDateKey(new Date(entrada.end_at)) !== toDateKey(new Date(entrada.start_at))
+  /* Mismo criterio que el calendario: acabar justo a las 00:00 es cerrar el
+     dia, no pasar al siguiente; el +1 solo sale si de verdad sigue de madrugada. */
+  const acabaOtroDia = (() => {
+    if (!entrada.end_at) return false
+    const medianoche = new Date(entrada.start_at)
+    medianoche.setHours(24, 0, 0, 0)
+    return new Date(entrada.end_at) > medianoche
+  })()
 
   return (
     <Popover.Root

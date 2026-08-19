@@ -263,6 +263,7 @@ export type Database = {
         Row: {
           archived: boolean
           budget_hours: number | null
+          client_id: string | null
           created_at: string
           ends_on: string | null
           id: string
@@ -276,6 +277,7 @@ export type Database = {
         Insert: {
           archived?: boolean
           budget_hours?: number | null
+          client_id?: string | null
           created_at?: string
           ends_on?: string | null
           id?: string
@@ -289,6 +291,7 @@ export type Database = {
         Update: {
           archived?: boolean
           budget_hours?: number | null
+          client_id?: string | null
           created_at?: string
           ends_on?: string | null
           id?: string

@@ -70,9 +70,17 @@ export function ResultadosProyecto({
     }
   }, [entradas])
 
+  /* Los cierres de una edicion se apuntan y se ven en la propia edicion, que
+     es donde se piensan. Aqui quedan los de periodo: una oportunidad que se
+     cobra, un mes de lo recurrente. */
+  const porPeriodo = useMemo(
+    () => resultados.filter((r) => !r.edition_id),
+    [resultados],
+  )
+
   const filas = useMemo(
     () =>
-      resultados.map((r) => {
+      porPeriodo.map((r) => {
         const segundos = horasDe(r)
         const horas = segundos / 3600
         const neto = Number(r.income) - Number(r.expenses)
@@ -84,13 +92,16 @@ export function ResultadosProyecto({
           netoPorHora: horas > 0 ? neto / horas : null,
         }
       }),
-    [resultados, horasDe],
+    [porPeriodo, horasDe],
   )
 
+  /* La rueda es del proyecto entero: cuenta todos los cierres, tambien los que
+     viven en sus ediciones. */
   const total = useMemo(() => {
-    const ingresos = filas.reduce((s, f) => s + Number(f.income), 0)
-    const gastos = filas.reduce((s, f) => s + Number(f.expenses), 0)
-    const segundos = filas.reduce((s, f) => s + f.segundos, 0)
+    const todos = resultados.map((r) => ({ ...r, segundos: horasDe(r) }))
+    const ingresos = todos.reduce((s, f) => s + Number(f.income), 0)
+    const gastos = todos.reduce((s, f) => s + Number(f.expenses), 0)
+    const segundos = todos.reduce((s, f) => s + f.segundos, 0)
     const horas = segundos / 3600
     return {
       ingresos,
@@ -99,7 +110,7 @@ export function ResultadosProyecto({
       segundos,
       porHora: horas > 0 ? ingresos / horas : null,
     }
-  }, [filas])
+  }, [resultados, horasDe])
 
   async function borrar(resultado: Resultado) {
     setOcupado(true)
@@ -129,9 +140,10 @@ export function ResultadosProyecto({
     <section className="card min-w-0 p-4">
       <h2 className="mb-1 text-sm font-semibold">Resultado</h2>
       <p className="mb-4 max-w-xl text-sm text-muted">
-        Lo que entró y lo que salió en cada cierre, y a cuánto sale la hora
-        facturable. Un evento se cierra al acabar, una oportunidad cuando se
-        cobra y lo recurrente, cada mes.
+        Lo que entró y lo que salió, y a cuánto sale la hora facturable. El
+        resultado de cada edición se apunta en su edición, ahí abajo; aquí van
+        los cierres por periodo: una oportunidad que se cobra, un mes de lo que
+        es recurrente.
       </p>
 
       {total.porHora !== null && (
@@ -268,7 +280,7 @@ export function ResultadosProyecto({
 
       {filas.length === 0 && !anadiendo && (
         <p className="py-2 text-sm text-muted">
-          Todavía no hay ningún cierre apuntado.
+          Todavía no hay ningún cierre por periodo.
         </p>
       )}
 

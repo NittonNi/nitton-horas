@@ -20,7 +20,6 @@ import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { SelectorColor } from "@/components/selector-color"
 import { SelectorCliente } from "@/components/selector-cliente"
-import { EdicionesProyecto } from "@/components/ediciones-proyecto"
 import { useAvisos } from "@/components/avisos"
 import { caminoDe, ramas, SIN_CATEGORIA } from "@/lib/categorias"
 import { agrupar, totales } from "@/lib/informes"
@@ -42,6 +41,7 @@ import {
   ResultadosProyecto,
   type Resultado,
 } from "@/components/resultados-proyecto"
+import { TarjetasEdicion } from "@/components/tarjetas-edicion"
 import { cn } from "@/lib/utils"
 
 /** Los cuatro tipos de trabajo del equipo, cada uno se cierra a su ritmo. */
@@ -134,21 +134,10 @@ export function DetalleProyecto({
                 </span>
               )}
             </h1>
-            <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-sm text-muted">
-              {/* El cliente se pone aqui mismo, como una tarea: entrar a
-                  editar el proyecto para eso era dar tres vueltas. */}
-              {puedeGestionar ? (
-                <ClienteEnLinea
-                  proyecto={proyecto}
-                  clientes={clientes}
-                />
-              ) : (
-                <span className="truncate">
-                  {proyecto.clients?.name ?? "Sin cliente"}
-                </span>
-              )}
-              {proyecto.billable_default && <span>· facturable por defecto</span>}
-              {proyecto.archived && <span>· archivado</span>}
+            <p className="truncate text-sm text-muted">
+              {proyecto.clients?.name ?? "Sin cliente"}
+              {proyecto.billable_default && " · facturable por defecto"}
+              {proyecto.archived && " · archivado"}
             </p>
           </div>
         </div>
@@ -236,13 +225,19 @@ export function DetalleProyecto({
         />
       </div>
 
-      <EdicionesProyecto
-        predeterminada={proyecto.default_edition_id}
+
+      <TarjetasEdicion
         espacioId={espacioId}
         proyectoId={proyecto.id}
+        clienteProyecto={proyecto.client_id}
         ediciones={ediciones}
         entradas={cerradas}
+        resultados={resultados}
+        clientes={clientes}
+        objetivoHora={objetivoHora}
+        predeterminada={proyecto.default_edition_id}
         puedeGestionar={puedeGestionar}
+        puedeVerImportes={puedeVerImportes}
       />
 
       <Tareas
@@ -331,84 +326,6 @@ function Desglose({
 }
 
 /* ------------------------------------------------------------------ tareas */
-
-/**
- * El cliente del proyecto, puesto donde se lee: un toque y se elige o se crea
- * uno nuevo sin salir de aqui.
- */
-function ClienteEnLinea({
-  proyecto,
-  clientes,
-}: {
-  proyecto: ProyectoConCliente
-  clientes: Cliente[]
-}) {
-  const router = useRouter()
-  const { avisar } = useAvisos()
-  const [abierto, setAbierto] = useState(false)
-  const [guardando, setGuardando] = useState(false)
-
-  async function poner(clienteId: string) {
-    const antes = proyecto.client_id
-    setGuardando(true)
-    const { error: err } = await createClient()
-      .from("projects")
-      .update({ client_id: clienteId || null })
-      .eq("id", proyecto.id)
-    setGuardando(false)
-    setAbierto(false)
-    if (err) {
-      avisar(mensajeError(err), undefined, "mal")
-      return
-    }
-    router.refresh()
-    avisar("Cliente cambiado.", async () => {
-      const { error: errVolver } = await createClient()
-        .from("projects")
-        .update({ client_id: antes })
-        .eq("id", proyecto.id)
-      if (errVolver) throw new Error(mensajeError(errVolver))
-      router.refresh()
-      return "Como estaba."
-    })
-  }
-
-  if (abierto) {
-    return (
-      <span className="inline-flex w-56 items-center gap-1">
-        <SelectorCliente
-          id={`cliente-${proyecto.id}`}
-          espacioId={proyecto.workspace_id}
-          clientes={clientes}
-          valor={proyecto.client_id ?? ""}
-          onChange={(id) => void poner(id)}
-        />
-        <button
-          type="button"
-          onClick={() => setAbierto(false)}
-          className="shrink-0 rounded-[3px] p-1 text-muted transition hover:bg-surface-2 hover:text-ink"
-          aria-label="Dejarlo como estaba"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </span>
-    )
-  }
-
-  return (
-    <button
-      type="button"
-      disabled={guardando}
-      onClick={() => setAbierto(true)}
-      className="truncate rounded-[3px] px-1 py-0.5 transition hover:bg-surface-2 hover:text-ink"
-      title="Cambiar el cliente"
-    >
-      {proyecto.clients?.name ?? (
-        <span className="text-accent">+ Añadir cliente</span>
-      )}
-    </button>
-  )
-}
 
 function Tareas({
   espacioId,

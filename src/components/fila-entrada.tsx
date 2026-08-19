@@ -18,6 +18,7 @@ import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { useCronometro } from "@/components/proveedor-cronometro"
 import { useAvisos } from "@/components/avisos"
+import { CampoHora } from "@/components/campo-hora"
 import { SelectorProyecto } from "@/components/selector-proyecto"
 import { SelectorEtiquetas } from "@/components/selector-etiquetas"
 import {
@@ -610,24 +611,20 @@ function PopoverHorario({
                 <label className="label" htmlFor={`inicio-${entrada.id}`}>
                   Inicio
                 </label>
-                <input
+                <CampoHora
                   id={`inicio-${entrada.id}`}
-                  type="time"
-                  className="field tabular"
-                  value={inicio}
-                  onChange={(e) => setInicio(e.target.value)}
+                  valor={inicio}
+                  onChange={setInicio}
                 />
               </div>
               <div>
                 <label className="label" htmlFor={`fin-${entrada.id}`}>
                   Fin
                 </label>
-                <input
+                <CampoHora
                   id={`fin-${entrada.id}`}
-                  type="time"
-                  className="field tabular"
-                  value={fin}
-                  onChange={(e) => setFin(e.target.value)}
+                  valor={fin}
+                  onChange={setFin}
                 />
               </div>
             </div>

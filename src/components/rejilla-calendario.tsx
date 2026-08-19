@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { useSesion } from "@/components/proveedor-sesion"
 import { useAvisos } from "@/components/avisos"
+import { CampoHora } from "@/components/campo-hora"
 import { DialogoEntrada } from "@/components/dialogo-entrada"
 import { SelectorPersonas } from "@/components/selector-personas"
 import { SelectorProyecto } from "@/components/selector-proyecto"
@@ -847,24 +848,20 @@ function DialogoNuevaEntrada({
                 <label className="label" htmlFor="cal-inicio">
                   Inicio
                 </label>
-                <input
+                <CampoHora
                   id="cal-inicio"
-                  type="time"
-                  className="field tabular"
-                  value={horaInicio}
-                  onChange={(e) => setHoraInicio(e.target.value)}
+                  valor={horaInicio}
+                  onChange={setHoraInicio}
                 />
               </div>
               <div>
                 <label className="label" htmlFor="cal-fin">
                   Fin
                 </label>
-                <input
+                <CampoHora
                   id="cal-fin"
-                  type="time"
-                  className="field tabular"
-                  value={horaFin}
-                  onChange={(e) => setHoraFin(e.target.value)}
+                  valor={horaFin}
+                  onChange={setHoraFin}
                 />
               </div>
             </div>

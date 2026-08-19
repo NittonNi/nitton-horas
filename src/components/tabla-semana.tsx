@@ -171,7 +171,7 @@ export function TablaSemana({
     if (segundos === null && texto.trim() === "" && existentes.length === 0) return
     if (segundos !== null && segundos === actual) return
     if (texto.trim() !== "" && segundos === null) {
-      setError("No entiendo esa duración. Prueba con 1:30, 90m o 1,5.")
+      setError("No entiendo esa duración. Prueba con 2, 1:30, 90m o 1,5.")
       return
     }
 

@@ -73,10 +73,11 @@ export function parseDurationToSeconds(raw: string): number | null {
     return Math.round(Number(`${decimal[1]}.${decimal[2]}`) * 3600)
   }
 
-  // un número pelado: minutos hasta 59, horas a partir de ahi sería ambiguo,
-  // así que se tratan siempre como minutos (es lo que espera quien teclea "45")
+  /* Un numero pelado son HORAS, igual que en el campo de la hora del reloj:
+     "2" es dos horas, como "12" son las doce. Para minutos esta "45m" o
+     "0:45", que es como se escribe en Clockify. */
   const bare = input.match(/^(\d+)$/)
-  if (bare) return Number(bare[1]) * 60
+  if (bare) return Number(bare[1]) * 3600
 
   return null
 }
@@ -226,4 +227,61 @@ export function weekLabel(mondayKey: string): string {
 /** Un objetivo en minutos, escrito como el resto de duraciones: "08:00:00". */
 export function formatObjetivoCorto(minutos: number): string {
   return formatDurationShort(minutos * 60)
+}
+
+/**
+ * Lo que se teclee, entendido como una hora del reloj y devuelto en "HH:MM".
+ * Es la manera de Clockify: "9" son las nueve, "930" las nueve y media, "21"
+ * las nueve de la noche y "9pm" tambien. Devuelve null si no hay forma de
+ * entenderlo, y entonces el campo se queda como estaba.
+ *
+ *   9      -> 09:00        930    -> 09:30
+ *   21     -> 21:00        0930   -> 09:30
+ *   9:3    -> 09:30        9.30   -> 09:30
+ *   9pm    -> 21:00        12am   -> 00:00
+ */
+export function interpretarHora(bruto: string): string | null {
+  const limpio = bruto.trim().toLowerCase().replace(/\s/g, "")
+  if (!limpio) return null
+
+  // La tarde y la mañana a la inglesa, por si se copia de otro sitio
+  const tarde = /(p\.?m\.?)$/.test(limpio)
+  const manana = /(a\.?m\.?)$/.test(limpio)
+  const sinSufijo = limpio.replace(/(a|p)\.?m\.?$/, "")
+
+  // Los separadores dan igual: dos puntos, punto, coma o la hache
+  const trozos = sinSufijo.split(/[:.,h]/).filter((t) => t !== "")
+  if (trozos.some((t) => !/^\d+$/.test(t))) return null
+
+  let horas: number
+  let minutos = 0
+
+  if (trozos.length >= 2) {
+    horas = Number(trozos[0])
+    // "9:3" son y media, no y tres: se lee como decenas
+    minutos = trozos[1].length === 1 ? Number(trozos[1]) * 10 : Number(trozos[1])
+  } else if (trozos.length === 1) {
+    const digitos = trozos[0]
+    if (digitos.length <= 2) {
+      horas = Number(digitos)
+    } else if (digitos.length === 3) {
+      horas = Number(digitos.slice(0, 1))
+      minutos = Number(digitos.slice(1))
+    } else if (digitos.length === 4) {
+      horas = Number(digitos.slice(0, 2))
+      minutos = Number(digitos.slice(2))
+    } else {
+      return null
+    }
+  } else {
+    return null
+  }
+
+  if (tarde && horas < 12) horas += 12
+  if (manana && horas === 12) horas = 0
+
+  if (!Number.isInteger(horas) || !Number.isInteger(minutos)) return null
+  if (horas > 23 || minutos > 59) return null
+
+  return `${String(horas).padStart(2, "0")}:${String(minutos).padStart(2, "0")}`
 }

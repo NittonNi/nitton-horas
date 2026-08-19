@@ -361,7 +361,7 @@ export default async function Portada() {
                 icono: CalendarRange,
                 titulo: "Calendario y semana",
                 texto:
-                  "Arrastras sobre el hueco y ya está apuntado; mueves el bloque si te confundiste. O escribes las horas en la tabla: acepta 1:30, 90m o 1,5.",
+                  "Arrastras sobre el hueco y ya está apuntado; mueves el bloque si te confundiste. O escribes las horas en la tabla: acepta 2, 1:30, 90m o 1,5.",
               },
               {
                 icono: BarChart3,

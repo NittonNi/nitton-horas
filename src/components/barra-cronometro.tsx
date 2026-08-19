@@ -11,6 +11,7 @@ import { mensajeError } from "@/lib/errores"
 import { useCronometro } from "@/components/proveedor-cronometro"
 import { useSesion } from "@/components/proveedor-sesion"
 import { useAvisos } from "@/components/avisos"
+import { CampoHora } from "@/components/campo-hora"
 import {
   SelectorProyecto,
   type Seleccion,
@@ -517,7 +518,7 @@ function EntradaManual({
   async function guardar() {
     const segs = parseDurationToSeconds(duracion)
     if (!segs || segs <= 0) {
-      avisar("Pon una duración válida, por ejemplo 1:30 o 90m.", undefined, "mal")
+      avisar("Pon una duración válida: 2, 1:30 o 90m.", undefined, "mal")
       return
     }
     if (exigeProyecto && !borrador.project_id) {
@@ -585,26 +586,24 @@ function EntradaManual({
         aria-label="Día"
         title="Qué día fue"
       />
-      <input
-        type="time"
-        value={inicio}
-        onChange={(e) => {
-          setInicio(e.target.value)
-          recalcularDuracion(e.target.value, fin)
+      <CampoHora
+        valor={inicio}
+        onChange={(v) => {
+          setInicio(v)
+          recalcularDuracion(v, fin)
         }}
-        className="field h-9 w-[6.5rem] tabular"
-        aria-label="Hora de inicio"
+        className="h-9 w-[6.5rem]"
+        etiqueta="Hora de inicio"
       />
       <span className="text-muted">–</span>
-      <input
-        type="time"
-        value={fin}
-        onChange={(e) => {
-          setFin(e.target.value)
-          recalcularDuracion(inicio, e.target.value)
+      <CampoHora
+        valor={fin}
+        onChange={(v) => {
+          setFin(v)
+          recalcularDuracion(inicio, v)
         }}
-        className="field h-9 w-[6.5rem] tabular"
-        aria-label="Hora de fin"
+        className="h-9 w-[6.5rem]"
+        etiqueta="Hora de fin"
       />
       <input
         value={duracion}
@@ -648,7 +647,8 @@ function EditorInicio({
   const [abierto, setAbierto] = useState(false)
   const [hora, setHora] = useState(toClockInput(inicio))
 
-  async function aplicar() {
+  async function aplicar(nueva = hora) {
+    const hora = nueva
     if (!hora || hora === toClockInput(inicio)) {
       setAbierto(false)
       return
@@ -671,9 +671,11 @@ function EditorInicio({
         setAbierto(v)
       }}
     >
+      {/* La tarjeta ya esta teñida de naranja, asi que el hover tiene que
+          apoyarse en la linea, no en el fondo: se marca el recuadro. */}
       <Popover.Trigger
         title="Cambiar a qué hora empezó"
-        className="cifra w-28 rounded-[var(--radio-sm)] px-1 text-right text-xl font-semibold tabular-nums text-running transition hover:bg-live-soft"
+        className="cifra w-28 rounded-[var(--radio-sm)] border border-transparent px-1 text-right text-xl font-semibold tabular-nums text-running transition hover:border-live-line hover:bg-surface/70 data-[state=open]:border-live-line data-[state=open]:bg-surface/70"
       >
         {formatDuration(segundos)}
       </Popover.Trigger>
@@ -682,36 +684,25 @@ function EditorInicio({
         <Popover.Content
           align="end"
           sideOffset={8}
-          className="card z-50 w-56 p-3"
+          className="card z-50 w-52 p-3"
           style={{ boxShadow: "var(--shadow-lg)" }}
         >
           <label className="label" htmlFor="inicio-cronometro">
             Empezó a las
           </label>
-          <input
-            id="inicio-cronometro"
-            type="time"
-            autoFocus
-            value={hora}
-            onChange={(e) => setHora(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") void aplicar()
-              if (e.key === "Escape") setAbierto(false)
-            }}
-            className="field tabular mt-1 h-9 w-full"
-          />
-          <p className="mt-2 text-xs text-muted">
-            La cuenta sigue desde esa hora. Si aún no ha llegado, se entiende
-            que fue ayer.
-          </p>
-          <div className="mt-3 flex justify-end gap-2">
-            <button type="button" onClick={() => setAbierto(false)} className="btn h-8 text-xs">
-              Cancelar
-            </button>
+          <div className="mt-1 flex items-center gap-2">
+            <CampoHora
+              id="inicio-cronometro"
+              autoFocus
+              valor={hora}
+              onChange={setHora}
+              alPulsarEnter={(v) => void aplicar(v)}
+              className="h-9 flex-1"
+            />
             <button
               type="button"
               onClick={() => void aplicar()}
-              className="btn btn-primary h-8 text-xs"
+              className="btn btn-primary h-9 shrink-0 text-xs"
             >
               Cambiar
             </button>

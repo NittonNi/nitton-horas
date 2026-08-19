@@ -7,6 +7,7 @@ import { Euro, Loader2, Trash2, X } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { useAvisos } from "@/components/avisos"
+import { CampoHora } from "@/components/campo-hora"
 import { SelectorPersonas } from "@/components/selector-personas"
 import { proponerHoras } from "@/lib/compartir"
 import { useSesion } from "@/components/proveedor-sesion"
@@ -144,7 +145,7 @@ export function DialogoEntrada({
     setError(null)
     const segs = parseDurationToSeconds(duracion)
     if (segs === null || segs <= 0) {
-      setError("La duración no es válida. Prueba con 1:30, 90m o 1,5.")
+      setError("La duración no es válida. Prueba con 2, 1:30, 90m o 1,5.")
       return
     }
 
@@ -291,14 +292,12 @@ export function DialogoEntrada({
               <label className="label" htmlFor="inicio">
                 Inicio
               </label>
-              <input
+              <CampoHora
                 id="inicio"
-                type="time"
-                className="field tabular"
-                value={inicio}
-                onChange={(e) => {
-                  setInicio(e.target.value)
-                  recalcularDuracion(e.target.value, fin)
+                valor={inicio}
+                onChange={(v) => {
+                  setInicio(v)
+                  recalcularDuracion(v, fin)
                 }}
               />
             </div>
@@ -306,14 +305,12 @@ export function DialogoEntrada({
               <label className="label" htmlFor="fin">
                 Fin
               </label>
-              <input
+              <CampoHora
                 id="fin"
-                type="time"
-                className="field tabular"
-                value={fin}
-                onChange={(e) => {
-                  setFin(e.target.value)
-                  recalcularDuracion(inicio, e.target.value)
+                valor={fin}
+                onChange={(v) => {
+                  setFin(v)
+                  recalcularDuracion(inicio, v)
                 }}
               />
             </div>

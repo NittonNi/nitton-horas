@@ -66,15 +66,17 @@ descripcion y si se cobra. Se comprobo en el navegador y quedo el rastro en
 los datos de Nicolas: una entrada de **2 segundos** a las 02:42, que es
 exactamente el patron de arrancar y parar enseguida al no ver nada.
 
-El problema es que **no se ve**: el cronometro se pone en marcha en la barra
-de arriba y en la lateral, pero la lista de horas -que es donde estas mirando
-cuando pulsas- no cambia nada. Parece que el boton no ha hecho nada.
+El problema era que **no se veia**: el cronometro se ponia en marcha en la
+barra de arriba y en la lateral, pero la lista de horas -que es donde estas
+mirando cuando pulsas- no cambiaba nada. Parecia que el boton no habia hecho
+nada.
 
-Que hacer:
-
-- que la entrada en marcha salga **como una fila mas arriba del todo de la
-  lista**, contando en vivo, en lugar de vivir solo en la barra;
-- y que al arrancar se note, aunque sea un instante.
+**Arreglado el 20-ago-2026**: la entrada en marcha sale ahora como una fila
+propia, teñida de naranja, encima de toda la lista -`FilaEnMarcha`, en
+`src/components/lista-entradas.tsx`-, contando en vivo con el mismo reloj de
+la barra y con un boton de parar directo ahi. Se edita desde la barra, igual
+que antes; aqui solo se ve y se para. Al pulsar Continuar en cualquier hora de
+abajo, la fila aparece al instante en el sitio donde se estaba mirando.
 
 Ojo tambien: las dos entradas iguales de LALALA a las 09:00 no son de
 continuar, son del boton de duplicar. Conviene mirar si duplicar deberia
@@ -162,9 +164,10 @@ cada uno dice cual es el suyo.
    otro equipo de LEINN, y necesita las cuentas de Nicolas.
 2. **En el panel de Supabase, a mano**: activar la proteccion de contrasenas
    filtradas y subir el minimo a 8 caracteres. Dos interruptores.
-3. **Aprobar horas**: cerrarlas ya se puede, y hay filtro de abiertas y
-   cerradas. Falta el paso previo: revisar la semana de alguien, devolversela
-   con un comentario y aprobarla.
+3. ~~Aprobar horas~~ **descartado el 20-ago-2026**: dentro de un equipo LEINN
+   nadie tiene que aprobar las horas de otro -cerrar ya vale, y con eso basta-.
+   Solo tendria sentido si esto se usa para empresas de fuera de LEINN, y ese
+   caso no esta decidido todavia. No implementar mientras siga sin decidir.
 4. **La hoja semanal solo deja editar las tuyas**. Para un administrador
    tendria sentido tambien ahi; en el calendario y en los informes ya se puede.
 5. **Horas compartidas, tercera vuelta**: proponerlas desde la hoja semanal, y
@@ -252,7 +255,9 @@ de una persona igual que se entra en la de un proyecto.
 ### 5. Control de las horas
 
 - Bloquear semanas ya facturadas para que no se toquen.
-- Aprobar o devolver las horas de otra persona.
+- ~~Aprobar o devolver las horas de otra persona~~ descartado el 20-ago-2026:
+  dentro de un equipo LEINN nadie aprueba las horas de otro. Solo volveria si
+  esto se usa para empresas de fuera de LEINN, sin decidir todavia.
 - Avisar de dias sin rellenar antes de cerrar la semana.
 
 ### 6. Flujos de alta y baja de horas

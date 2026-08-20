@@ -276,6 +276,25 @@ misma caja (`CajaTooltip`) que el resto de graficas, con `position: fixed`
 para no cortarse contra el scroll horizontal del propio mapa. Mismo dato de
 siempre, solo mejor puesto.
 
+**Hover del donut arreglado del todo, el 20-ago-2026**: Nicolas vio que el
+tooltip del donut se plantaba a veces en medio y tapaba otras porciones, sin
+dejar clicar. Primer intento -seguir el cursor a mano con estado de React en
+cada `mouseenter`, igual que el mapa de calor- **no funciono**: cada entrada
+en una porcion volvia a montar esa porcion entera, y el clic que venia justo
+detras se perdia por el camino -confirmado en vivo: el clic en la leyenda
+seguia funcionando siempre, el clic directo en el donut fallaba a menudo-.
+Revertido a como estaba, con dos cambios de verdad:
+
+- `CajaTooltip` (el componente que ya usan las cuatro graficas) lleva ahora
+  `pointer-events-none`: la caja del hover nunca puede tapar un clic,
+  aunque se dibuje encima de otra porcion.
+- El `<Tooltip>` del donut lleva `offset={28}` en vez del valor por defecto,
+  para que se separe mas del anillo y no se pegue a la porcion de al lado.
+
+Probado en vivo repetidas veces: clic en una porcion filtra correctamente
+-cifras, listas y mapa de calor se acotan-, el hover ya no se ve pegado al
+centro, y no hay perdida de clics.
+
 ### 2. Integracion con Google Calendar
 
 Traer los eventos del calendario y convertirlos en horas con un clic, sin

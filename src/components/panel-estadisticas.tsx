@@ -812,7 +812,10 @@ export function PanelEstadisticas({
                         />
                       ))}
                     </Pie>
+                    {/* offset alto: que no se pegue al donut y tape la porcion
+                        de al lado, que es justo lo que impedia seguir clicando */}
                     <Tooltip
+                      offset={28}
                       content={({ active, payload }) => {
                         if (!active || !payload?.length) return null
                         const nombre = payload[0].name as string
@@ -1233,7 +1236,7 @@ function CajaTooltip({
   personas?: Grupo[]
 }) {
   return (
-    <div style={CAJA} className="max-w-60 p-2.5">
+    <div style={CAJA} className="pointer-events-none max-w-60 p-2.5">
       <p className="text-sm font-medium">{titulo}</p>
       {lineas?.map((l, i) => (
         <p

@@ -1,4 +1,4 @@
-# ClockLEINN
+# hitoo
 
 Control de horas para equipos LEINN: cronometro, hoja semanal, informes con
 importes e importacion del historico de Clockify. Cada equipo tiene su propio

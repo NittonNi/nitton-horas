@@ -3,8 +3,8 @@ import type { MetadataRoute } from "next"
 /** Next sirve esto en /manifest.webmanifest, que el proxy ya deja pasar sin sesion. */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "ClockLEINN",
-    short_name: "ClockLEINN",
+    name: "hitoo",
+    short_name: "hitoo",
     description: "Cronómetro, hojas de horas e informes para equipos",
     start_url: "/panel",
     display: "standalone",

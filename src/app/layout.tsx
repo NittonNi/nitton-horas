@@ -15,8 +15,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "ClockLEINN",
-    template: "%s · ClockLEINN",
+    default: "hitoo",
+    template: "%s · hitoo",
   },
   description: "Cronómetro, hojas de horas e informes para equipos",
 }

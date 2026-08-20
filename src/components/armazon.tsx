@@ -261,7 +261,7 @@ function useTituloCronometro() {
 
   useEffect(() => {
     if (!enMarcha) {
-      document.title = "ClockLEINN"
+      document.title = "hitoo"
       return
     }
     const etiqueta = enMarcha.description || enMarcha.proyecto?.name || "En marcha"

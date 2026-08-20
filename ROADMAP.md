@@ -5,6 +5,26 @@ Lo que falta, en el orden en que tiene sentido hacerlo. Se va moviendo a
 
 ## Por arreglar
 
+### Filtro "marcar todos" se queda atras si se crea algo nuevo mientras esta activo
+
+Visto el 20-ago-2026 en revision de codigo, en
+`src/components/filtro-multiple.tsx`. No es un fallo del "Marcar todos" del
+19-ago -al reves, el diseño es a proposito: guarda la lista explicita de ids
+para poder luego ir quitando uno ("todos menos este"), que es todo el sentido
+del boton-.
+
+El roce es otro: si mientras ese filtro sigue activo se crea un proyecto, una
+rama o una etiqueta nueva, la casilla de cabecera se da cuenta sola -pasa de
+marcada a "5/6"-, pero **el informe o la estadistica que esta mirando esa
+persona en ese momento no avisa**, solo deja de contar la entrada nueva. Pasa
+igual en cualquier filtro de la app que se deje a medias sin querer, no es
+exclusivo de este boton.
+
+Que hacer, a decidir: o bien un aviso visible cuando el filtro activo ya no
+cubre todo lo que hay ("hay 1 proyecto nuevo fuera del filtro"), o bien
+aceptar que es el precio de tener el boton de "todos menos este" y dejarlo
+documentado. No toco el codigo hasta decidir cual.
+
 ### Continuar arranca, pero no se nota
 
 Diagnosticado el 19-ago-2026. **Si funciona**: al pulsarlo se crea una entrada
@@ -171,10 +191,23 @@ de una persona igual que se entra en la de un proyecto.
 
 ### 7. Identidad
 
-Hecho el 18-ago-2026 el nombre: **ClockLEINN**, en la portada, en el acceso, en
-la pestana y en el manifiesto. Falta **logo y favicon propios** -el icono sigue
-siendo un cronometro generico- y renombrar el repositorio de GitHub, que aun se
-llama `nitton-horas`.
+Hecho el 18-ago-2026 el nombre: ~~ClockLEINN~~, en la portada, en el acceso, en
+la pestana y en el manifiesto.
+
+Renombrado el 20-ago-2026 a **hitoo**: es el nombre real, el dominio ya era
+`hitoo.vercel.app` desde antes. Cambiado en la portada, el acceso, la pestana,
+el manifiesto, `package.json`, README y guia de despliegue. Logo y favicon
+propios puestos -wordmark en el header y acceso, marca "h" en favicon e
+iconos PWA (192, 512, 512 recortable)-, a partir del SVG que paso Nicolas
+(`hitoo_logo_white_v4_wordmark_only.svg`).
+
+Queda:
+
+- **og:image** para compartir enlaces (redes, WhatsApp): no hay todavia.
+- Renombrar el repositorio de GitHub, que aun se llama `nitton-horas`.
+- Revisar `theme_color`/`background_color` del manifiesto: siguen siendo el
+  azul de antes (`#0071e3` / `#f5f5f7`), no se han tocado a proposito -es un
+  cambio de paleta, no de marca-.
 
 ### 8. Despliegue
 

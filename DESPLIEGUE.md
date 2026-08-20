@@ -1,4 +1,4 @@
-# Poner ClockLEINN en marcha para todo el mundo
+# Poner hitoo en marcha para todo el mundo
 
 Mientras esto viva en `localhost` solo lo usa quien tenga el portatil delante.
 Estos son los pasos, en orden, y lo que hay que comprobar despues de cada uno.
@@ -23,7 +23,7 @@ El repositorio es publico y solo lleva codigo: las claves viven en `.env.local`
    | `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API |
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | la clave **publicable** (`sb_publishable_…`), no la secreta |
 
-4. Deploy. Sale una direccion tipo `clockleinn.vercel.app`.
+4. Deploy. Sale una direccion tipo `hitoo.vercel.app`.
 
 **Comprobar**: la portada carga y `/acceso` sale bien. Entrar todavia no
 funciona: falta el paso siguiente.
@@ -32,12 +32,12 @@ funciona: falta el paso siguiente.
 
 Supabase → **Authentication → URL Configuration**:
 
-- **Site URL**: `https://clockleinn.vercel.app` (o el dominio propio).
+- **Site URL**: `https://hitoo.vercel.app` (o el dominio propio).
 - **Redirect URLs**, una por linea:
 
   ```
-  https://clockleinn.vercel.app/auth/callback
-  https://clockleinn.vercel.app/auth/confirmar
+  https://hitoo.vercel.app/auth/callback
+  https://hitoo.vercel.app/auth/confirmar
   http://localhost:3000/auth/callback
   http://localhost:3000/auth/confirmar
   ```
@@ -53,10 +53,10 @@ El codigo esta listo desde el primer dia; lo que falta son las credenciales.
 
 1. [Google Cloud Console](https://console.cloud.google.com/) → proyecto nuevo.
 2. **APIs y servicios → Pantalla de consentimiento de OAuth**: externo, nombre
-   ClockLEINN, correo de contacto.
+   hitoo, correo de contacto.
 3. **Credenciales → Crear credenciales → ID de cliente de OAuth → Aplicacion
    web**:
-   - Origenes autorizados de JavaScript: `https://clockleinn.vercel.app`
+   - Origenes autorizados de JavaScript: `https://hitoo.vercel.app`
    - URI de redireccionamiento autorizado:
      `https://TU-PROYECTO.supabase.co/auth/v1/callback`
      (ojo: es el de **Supabase**, no el de la web)
@@ -89,7 +89,7 @@ URLs y origenes de Google.
       `Content-Security-Policy` y `X-Frame-Options: DENY`.
 
 ```bash
-curl -sD - -o /dev/null https://clockleinn.vercel.app/ | grep -i "content-security\|x-frame"
+curl -sD - -o /dev/null https://hitoo.vercel.app/ | grep -i "content-security\|x-frame"
 ```
 
 ## Lo que hay que recordar

@@ -16,31 +16,16 @@ import { RUTA_APP } from "@/lib/rutas"
 import { CronometroDemo } from "@/components/cronometro-demo"
 
 export const metadata = {
-  title: { absolute: "ClockLEINN · Las horas del equipo, en su sitio" },
+  title: { absolute: "hitoo · Las horas del equipo, en su sitio" },
   description:
     "Control de horas para equipos LEINN: cronómetro, calendario, hoja semanal, proyectos e informes. Con la categorización de vuestro equipo y lo que ya tenéis en Clockify.",
 }
 
-/** La marca, en pequeño. El icono es el mismo cronómetro que se ve dentro. */
+/** La marca, en pequeño. */
 function Marca() {
   return (
-    <span className="flex items-center gap-2">
-      <span className="flex h-7 w-7 items-center justify-center rounded-[var(--radio-sm)] bg-accent text-accent-fg">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          className="h-4 w-4"
-          aria-hidden
-        >
-          <circle cx="12" cy="13" r="8" />
-          <path d="M12 9v4l2.5 2.5M9 2h6" />
-        </svg>
-      </span>
-      <span className="text-[15px] font-semibold tracking-tight">ClockLEINN</span>
-    </span>
+    // eslint-disable-next-line @next/next/no-img-element -- SVG de marca, no necesita next/image
+    <img src="/hitoo-logo.svg" alt="hitoo" className="h-7 w-auto" />
   )
 }
 
@@ -305,7 +290,7 @@ export default async function Portada() {
             </h1>
             <p className="mt-5 max-w-lg text-[15px] leading-relaxed text-ink-soft">
               Backoffice, conocimiento y proyectos no se miden igual, pero acaban
-              en la misma hoja. ClockLEINN es el cronómetro, el calendario y los
+              en la misma hoja. hitoo es el cronómetro, el calendario y los
               informes de tu equipo, en castellano y con vuestra manera de
               organizaros.
             </p>

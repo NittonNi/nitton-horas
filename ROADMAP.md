@@ -183,12 +183,10 @@ quien nunca vaya a usarlo), guarda el token de refresco en su propia tabla
 -`google_connections`, RLS por persona, nunca llega al navegador- y ya enseña
 los eventos con hora de los proximos 7 dias dentro del dialogo.
 
-**Probado en local el 20-ago-2026**: conectar funciona de principio a fin -el
-scope de calendario ya esta bien puesto en la pantalla de consentimiento-,
-pero traer los eventos falla con "Calendar API has not been used in project
-... or it is disabled". Falta un paso en Google Cloud Console que no puedo
-hacer yo -sin acceso a esa consola-: `APIs & Services` → `Library` → buscar
-"Google Calendar API" → `Enable`. Solo eso; el resto ya esta listo.
+**Probado en local el 20-ago-2026, de principio a fin**: conectar, guardar el
+token y traer los eventos reales -funcionaba todo salvo la Calendar API, que
+no estaba activada en Google Cloud Console; en cuanto Nicolas la activo,
+quedo comprobado que lee el calendario de verdad.
 
 Ojo tambien con las Redirect URLs de Supabase: hacia falta el comodin (`**`)
 al final -`.../auth/callback**`-, porque el `?next=...` que se le añade no

@@ -23,6 +23,7 @@ export type Etiqueta = Tables<"tags">
 export type Entrada = Tables<"time_entries">
 export type Tarifa = Tables<"rates">
 export type Invitacion = Tables<"invitations">
+export type ConexionGoogle = Tables<"google_connections">
 
 /** Una persona dentro de un espacio concreto: su perfil más su rol allí. */
 export type Miembro = {

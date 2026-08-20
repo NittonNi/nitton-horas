@@ -109,3 +109,14 @@ export async function cargarMiembros(espacioId: string): Promise<Miembro[]> {
     )
     .sort((a, b) => a.full_name.localeCompare(b.full_name))
 }
+
+/** Si esta persona ya trajo su Google Calendar. Es por persona, no por espacio. */
+export async function estaConectadoGoogle(userId: string): Promise<boolean> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from("google_connections")
+    .select("user_id")
+    .eq("user_id", userId)
+    .maybeSingle()
+  return data !== null
+}

@@ -22,9 +22,20 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const supabase = await createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error) {
+      /* Si esta vuelta tambien pedia el calendario (ver boton-conectar-
+         calendario.tsx), Google solo manda refresh_token la primera vez que
+         se consiente el permiso -o cuando se fuerza con prompt=consent-. Se
+         guarda aqui, en el servidor: nunca llega al navegador. */
+      const refreshToken = data.session?.provider_refresh_token
+      if (refreshToken && data.user) {
+        await supabase
+          .from("google_connections")
+          .upsert({ user_id: data.user.id, refresh_token: refreshToken })
+      }
+
       // Detras de un proxy (Vercel) el host real viene en la cabecera
       const reenviado = request.headers.get("x-forwarded-host")
       const enProduccion = process.env.NODE_ENV === "production"

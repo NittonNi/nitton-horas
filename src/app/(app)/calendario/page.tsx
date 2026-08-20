@@ -5,8 +5,10 @@ import {
   cargarEntradas,
   cargarMiembros,
   cargarPropuestas,
+  estaConectadoGoogle,
 } from "@/lib/datos"
 import { RejillaCalendario } from "@/components/rejilla-calendario"
+import { AjustesCalendarioGoogle } from "@/components/ajustes-calendario-google"
 import { addDays, fromDateKey, startOfWeek, toDateKey } from "@/lib/time"
 
 export const metadata = { title: "Calendario" }
@@ -27,7 +29,7 @@ export default async function PaginaCalendario({
   /* El calendario es personal: siempre las horas de quien mira. Las de otra
      gente se revisan en informes, que es donde eso hace falta. */
 
-  const [catalogo, entradas, miembros, propuestas] = await Promise.all([
+  const [catalogo, entradas, miembros, propuestas, googleConectado] = await Promise.all([
     cargarCatalogo(espacio.id),
     cargarEntradas({
       espacioId: espacio.id,
@@ -37,6 +39,7 @@ export default async function PaginaCalendario({
     }),
     cargarMiembros(espacio.id),
     cargarPropuestas(espacio.id),
+    estaConectadoGoogle(perfil.id),
   ])
 
   /* Las propuestas son mias, asi que solo pintan cuando miro mi semana, y solo
@@ -48,11 +51,14 @@ export default async function PaginaCalendario({
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-lg font-semibold tracking-tight">Calendario</h1>
-        <p className="mt-0.5 text-sm text-muted">
-          Las horas de la semana colocadas donde de verdad ocurrieron.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-lg font-semibold tracking-tight">Calendario</h1>
+          <p className="mt-0.5 text-sm text-muted">
+            Las horas de la semana colocadas donde de verdad ocurrieron.
+          </p>
+        </div>
+        <AjustesCalendarioGoogle conectado={googleConectado} />
       </div>
 
       <PistaPagina clave="calendario" perfilId={perfil.id}>

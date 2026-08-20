@@ -152,6 +152,38 @@ export type Database = {
           },
         ]
       }
+      google_connections: {
+        Row: {
+          calendar_id: string
+          connected_at: string
+          last_synced_at: string | null
+          refresh_token: string
+          user_id: string
+        }
+        Insert: {
+          calendar_id?: string
+          connected_at?: string
+          last_synced_at?: string | null
+          refresh_token: string
+          user_id: string
+        }
+        Update: {
+          calendar_id?: string
+          connected_at?: string
+          last_synced_at?: string | null
+          refresh_token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_connections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitations: {
         Row: {
           accepted_at: string | null

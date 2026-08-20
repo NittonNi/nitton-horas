@@ -174,15 +174,37 @@ tiene que responder "como vamos".
 ### 2. Integracion con Google Calendar
 
 Traer los eventos del calendario y convertirlos en horas con un clic, sin
-teclear. **Bloqueado**: hace falta antes dar de alta el acceso con Google, que
-es de donde sale el permiso `calendar.readonly` del usuario.
+teclear.
 
-Decisiones pendientes:
+**Hecho el 20-ago-2026**: conectar y desconectar, desde un icono de ajustes en
+el propio Calendario -al estilo Clockify, donde vive el permiso es donde se
+usa-. Pide el permiso de calendario aparte del login normal (no se le pide a
+quien nunca vaya a usarlo), guarda el token de refresco en su propia tabla
+-`google_connections`, RLS por persona, nunca llega al navegador- y ya enseña
+los eventos con hora de los proximos 7 dias dentro del dialogo.
 
-- donde se guarda el token de refresco (nunca en el navegador);
-- cada cuanto se sincroniza, y si es a demanda o de fondo;
+**Probado en local el 20-ago-2026**: conectar funciona de principio a fin -el
+scope de calendario ya esta bien puesto en la pantalla de consentimiento-,
+pero traer los eventos falla con "Calendar API has not been used in project
+... or it is disabled". Falta un paso en Google Cloud Console que no puedo
+hacer yo -sin acceso a esa consola-: `APIs & Services` → `Library` → buscar
+"Google Calendar API" → `Enable`. Solo eso; el resto ya esta listo.
+
+Ojo tambien con las Redirect URLs de Supabase: hacia falta el comodin (`**`)
+al final -`.../auth/callback**`-, porque el `?next=...` que se le añade no
+encajaba con la URL exacta guardada y la sesion caia al Site URL de
+produccion en vez de volver a donde se estaba. Ya esta añadido.
+
+**Decisiones que faltan** para el paso siguiente -convertir un evento en hora-:
+
+- a que proyecto/tarea va cada hora importada: ¿se elige por evento, o uno
+  para toda la tanda de una vez? Los espacios con `require_project` activo no
+  dejan crear una entrada sin proyecto, así que esto no es opcional.
 - como se evita reimportar un evento ya convertido — misma idea que el
-  `external_id` de Clockify;
+  `external_id` de Clockify -ya usada en el `source: "google_calendar"` que se
+  usara para los inserts-;
+- cada cuanto se sincroniza, y si es a demanda -como ahora, al abrir el
+  dialogo- o de fondo;
 - que hacer cuando el evento cambia de hora despues de haberlo importado.
 
 ### 3. Proyectos: buscar y ficha mas completa

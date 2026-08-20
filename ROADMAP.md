@@ -84,16 +84,17 @@ avisar de algo, porque deja dos filas identicas sin mas.
 
 ### Las horas compartidas no se ven
 
-Estan implementadas pero Nicolas no ha dado con ellas, que es como decir que
-no existen:
+Revisado el 20-ago-2026: la mayoria de esto ya estaba hecho, y esta nota se
+habia quedado desactualizada.
 
-- solo se pueden proponer desde el dialogo del calendario. Tienen que estar
-  tambien en el cronometro y en la hoja semanal.
-- el selector se esconde cuando eres el unico del espacio, asi que ahora
-  mismo no hay forma de descubrir la funcion. Deberia verse igual, explicando
-  que hace falta alguien mas.
-- falta enseñar en la propia entrada a quien mas le cuenta, y en que estado
-  esta cada uno (pendiente, aceptada, rechazada).
+Ya resuelto: se proponen desde el cronometro, el calendario y el dialogo de
+apuntar a mano (informes y ficha de proyecto); si estas solo en el espacio,
+la barra lo explica en vez de esconder el selector ("Trae a tu equipo..."); y
+cada entrada enseña con quien mas cuenta y en que estado -pendiente, aceptada,
+rechazada- con su propio boton (`CompartirCon`, en `fila-entrada.tsx`).
+
+Sigue sin poder proponerse **desde la hoja semanal**, que es el mismo punto 5
+de la lista de pendientes de mas abajo.
 
 ## Enfoque LEINN
 

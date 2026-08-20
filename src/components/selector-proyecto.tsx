@@ -49,6 +49,7 @@ export function SelectorProyecto({
   autoFoco = false,
   autoAbrir = false,
   invita = false,
+  onAbiertoChange,
 }: {
   catalogo: Catalogo
   valor: Seleccion
@@ -62,6 +63,12 @@ export function SelectorProyecto({
    * siguiente que hay que hacer. Se pide en vez de constatar que esta vacio.
    */
   invita?: boolean
+  /**
+   * Para cuando esto vive dentro de otro dialogo: el clic que cierra este
+   * desplegable no tiene que cerrar tambien el de fuera. Quien lo use puede
+   * mirar esto y decirle a su propio dialogo que se aguante un clic.
+   */
+  onAbiertoChange?: (abierto: boolean) => void
 }) {
   const router = useRouter()
   const { espacio, perfil, rol } = useSesion()
@@ -206,6 +213,7 @@ export function SelectorProyecto({
     setFiltro("")
     setAnadiendoEn(null)
     setError(null)
+    onAbiertoChange?.(false)
   }
 
   /**
@@ -266,6 +274,7 @@ export function SelectorProyecto({
       onOpenChange={(v) => {
         if (v) {
           setAbierto(true)
+          onAbiertoChange?.(true)
           void cargarFavoritos()
         } else {
           cerrar()

@@ -921,14 +921,9 @@ function DialogoAceptarGoogle({
   const [facturable, setFacturable] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const alPulsar = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCerrar()
-    }
-    window.addEventListener("keydown", alPulsar)
-    return () => window.removeEventListener("keydown", alPulsar)
-  }, [onCerrar])
+  // El desplegable de proyecto tapa el resto de la tarjeta: el clic que lo
+  // cierra no tiene que cerrar tambien el dialogo entero.
+  const [proyectoAbierto, setProyectoAbierto] = useState(false)
 
   function elegirProyecto(sel: { project_id: string | null; task_id: string | null }) {
     setProyecto(sel)
@@ -1020,21 +1015,23 @@ function DialogoAceptarGoogle({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
-      onMouseDown={(e) => e.target === e.currentTarget && onCerrar()}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Reunion de Google Calendar"
-        className="card flex max-h-[90vh] w-full max-w-sm flex-col rounded-b-none sm:rounded-xl"
-        style={{ boxShadow: "var(--shadow-lg)" }}
-      >
+    <Dialog.Root open onOpenChange={(abierto) => !abierto && onCerrar()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
+        <Dialog.Content
+          aria-describedby={undefined}
+          onPointerDownOutside={(e) => {
+            if (proyectoAbierto) e.preventDefault()
+          }}
+          className="card fixed inset-x-0 bottom-0 z-50 flex max-h-[90vh] w-full flex-col rounded-b-none sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-sm sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl"
+          style={{ boxShadow: "var(--shadow-lg)" }}
+        >
         <div className="flex items-start gap-3 border-b border-line px-4 py-3">
           <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-muted" aria-hidden />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">{evento.titulo}</p>
+            <Dialog.Title className="truncate text-sm font-semibold">
+              {evento.titulo}
+            </Dialog.Title>
             <p className="mt-0.5 text-xs tabular text-muted">
               Aceptada en tu Google Calendar · {formatClock(evento.inicio)}–
               {formatClock(evento.fin)}
@@ -1072,6 +1069,7 @@ function DialogoAceptarGoogle({
                 setEdicionId(sel.edition_id)
                 elegirProyecto(sel)
               }}
+              onAbiertoChange={setProyectoAbierto}
             />
           </div>
 
@@ -1118,10 +1116,10 @@ function DialogoAceptarGoogle({
         </div>
 
         <div className="flex justify-end gap-2 border-t border-line px-4 py-3">
-          <button type="button" disabled={guardando} onClick={onCerrar} className="btn">
+          <Dialog.Close disabled={guardando} className="btn">
             <X className="h-3.5 w-3.5" />
             Ignorar
-          </button>
+          </Dialog.Close>
           <button
             type="button"
             disabled={guardando}
@@ -1136,8 +1134,9 @@ function DialogoAceptarGoogle({
             Aceptar
           </button>
         </div>
-      </div>
-    </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }
 
@@ -1432,6 +1431,9 @@ function DialogoNuevaEntrada({
   const [etiquetas, setEtiquetas] = useState<string[]>([])
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // El desplegable de proyecto tapa el resto de la tarjeta: el clic que lo
+  // cierra no tiene que cerrar tambien el dialogo entero.
+  const [proyectoAbierto, setProyectoAbierto] = useState(false)
 
   /* El arrastre solo propone: aquí se puede afinar la fecha y las horas */
   const [fecha, setFecha] = useState(nuevo.dia)
@@ -1551,6 +1553,9 @@ function DialogoNuevaEntrada({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
         <Dialog.Content
+          onPointerDownOutside={(e) => {
+            if (proyectoAbierto) e.preventDefault()
+          }}
           className="card fixed left-1/2 top-1/2 z-50 w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 p-0"
           style={{ boxShadow: "var(--shadow-lg)" }}
         >
@@ -1626,6 +1631,7 @@ function DialogoNuevaEntrada({
                   setEdicionId(sel.edition_id)
                   elegirProyecto(sel)
                 }}
+                onAbiertoChange={setProyectoAbierto}
               />
             </div>
 

@@ -138,9 +138,11 @@ cada uno dice cual es el suyo.
 
 **Pendiente**:
 
-0. **Mirar la aplicacion en el movil**. Lo dejo pendiente Nicolas para hacerlo
-   el mismo desde su telefono: la barra de abajo, la tabla de informes con las
-   casillas y el calendario son lo que hay que mirar.
+0. **Repaso de UX en movil, pendiente**. Apuntado por Nicolas el 20-ago-2026:
+   hay varias cosas que comprobar desde el telefono de verdad, no solo en el
+   emulador -barra de abajo, la tabla de informes con las casillas, y el
+   calendario son los primeros candidatos-, y falta un repaso completo de UX
+   pensado para movil, no solo verificar que no rompe.
 
 
 1. **Desplegar**: `DESPLIEGUE.md` lleva los pasos en orden -Vercel, las URLs de

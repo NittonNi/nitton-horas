@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
-import type { Catalogo, EntradaVista, Miembro } from "@/lib/tipos"
+import type { Catalogo, EntradaVista, Miembro, Reparto, RepartoShare } from "@/lib/tipos"
 
 /**
  * Todo lo de aquí va filtrado por espacio de trabajo. La RLS ya lo impide por
@@ -108,4 +108,28 @@ export async function cargarMiembros(espacioId: string): Promise<Miembro[]> {
         : [],
     )
     .sort((a, b) => a.full_name.localeCompare(b.full_name))
+}
+
+/** Como se reparte la facturacion de cada proyecto/edicion entre las personas. */
+export async function cargarReparto(
+  espacioId: string,
+): Promise<{ repartos: Reparto[]; shares: RepartoShare[] }> {
+  const supabase = await createClient()
+
+  const [repartos, shares] = await Promise.all([
+    supabase.from("revenue_splits").select("*").eq("workspace_id", espacioId),
+    supabase
+      .from("revenue_split_shares")
+      .select("*, revenue_splits!inner(workspace_id)")
+      .eq("revenue_splits.workspace_id", espacioId),
+  ])
+
+  return {
+    repartos: (repartos.data ?? []) as Reparto[],
+    shares: (shares.data ?? []).map(({ split_id, user_id, percent }) => ({
+      split_id,
+      user_id,
+      percent,
+    })),
+  }
 }

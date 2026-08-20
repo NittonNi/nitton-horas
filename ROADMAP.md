@@ -188,6 +188,54 @@ evoluciona mes a mes, cuanto se factura de lo que se trabaja, que proyectos se
 comen el presupuesto. Los informes de ahora responden "que horas hay"; esto
 tiene que responder "como vamos".
 
+**Reconstruccion a fondo el 20-ago-2026**, pedida por Nicolas explicitamente
+("bien bien hecha"). Plan completo en la sesion; por encima:
+
+- **Granularidad explicita**: boton Dia/Semana/Mes/Año junto al periodo,
+  independiente del rango -antes solo lo decidia el tamaño del rango-.
+  `unidadPara`/`serie` en `src/lib/estadisticas.ts` ganan la unidad "ano".
+- **Objetivos**: seccion nueva, siempre de hoy/esta semana al margen del
+  periodo que se mire arriba -objetivo diario y semanal del espacio, y una
+  fila por cada rama con objetivo semanal puesto (`categories.goal_weekly_minutes`,
+  que ya existia pero no se enseñaba en ningun sitio fuera de Gestion).
+- **Reparto de facturacion**: hasta ahora cada uno se llevaba el dinero de sus
+  propias horas por su propia tarifa, sin mas. Nicolas explico que en NITTON
+  el dinero de un proyecto se reparte de formas distintas segun el caso -por
+  horas metidas, a partes iguales entre quien participo, por un % fijo puesto
+  a mano, o entre todo el equipo aunque no haya metido horas-. Nuevo, en
+  Gestion → Tarifas: tablas `revenue_splits`/`revenue_split_shares` (mismo
+  patron de "mas especifico gana" que `rates`: edicion > proyecto > espacio,
+  sin historico -un modo activo por ambito-), logica pura en
+  `src/lib/reparto.ts` (`resolverReparto`/`calcularAtribucion`), UI en
+  `src/components/gestion-reparto.tsx`. Con eso, Estadisticas trae una seccion
+  **Coste por hora, por persona** con el €/h real de cada uno segun como se
+  reparte de verdad, no solo sus propias horas.
+- **Cruce al clic, tipo Power BI**: una sola seleccion activa a la vez -clic
+  en un area del donut, un proyecto, o una persona, y el resto de la pagina
+  se acota a eso al instante: cifras, "como va el ritmo", mapa de calor,
+  todos los desgloses-. Segundo clic en lo mismo lo quita; hay un chip junto
+  a los mandos para quitarlo tambien desde ahi. Probado en vivo: se cruza
+  desde el donut, desde "quien lo pone" y desde "los proyectos que mas
+  pesan", y cascada a todo lo demas correctamente.
+- **El donut ya cuenta algo al pasar el raton**: antes solo enseñaba las
+  horas totales del area. Ahora el tooltip trae el desglose por proyecto y
+  por persona dentro de esa area -queja concreta de Nicolas-.
+- Aprovechado de paso: `database.types.ts` se regenero entero desde el
+  esquema real -cerraba una tarea pendiente del roadmap, los tipos de
+  `entry_invitations`/`resumen_proyectos` ya no estan puestos a mano-.
+
+Verificado con `npx tsc --noEmit`, `eslint` y `npm run build` limpios, y en
+el navegador: reparto por porcentajes creado y borrado de verdad en Tarifas,
+granularidad forzada probada en un rango de 12 meses, tooltip del donut con
+desglose real, y el cruce al clic probado en las tres direcciones con
+capturas de pantalla en cada paso.
+
+Queda pendiente si hace falta: atenuar visualmente (no solo filtrar) los
+`Cell`/barras que no coinciden con el foco en las graficas donde esa misma
+dimension no es la que se esta clicando -hoy solo se atenua dentro de la
+propia grafica clicada-; y decidir si vale la pena paginar el reparto en
+Tarifas si algun dia hay muchos proyectos con reparto propio.
+
 ### 2. Integracion con Google Calendar
 
 Traer los eventos del calendario y convertirlos en horas con un clic, sin

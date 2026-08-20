@@ -50,14 +50,17 @@ export function dentro(entrada: EntradaVista, rango: Rango) {
  * La unidad de la serie se elige sola: un mes se mira por dias y dos años por
  * meses. Nadie quiere leer trescientas barras.
  */
-export function unidadPara(rango: Rango): "dia" | "semana" | "mes" {
+export type Unidad = "dia" | "semana" | "mes" | "ano"
+
+export function unidadPara(rango: Rango): Unidad {
   const dias = diasDe(rango)
   if (dias <= 45) return "dia"
   if (dias <= 200) return "semana"
-  return "mes"
+  if (dias <= 900) return "mes"
+  return "ano"
 }
 
-function claveYEtiqueta(dia: string, unidad: "dia" | "semana" | "mes") {
+function claveYEtiqueta(dia: string, unidad: Unidad) {
   const fecha = fromDateKey(dia)
   if (unidad === "dia") {
     return { clave: dia, etiqueta: `${fecha.getDate()} ${MESES[fecha.getMonth()]}` }
@@ -69,10 +72,13 @@ function claveYEtiqueta(dia: string, unidad: "dia" | "semana" | "mes") {
       etiqueta: `${lunes.getDate()} ${MESES[lunes.getMonth()]}`,
     }
   }
-  return {
-    clave: dia.slice(0, 7),
-    etiqueta: `${MESES[fecha.getMonth()]} ${String(fecha.getFullYear()).slice(2)}`,
+  if (unidad === "mes") {
+    return {
+      clave: dia.slice(0, 7),
+      etiqueta: `${MESES[fecha.getMonth()]} ${String(fecha.getFullYear()).slice(2)}`,
+    }
   }
+  return { clave: dia.slice(0, 4), etiqueta: dia.slice(0, 4) }
 }
 
 /**
@@ -82,7 +88,7 @@ function claveYEtiqueta(dia: string, unidad: "dia" | "semana" | "mes") {
 export function serie(
   entradas: EntradaVista[],
   rango: Rango,
-  unidad: "dia" | "semana" | "mes",
+  unidad: Unidad,
   comparar?: EntradaVista[],
 ): Punto[] {
   const mapa = new Map<string, Punto>()

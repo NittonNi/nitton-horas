@@ -16,10 +16,11 @@ import {
   XAxis,
   YAxis,
 } from "recharts"
-import { Maximize2, Minimize2, TrendingDown, TrendingUp } from "lucide-react"
+import { Maximize2, Minimize2, TrendingDown, TrendingUp, X } from "lucide-react"
 
 import { agrupar, totales } from "@/lib/informes"
-import { SIN_CATEGORIA } from "@/lib/categorias"
+import { formatObjetivo, ramas, SIN_CATEGORIA } from "@/lib/categorias"
+import { calcularAtribucion } from "@/lib/reparto"
 import {
   anterior,
   DIAS,
@@ -30,11 +31,13 @@ import {
   serie,
   unidadPara,
   type Rango,
+  type Unidad,
 } from "@/lib/estadisticas"
 import {
   addDays,
   formatDurationShort,
   formatMoney,
+  startOfWeek,
   toDateKey,
   todayKey,
 } from "@/lib/time"
@@ -46,7 +49,7 @@ import {
   SIN_FILTROS,
   type Filtros,
 } from "@/components/filtros-horas"
-import type { Catalogo, EntradaVista, Miembro } from "@/lib/tipos"
+import type { Catalogo, EntradaVista, Miembro, Reparto, RepartoShare } from "@/lib/tipos"
 import { cn } from "@/lib/utils"
 
 /**
@@ -123,6 +126,9 @@ const PALETA = [
   "#64748b",
 ]
 
+/** Con que dato se ha cruzado la pagina entera: un clic en cualquier grafica. */
+type Foco = { tipo: "area" | "proyecto" | "persona"; clave: string; etiqueta: string }
+
 export function PanelEstadisticas({
   entradas,
   catalogo,
@@ -130,6 +136,10 @@ export function PanelEstadisticas({
   perfilId,
   puedeVerImportes,
   objetivoHora,
+  objetivoDiaMinutos,
+  objetivoSemanaMinutos,
+  repartos,
+  repartoShares,
 }: {
   entradas: EntradaVista[]
   catalogo: Catalogo
@@ -138,6 +148,11 @@ export function PanelEstadisticas({
   puedeVerImportes: boolean
   /** Facturación por hora a la que aspira el equipo. */
   objetivoHora: number | null
+  /** Objetivos del espacio, para la seccion de Objetivos -siempre de hoy/esta semana. */
+  objetivoDiaMinutos: number | null
+  objetivoSemanaMinutos: number | null
+  repartos: Reparto[]
+  repartoShares: RepartoShare[]
 }) {
   const hayEquipo = miembros.length > 1
 
@@ -150,6 +165,16 @@ export function PanelEstadisticas({
   const [filtros, setFiltros] = useState<Filtros>(SIN_FILTROS)
   const [comparar, setComparar] = useState(true)
   const [presentando, setPresentando] = useState(false)
+  const [unidadForzada, setUnidadForzada] = useState<"auto" | Unidad>("auto")
+  const [foco, setFoco] = useState<Foco | null>(null)
+
+  function alternarFoco(nuevo: Foco) {
+    setFoco((actual) =>
+      actual && actual.tipo === nuevo.tipo && actual.clave === nuevo.clave
+        ? null
+        : nuevo,
+    )
+  }
 
   const rango = useMemo(
     () =>
@@ -169,21 +194,37 @@ export function PanelEstadisticas({
     return filtrarHoras(porPersona, filtros)
   }, [entradas, ambito, perfilId, personas, filtros])
 
+  /* El foco es un filtro mas, puesto encima de todos los demas: clicar un
+     dato de cualquier grafica acota el resto de la pagina a eso. */
+  const conFoco = useMemo(() => {
+    if (!foco) return suyas
+    if (foco.tipo === "area") {
+      return suyas.filter((e) => (e.category_id ?? "sin") === foco.clave)
+    }
+    if (foco.tipo === "proyecto") {
+      return suyas.filter((e) => (e.project_id ?? "sin") === foco.clave)
+    }
+    return suyas.filter((e) => e.user_id === foco.clave)
+  }, [suyas, foco])
+
   const dentroDel = useMemo(
-    () => suyas.filter((e) => dentro(e, rango)),
-    [suyas, rango],
+    () => conFoco.filter((e) => dentro(e, rango)),
+    [conFoco, rango],
   )
   const antes = useMemo(() => {
     const previo = anterior(rango)
-    return suyas.filter((e) => dentro(e, previo))
-  }, [suyas, rango])
+    return conFoco.filter((e) => dentro(e, previo))
+  }, [conFoco, rango])
 
   /* --------------------------------------------------------------- cuentas */
 
   const suma = useMemo(() => totales(dentroDel), [dentroDel])
   const sumaAntes = useMemo(() => totales(antes), [antes])
 
-  const unidad = useMemo(() => unidadPara(rango), [rango])
+  const unidad = useMemo(
+    () => (unidadForzada === "auto" ? unidadPara(rango) : unidadForzada),
+    [rango, unidadForzada],
+  )
   const puntos = useMemo(
     () => serie(dentroDel, rango, unidad, comparar ? antes : undefined),
     [dentroDel, rango, unidad, comparar, antes],
@@ -212,6 +253,75 @@ export function PanelEstadisticas({
       ),
     [dentroDel],
   )
+
+  /* Desglose por proyecto y por persona dentro de cada area, para que el
+     tooltip del donut cuente algo de verdad -no solo el total del area-. */
+  const desgloseArea = useMemo(() => {
+    const mapa = new Map<string, { proyectos: ReturnType<typeof agrupar>; personas: ReturnType<typeof agrupar> }>()
+    for (const g of porArea) {
+      const deEsaArea = dentroDel.filter((e) => (e.category_id ?? "sin") === g.clave)
+      mapa.set(g.clave, {
+        proyectos: agrupar(
+          deEsaArea,
+          (e) => e.project_id ?? "sin",
+          (e) => e.project_name ?? "Sin proyecto",
+        ),
+        personas: agrupar(deEsaArea, (e) => e.user_id, (e) => e.user_name),
+      })
+    }
+    return mapa
+  }, [porArea, dentroDel])
+
+  /* Dinero atribuido a cada persona segun el reparto configurado -no solo lo
+     de sus propias horas-, para el €/h real de cada uno. */
+  const atribucion = useMemo(
+    () => calcularAtribucion(dentroDel, repartos, repartoShares, miembros),
+    [dentroDel, repartos, repartoShares, miembros],
+  )
+  const costePorPersona = useMemo(
+    () =>
+      porPersona
+        .map((g) => {
+          const dinero = atribucion.get(g.clave) ?? 0
+          return {
+            ...g,
+            dinero,
+            porHora: g.facturables >= 3600 ? dinero / (g.facturables / 3600) : null,
+          }
+        })
+        .sort((a, b) => b.dinero - a.dinero),
+    [porPersona, atribucion],
+  )
+
+  /* Los objetivos son siempre de hoy y de esta semana, al margen del rango
+     y el foco que se este mirando arriba. */
+  const semanaActual = useMemo(() => {
+    const lunes = toDateKey(startOfWeek(new Date()))
+    const domingo = toDateKey(addDays(startOfWeek(new Date()), 6))
+    return suyas.filter((e) => e.local_date >= lunes && e.local_date <= domingo)
+  }, [suyas])
+  const hoySegundos = semanaActual
+    .filter((e) => e.local_date === todayKey())
+    .reduce((s, e) => s + (e.duration_seconds ?? 0), 0)
+  const semanaSegundos = semanaActual.reduce((s, e) => s + (e.duration_seconds ?? 0), 0)
+  const porRama = useMemo(() => {
+    const segundosPorCategoria = new Map<string, number>()
+    for (const e of semanaActual) {
+      if (!e.category_id) continue
+      segundosPorCategoria.set(
+        e.category_id,
+        (segundosPorCategoria.get(e.category_id) ?? 0) + (e.duration_seconds ?? 0),
+      )
+    }
+    return ramas(catalogo.categorias)
+      .filter((r) => r.categoria.goal_weekly_minutes)
+      .map((r) => ({
+        id: r.categoria.id,
+        camino: r.camino,
+        objetivo: r.categoria.goal_weekly_minutes!,
+        segundos: segundosPorCategoria.get(r.categoria.id) ?? 0,
+      }))
+  }, [semanaActual, catalogo.categorias])
 
   const rejilla = useMemo(() => mapaDeCalor(dentroDel), [dentroDel])
   const franja = useMemo(() => franjaViva(rejilla), [rejilla])
@@ -301,6 +411,33 @@ export function PanelEstadisticas({
             />
           </div>
 
+          <div className="flex rounded-[3px] border border-line-strong bg-surface p-0.5 text-sm">
+            {(
+              [
+                { valor: "auto", etiqueta: "Auto" },
+                { valor: "dia", etiqueta: "Día" },
+                { valor: "semana", etiqueta: "Semana" },
+                { valor: "mes", etiqueta: "Mes" },
+                { valor: "ano", etiqueta: "Año" },
+              ] as const
+            ).map((u) => (
+              <button
+                key={u.valor}
+                type="button"
+                onClick={() => setUnidadForzada(u.valor)}
+                aria-pressed={unidadForzada === u.valor}
+                className={cn(
+                  "whitespace-nowrap rounded-[2px] px-2.5 py-1 transition",
+                  unidadForzada === u.valor
+                    ? "bg-accent-soft font-medium text-accent"
+                    : "text-muted hover:text-ink",
+                )}
+              >
+                {u.etiqueta}
+              </button>
+            ))}
+          </div>
+
           <button
             type="button"
             onClick={presentar}
@@ -363,6 +500,17 @@ export function PanelEstadisticas({
             />
             Comparar con el periodo anterior
           </label>
+
+          {foco && (
+            <button
+              type="button"
+              onClick={() => setFoco(null)}
+              className="flex items-center gap-1.5 rounded-full bg-accent-soft py-1 pl-3 pr-2 text-sm font-medium text-accent"
+            >
+              {foco.etiqueta}
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -427,6 +575,40 @@ export function PanelEstadisticas({
         )}
       </div>
 
+      {/* ---------------------------------------------------------- objetivos */}
+      {(objetivoDiaMinutos || objetivoSemanaMinutos || porRama.length > 0) && (
+        <section className="card p-4">
+          <h2 className="text-sm font-semibold">Objetivos</h2>
+          <p className="mb-3 mt-0.5 text-xs text-muted">
+            Hoy y esta semana, al margen del periodo que se este mirando arriba.
+          </p>
+          <div className="space-y-3">
+            {objetivoDiaMinutos && (
+              <BarraObjetivo
+                etiqueta="Hoy"
+                segundos={hoySegundos}
+                objetivoMinutos={objetivoDiaMinutos}
+              />
+            )}
+            {objetivoSemanaMinutos && (
+              <BarraObjetivo
+                etiqueta="Esta semana"
+                segundos={semanaSegundos}
+                objetivoMinutos={objetivoSemanaMinutos}
+              />
+            )}
+            {porRama.map((r) => (
+              <BarraObjetivo
+                key={r.id}
+                etiqueta={r.camino}
+                segundos={r.segundos}
+                objetivoMinutos={r.objetivo}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* --------------------------------------------------------- evolucion */}
       <section className="card p-4">
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
@@ -437,7 +619,9 @@ export function PanelEstadisticas({
                 ? "Día a día"
                 : unidad === "semana"
                   ? "Semana a semana"
-                  : "Mes a mes"}
+                  : unidad === "mes"
+                    ? "Mes a mes"
+                    : "Año a año"}
               . En verde lo que se cobra
               {comparar && ", y la línea es el periodo anterior"}.
             </p>
@@ -534,17 +718,53 @@ export function PanelEstadisticas({
                       strokeWidth={0}
                     >
                       {porArea.map((g, i) => (
-                        <Cell key={g.clave} fill={PALETA[i % PALETA.length]} />
+                        <Cell
+                          key={g.clave}
+                          fill={PALETA[i % PALETA.length]}
+                          onClick={() =>
+                            alternarFoco({ tipo: "area", clave: g.clave, etiqueta: g.etiqueta })
+                          }
+                          cursor="pointer"
+                          opacity={
+                            foco && foco.tipo === "area" && foco.clave !== g.clave ? 0.35 : 1
+                          }
+                        />
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={CAJA}
-                      formatter={(v) => [
-                        `${Number(v ?? 0).toLocaleString("es-ES", {
-                          maximumFractionDigits: 2,
-                        })} h`,
-                        "Horas",
-                      ]}
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null
+                        const nombre = payload[0].name as string
+                        const grupo = porArea.find((g) => g.etiqueta === nombre)
+                        if (!grupo) return null
+                        const desglose = desgloseArea.get(grupo.clave)
+                        return (
+                          <div style={CAJA} className="max-w-60 p-2.5">
+                            <p className="text-sm font-medium">
+                              {grupo.etiqueta} · {formatDurationShort(grupo.segundos)}
+                            </p>
+                            {desglose && desglose.proyectos.length > 0 && (
+                              <div className="mt-1.5 space-y-0.5 border-t border-line pt-1.5 text-xs">
+                                {desglose.proyectos.slice(0, 4).map((p) => (
+                                  <div key={p.clave} className="flex justify-between gap-3">
+                                    <span className="truncate">{p.etiqueta}</span>
+                                    <span className="tabular shrink-0 text-muted">
+                                      {formatDurationShort(p.segundos)}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {desglose && desglose.personas.length > 0 && (
+                              <p className="mt-1.5 border-t border-line pt-1.5 text-xs text-muted">
+                                {desglose.personas
+                                  .map((p) => `${p.etiqueta} ${formatDurationShort(p.segundos)}`)
+                                  .join(" · ")}
+                              </p>
+                            )}
+                          </div>
+                        )
+                      }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -554,7 +774,21 @@ export function PanelEstadisticas({
                 {porArea.slice(0, 6).map((g, i) => (
                   <li
                     key={g.clave}
-                    className="flex items-baseline gap-2 text-sm"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() =>
+                      alternarFoco({ tipo: "area", clave: g.clave, etiqueta: g.etiqueta })
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        alternarFoco({ tipo: "area", clave: g.clave, etiqueta: g.etiqueta })
+                      }
+                    }}
+                    className={cn(
+                      "flex cursor-pointer items-baseline gap-2 rounded-[var(--radio-sm)] text-sm transition hover:bg-surface-2",
+                      foco && foco.tipo === "area" && foco.clave !== g.clave && "opacity-40",
+                    )}
                   >
                     <span
                       aria-hidden
@@ -639,12 +873,46 @@ export function PanelEstadisticas({
                         n === "cobrables" ? "Se cobran" : "Total",
                       ]}
                     />
-                    <Bar dataKey="horas" fill="var(--accent)" radius={[0, 3, 3, 0]} />
+                    <Bar
+                      dataKey="horas"
+                      fill="var(--accent)"
+                      radius={[0, 3, 3, 0]}
+                      cursor="pointer"
+                      onClick={(_, i) => {
+                        const g = porPersona[i]
+                        if (g) alternarFoco({ tipo: "persona", clave: g.clave, etiqueta: g.etiqueta })
+                      }}
+                    >
+                      {porPersona.map((g) => (
+                        <Cell
+                          key={g.clave}
+                          fill="var(--accent)"
+                          opacity={
+                            foco && foco.tipo === "persona" && foco.clave !== g.clave ? 0.35 : 1
+                          }
+                        />
+                      ))}
+                    </Bar>
                     <Bar
                       dataKey="cobrables"
                       fill="var(--billable-fill)"
                       radius={[0, 3, 3, 0]}
-                    />
+                      cursor="pointer"
+                      onClick={(_, i) => {
+                        const g = porPersona[i]
+                        if (g) alternarFoco({ tipo: "persona", clave: g.clave, etiqueta: g.etiqueta })
+                      }}
+                    >
+                      {porPersona.map((g) => (
+                        <Cell
+                          key={g.clave}
+                          fill="var(--billable-fill)"
+                          opacity={
+                            foco && foco.tipo === "persona" && foco.clave !== g.clave ? 0.35 : 1
+                          }
+                        />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -667,7 +935,27 @@ export function PanelEstadisticas({
                 const cobrable =
                   g.segundos > 0 ? (g.facturables / g.segundos) * 100 : 0
                 return (
-                  <li key={g.clave}>
+                  <li
+                    key={g.clave}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() =>
+                      alternarFoco({ tipo: "proyecto", clave: g.clave, etiqueta: g.etiqueta })
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        alternarFoco({ tipo: "proyecto", clave: g.clave, etiqueta: g.etiqueta })
+                      }
+                    }}
+                    className={cn(
+                      "cursor-pointer rounded-[var(--radio-sm)] transition hover:bg-surface-2",
+                      foco &&
+                        foco.tipo === "proyecto" &&
+                        foco.clave !== g.clave &&
+                        "opacity-40",
+                    )}
+                  >
                     <div className="flex items-baseline justify-between gap-2 text-sm">
                       <span className="min-w-0 truncate">{g.etiqueta}</span>
                       <span className="shrink-0 text-xs text-muted">
@@ -700,6 +988,60 @@ export function PanelEstadisticas({
           )}
         </section>
       </div>
+
+      {/* -------------------------------------------------- coste por persona */}
+      {puedeVerImportes && hayEquipo && costePorPersona.some((p) => p.dinero > 0) && (
+        <section className="card p-4">
+          <h2 className="text-sm font-semibold">Coste por hora, por persona</h2>
+          <p className="mb-3 mt-0.5 text-xs text-muted">
+            Lo que cada uno se lleva según el reparto configurado en Tarifas,
+            entre sus horas facturables -no siempre es lo mismo que sus
+            propias horas por su propia tarifa-.
+          </p>
+          <div className="scroll-thin overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
+                  <th className="py-2 pr-3 font-semibold">Persona</th>
+                  <th className="py-2 pr-3 text-right font-semibold">Horas</th>
+                  <th className="py-2 pr-3 text-right font-semibold">Atribuido</th>
+                  <th className="py-2 text-right font-semibold">€/h</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {costePorPersona.map((p) => (
+                  <tr
+                    key={p.clave}
+                    onClick={() =>
+                      alternarFoco({ tipo: "persona", clave: p.clave, etiqueta: p.etiqueta })
+                    }
+                    className={cn(
+                      "cursor-pointer transition hover:bg-surface-2",
+                      foco &&
+                        foco.tipo === "persona" &&
+                        foco.clave !== p.clave &&
+                        "opacity-40",
+                    )}
+                  >
+                    <td className="py-2 pr-3">{p.etiqueta}</td>
+                    <td className="tabular py-2 pr-3 text-right text-muted">
+                      {formatDurationShort(p.segundos)}
+                    </td>
+                    <td className="tabular py-2 pr-3 text-right font-medium">
+                      {formatMoney(p.dinero)}
+                    </td>
+                    <td className="tabular py-2 text-right font-medium">
+                      {p.porHora !== null
+                        ? `${p.porHora.toLocaleString("es-ES", { maximumFractionDigits: 0 })} €/h`
+                        : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       {/* --------------------------------------------------------- por hora */}
       {puedeVerImportes && porProyecto.some((g) => g.importe > 0) && (
@@ -790,6 +1132,40 @@ const CAJA = {
 
 function Vacio() {
   return <p className="py-6 text-center text-sm text-muted">Nada en este periodo.</p>
+}
+
+/** Una fila de "cuanto llevamos" contra un objetivo, con su barra. */
+function BarraObjetivo({
+  etiqueta,
+  segundos,
+  objetivoMinutos,
+}: {
+  etiqueta: string
+  segundos: number
+  objetivoMinutos: number
+}) {
+  const objetivoSegundos = objetivoMinutos * 60
+  const parte =
+    objetivoSegundos > 0 ? Math.min(100, (segundos / objetivoSegundos) * 100) : 0
+  const cumplido = segundos >= objetivoSegundos
+
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-2 text-sm">
+        <span className="min-w-0 truncate">{etiqueta}</span>
+        <span className={cn("cifra shrink-0 font-medium", cumplido && "text-billable")}>
+          {formatDurationShort(segundos)}{" "}
+          <span className="text-muted">/ {formatObjetivo(objetivoMinutos)}</span>
+        </span>
+      </div>
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">
+        <div
+          className={cn("h-full rounded-full", cumplido ? "bg-billable-fill" : "bg-accent")}
+          style={{ width: `${parte}%` }}
+        />
+      </div>
+    </div>
+  )
 }
 
 /** Un número grande con su comparación contra el periodo anterior. */

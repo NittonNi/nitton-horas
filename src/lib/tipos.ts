@@ -25,6 +25,11 @@ export type Tarifa = Tables<"rates">
 export type Invitacion = Tables<"invitations">
 export type ConexionGoogle = Tables<"google_connections">
 
+/** Como se reparte la facturacion ya calculada entre las personas. */
+export type ModoReparto = "horas" | "equitativo" | "porcentajes" | "equipo"
+export type Reparto = Omit<Tables<"revenue_splits">, "mode"> & { mode: ModoReparto }
+export type RepartoShare = Tables<"revenue_split_shares">
+
 /** Una persona dentro de un espacio concreto: su perfil más su rol allí. */
 export type Miembro = {
   id: string

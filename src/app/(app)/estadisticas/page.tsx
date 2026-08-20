@@ -1,7 +1,12 @@
 import { getSesion } from "@/lib/sesion"
 import { PistaPagina } from "@/components/pista-pagina"
 import { veTodo } from "@/lib/roles"
-import { cargarCatalogo, cargarEntradas, cargarMiembros } from "@/lib/datos"
+import {
+  cargarCatalogo,
+  cargarEntradas,
+  cargarMiembros,
+  cargarReparto,
+} from "@/lib/datos"
 import { PanelEstadisticas } from "@/components/panel-estadisticas"
 import { toDateKey, todayKey } from "@/lib/time"
 
@@ -12,11 +17,12 @@ export default async function PaginaEstadisticas() {
   const gestor = veTodo(rol)
 
   /* Dos años: uno para mirar y otro para poder compararlo con el anterior sin
-     que la comparación salga siempre vacía. */
+     que la comparación salga siempre vacía. Cubre tambien de sobra la semana
+     actual, que hace falta para los objetivos. */
   const hoy = new Date()
   const desde = toDateKey(new Date(hoy.getFullYear() - 2, hoy.getMonth(), 1))
 
-  const [catalogo, entradas, miembros] = await Promise.all([
+  const [catalogo, entradas, miembros, reparto] = await Promise.all([
     cargarCatalogo(espacio.id, true),
     cargarEntradas({
       espacioId: espacio.id,
@@ -25,6 +31,7 @@ export default async function PaginaEstadisticas() {
       limite: 40000,
     }),
     cargarMiembros(espacio.id),
+    cargarReparto(espacio.id),
   ])
 
   return (
@@ -48,6 +55,10 @@ export default async function PaginaEstadisticas() {
         perfilId={perfil.id}
         puedeVerImportes={gestor}
         objetivoHora={espacio.target_hourly_rate}
+        objetivoDiaMinutos={espacio.goal_daily_minutes}
+        objetivoSemanaMinutos={espacio.goal_weekly_minutes}
+        repartos={reparto.repartos}
+        repartoShares={reparto.shares}
       />
     </div>
   )

@@ -253,6 +253,20 @@ export function PanelEstadisticas({
       ),
     [dentroDel],
   )
+  const porHoraProyectos = useMemo(
+    () =>
+      porProyecto
+        .filter((g) => g.facturables > 0 && g.importe > 0)
+        .map((g) => ({
+          clave: g.clave,
+          nombre: g.etiqueta,
+          color: g.color ?? "var(--accent)",
+          porHora: Math.round((g.importe / (g.facturables / 3600)) * 10) / 10,
+        }))
+        .sort((a, b) => b.porHora - a.porHora)
+        .slice(0, 10),
+    [porProyecto],
+  )
 
   /* Desglose por proyecto y por persona dentro de cada area, para que el
      tooltip del donut cuente algo de verdad -no solo el total del area-. */
@@ -1053,19 +1067,7 @@ export function PanelEstadisticas({
           </p>
           <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={porProyecto
-                  .filter((g) => g.facturables > 0 && g.importe > 0)
-                  .map((g) => ({
-                    nombre: g.etiqueta,
-                    color: g.color ?? "var(--accent)",
-                    porHora:
-                      Math.round((g.importe / (g.facturables / 3600)) * 10) / 10,
-                  }))
-                  .sort((a, b) => b.porHora - a.porHora)
-                  .slice(0, 10)}
-                margin={{ top: 4, right: 4, left: -18, bottom: 0 }}
-              >
+              <BarChart data={porHoraProyectos} margin={{ top: 4, right: 4, left: -18, bottom: 0 }}>
                 <CartesianGrid
                   strokeDasharray="2 4"
                   vertical={false}
@@ -1097,13 +1099,25 @@ export function PanelEstadisticas({
                     strokeDasharray="4 3"
                   />
                 ) : null}
-                <Bar dataKey="porHora" radius={[3, 3, 0, 0]} maxBarSize={56}>
-                  {porProyecto
-                    .filter((g) => g.facturables > 0 && g.importe > 0)
-                    .slice(0, 10)
-                    .map((g) => (
-                      <Cell key={g.clave} fill={g.color ?? "var(--accent)"} />
-                    ))}
+                <Bar
+                  dataKey="porHora"
+                  radius={[3, 3, 0, 0]}
+                  maxBarSize={56}
+                  cursor="pointer"
+                  onClick={(_, i) => {
+                    const g = porHoraProyectos[i]
+                    if (g) alternarFoco({ tipo: "proyecto", clave: g.clave, etiqueta: g.nombre })
+                  }}
+                >
+                  {porHoraProyectos.map((g) => (
+                    <Cell
+                      key={g.clave}
+                      fill={g.color}
+                      opacity={
+                        foco && foco.tipo === "proyecto" && foco.clave !== g.clave ? 0.35 : 1
+                      }
+                    />
+                  ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

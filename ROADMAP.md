@@ -31,12 +31,15 @@ generico y reutilizable (`EsqueletoPagina`, el mismo patron de bloques grises
 navegar entre paginas como al recargar, mientras se resuelve la consulta a
 Supabase de esa pagina.
 
-Queda pendiente si hace falta ademas: la recarga completa tambien espera a la
-sesion del layout (`getSesion` + el cronometro en marcha) antes de que
-aparezca el primer esqueleto, un tramo mas corto que no tiene aviso propio
--se podria cubrir con un `loading.tsx` en la raiz si se nota-, y afinar el
-esqueleto de cada pagina para que se parezca mas a su contenido real en vez
-de bloques genericos.
+**Cerrado el 20-ago-2026**: el tramo de la sesion del layout (`getSesion` +
+el cronometro en marcha), que ningun `loading.tsx` de seccion cubria, ahora
+tiene el suyo en `src/app/loading.tsx` -un spinner centrado, sin ligar a
+ningun layout a proposito, porque tambien cubre las paginas publicas antes
+del propio `(app)`-. Probado en vivo: la portada publica sigue cargando
+igual que antes.
+
+Queda pendiente si hace falta: afinar el esqueleto de cada pagina para que
+se parezca mas a su contenido real en vez de bloques genericos.
 
 ### Filtro "marcar todos" se queda atras si se crea algo nuevo mientras esta activo
 
@@ -230,10 +233,19 @@ granularidad forzada probada en un rango de 12 meses, tooltip del donut con
 desglose real, y el cruce al clic probado en las tres direcciones con
 capturas de pantalla en cada paso.
 
-Queda pendiente si hace falta: atenuar visualmente (no solo filtrar) los
-`Cell`/barras que no coinciden con el foco en las graficas donde esa misma
-dimension no es la que se esta clicando -hoy solo se atenua dentro de la
-propia grafica clicada-; y decidir si vale la pena paginar el reparto en
+**Rematado el 20-ago-2026**: faltaba clic y atenuado en "A cuánto sale la
+hora" -era la unica grafica de la dimension proyecto que no cruzaba con el
+foco-, ya arreglado; y el ultimo hueco de las paginas de carga, la sesion
+del propio layout de `(app)` -quien eres, si tienes el cronometro en
+marcha-, que ningun `loading.tsx` de seccion llegaba a cubrir. Nuevo
+`src/app/loading.tsx`, sin ligar a ningun layout a proposito -tambien cubre
+las paginas publicas, con un spinner centrado que no da por hecho ningun
+armazon-. Probado en vivo: `A cuánto sale la hora` cruza con las demas
+graficas de proyecto -para eso hizo falta un tramo con una tarifa y un
+reparto de prueba puestos y quitados a mano en Tarifas-, y la portada
+publica carga igual que antes con el `loading.tsx` nuevo de por medio.
+
+Queda pendiente si hace falta: decidir si vale la pena paginar el reparto en
 Tarifas si algun dia hay muchos proyectos con reparto propio.
 
 ### 2. Integracion con Google Calendar

@@ -5,6 +5,28 @@ Lo que falta, en el orden en que tiene sentido hacerlo. Se va moviendo a
 
 ## Por arreglar
 
+### Google OAuth y correo de produccion
+
+Configurado el 20-ago-2026: cuenta `hitooclock@gmail.com` con proyecto propio
+en Google Cloud, pantalla de consentimiento publicada, credenciales pegadas
+en Supabase. Pendiente de probar el flujo completo una vez despliegue el
+arreglo del boton de cerrar sesion (necesario para probarlo mas de una vez
+seguida). Sigue pendiente el SMTP propio: los correos van con el servicio por
+defecto de Supabase, con limite bajo -no vale para que lo use otro equipo-.
+
+### Faltan estados de carga: la pantalla se queda parada y de golpe aparece todo
+
+Apuntado por Nicolas el 20-ago-2026. En varios sitios de la app, mientras se
+espera la respuesta de Supabase no hay ningun aviso -ni esqueleto, ni
+spinner-, asi que da la sensacion de que se ha quedado colgado. Luego aparece
+todo de golpe. Confunde bastante, sobre todo en conexiones lentas o con listas
+largas.
+
+Falta decidir donde son mas necesarios (candidatos: cronometro/panel al
+cargar, informes al cambiar filtros, calendario al cambiar de semana) y que
+patron usar -esqueleto tipo el que ya usa el propio dashboard de Supabase, o
+un spinner simple-, para que sea el mismo en toda la app.
+
 ### Filtro "marcar todos" se queda atras si se crea algo nuevo mientras esta activo
 
 Visto el 20-ago-2026 en revision de codigo, en

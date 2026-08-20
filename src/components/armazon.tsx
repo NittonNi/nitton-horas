@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu"
@@ -367,6 +367,7 @@ function BarraInferior() {
 
 function MenuUsuario() {
   const { perfil, rol } = useSesion()
+  const formSalirRef = useRef<HTMLFormElement>(null)
 
   const iniciales = perfil.full_name
     .split(/\s+/)
@@ -440,16 +441,17 @@ function MenuUsuario() {
               Mi perfil
             </Link>
           </DropdownMenu.Item>
-          <DropdownMenu.Item asChild>
-            <form action="/auth/salir" method="post">
-              <button
-                type="submit"
-                className="flex w-full items-center gap-2 rounded-[var(--radio-sm)] px-2 py-1.5 text-left text-sm text-danger outline-none transition hover:bg-danger-soft data-highlighted:bg-danger-soft"
-              >
-                <LogOut className="h-4 w-4" />
-                Cerrar sesión
-              </button>
-            </form>
+          {/* Radix cierra (desmonta) el menu al elegir un item: si la accion
+              vive en el click nativo de un boton de un <form> anidado con
+              asChild, el desmontaje gana la carrera y el submit no llega a
+              salir. Se dispara aparte, con la referencia, en onSelect. */}
+          <form ref={formSalirRef} action="/auth/salir" method="post" className="hidden" />
+          <DropdownMenu.Item
+            onSelect={() => formSalirRef.current?.requestSubmit()}
+            className="flex w-full cursor-pointer items-center gap-2 rounded-[var(--radio-sm)] px-2 py-1.5 text-sm text-danger outline-none transition hover:bg-danger-soft data-highlighted:bg-danger-soft"
+          >
+            <LogOut className="h-4 w-4" />
+            Cerrar sesión
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>

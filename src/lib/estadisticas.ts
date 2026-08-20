@@ -60,7 +60,7 @@ export function unidadPara(rango: Rango): Unidad {
   return "ano"
 }
 
-function claveYEtiqueta(dia: string, unidad: Unidad) {
+export function claveYEtiqueta(dia: string, unidad: Unidad) {
   const fecha = fromDateKey(dia)
   if (unidad === "dia") {
     return { clave: dia, etiqueta: `${fecha.getDate()} ${MESES[fecha.getMonth()]}` }

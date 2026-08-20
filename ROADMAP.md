@@ -248,6 +248,27 @@ publica carga igual que antes con el `loading.tsx` nuevo de por medio.
 Queda pendiente si hace falta: decidir si vale la pena paginar el reparto en
 Tarifas si algun dia hay muchos proyectos con reparto propio.
 
+**Mismo estilo de hover en todas partes, el 20-ago-2026**: a Nicolas le
+gustaba el hover del donut -titulo, desglose por proyecto y por persona- y
+pidio que fuera el mismo en el resto de graficas con tooltip. Sacado a un
+componente compartido (`CajaTooltip`, en `panel-estadisticas.tsx`) y puesto
+tambien en "Como va el ritmo" (desglose por proyecto/persona de ese punto
+del tiempo), "Quien lo pone" (por proyecto de esa persona) y "A cuanto sale
+la hora" (por persona de ese proyecto). El donut se reescribio para usar el
+mismo componente en vez de tener su version aparte.
+
+De paso, arreglado un bug que encontro Nicolas mirando esto: el color de
+cada area del donut salia de su posicion en la lista -al filtrar y quedar
+una sola area visible, esa area pasaba a ser la primera y "robaba" siempre
+el azul, aunque su color de siempre fuera otro-. Ahora el color de cada area
+sale de un mapa fijo calculado sobre el catalogo entero
+(`categoriasRaiz(catalogo.categorias)`), no de la lista filtrada: cada area
+mantiene su color se mire como se mire.
+
+Probado en vivo: hover en las cuatro graficas con datos reales, y
+comprobado que "PROYECTOS" se queda verde al filtrar aunque quede sola,
+en vez de pasar a azul.
+
 ### 2. Integracion con Google Calendar
 
 Traer los eventos del calendario y convertirlos en horas con un clic, sin

@@ -18,11 +18,12 @@ import {
 } from "recharts"
 import { Maximize2, Minimize2, TrendingDown, TrendingUp, X } from "lucide-react"
 
-import { agrupar, totales } from "@/lib/informes"
-import { formatObjetivo, ramas, SIN_CATEGORIA } from "@/lib/categorias"
+import { agrupar, totales, type Grupo } from "@/lib/informes"
+import { categoriasRaiz, formatObjetivo, ramas, SIN_CATEGORIA } from "@/lib/categorias"
 import { calcularAtribucion } from "@/lib/reparto"
 import {
   anterior,
+  claveYEtiqueta,
   DIAS,
   dentro,
   diasDe,
@@ -30,6 +31,7 @@ import {
   mapaDeCalor,
   serie,
   unidadPara,
+  type Punto,
   type Rango,
   type Unidad,
 } from "@/lib/estadisticas"
@@ -243,6 +245,18 @@ export function PanelEstadisticas({
     () => agrupar(dentroDel, (e) => e.user_id, (e) => e.user_name),
     [dentroDel],
   )
+
+  /* El color de cada area es fijo -sale del catalogo entero, no de la
+     posicion en la lista filtrada-: si no, al clicar y quedar una sola area
+     visible, esa area "roba" siempre el primer color de la paleta en vez de
+     mantener el suyo. */
+  const coloresArea = useMemo(() => {
+    const mapa = new Map<string, string>()
+    const raices = categoriasRaiz(catalogo.categorias)
+    raices.forEach((c, i) => mapa.set(c.id, PALETA[i % PALETA.length]))
+    mapa.set("sin", PALETA[raices.length % PALETA.length])
+    return mapa
+  }, [catalogo.categorias])
   const porProyecto = useMemo(
     () =>
       agrupar(
@@ -285,6 +299,49 @@ export function PanelEstadisticas({
     }
     return mapa
   }, [porArea, dentroDel])
+
+  /* Mismo criterio, pero por punto de la serie temporal: que hay detras de
+     cada barra de "como va el ritmo". */
+  const desglosePunto = useMemo(() => {
+    const porClave = new Map<string, EntradaVista[]>()
+    for (const e of dentroDel) {
+      const { clave } = claveYEtiqueta(e.local_date, unidad)
+      const lista = porClave.get(clave)
+      if (lista) lista.push(e)
+      else porClave.set(clave, [e])
+    }
+    const mapa = new Map<string, { proyectos: Grupo[]; personas: Grupo[] }>()
+    for (const [clave, lista] of porClave) {
+      mapa.set(clave, {
+        proyectos: agrupar(lista, (e) => e.project_id ?? "sin", (e) => e.project_name ?? "Sin proyecto"),
+        personas: agrupar(lista, (e) => e.user_id, (e) => e.user_name),
+      })
+    }
+    return mapa
+  }, [dentroDel, unidad])
+
+  /* Y por persona: en que proyectos se le fueron las horas. */
+  const desglosePersona = useMemo(() => {
+    const mapa = new Map<string, Grupo[]>()
+    for (const g of porPersona) {
+      const deEsaPersona = dentroDel.filter((e) => e.user_id === g.clave)
+      mapa.set(
+        g.clave,
+        agrupar(deEsaPersona, (e) => e.project_id ?? "sin", (e) => e.project_name ?? "Sin proyecto"),
+      )
+    }
+    return mapa
+  }, [porPersona, dentroDel])
+
+  /* Y por proyecto, para el grafico de €/h: quien puso esas horas. */
+  const desgloseProyectoDinero = useMemo(() => {
+    const mapa = new Map<string, Grupo[]>()
+    for (const g of porHoraProyectos) {
+      const deEseProyecto = dentroDel.filter((e) => (e.project_id ?? "sin") === g.clave)
+      mapa.set(g.clave, agrupar(deEseProyecto, (e) => e.user_id, (e) => e.user_name))
+    }
+    return mapa
+  }, [porHoraProyectos, dentroDel])
 
   /* Dinero atribuido a cada persona segun el reparto configurado -no solo lo
      de sus propias horas-, para el €/h real de cada uno. */
@@ -665,17 +722,27 @@ export function PanelEstadisticas({
               />
               <Tooltip
                 cursor={{ fill: "var(--surface-2)" }}
-                contentStyle={CAJA}
-                formatter={(valor, nombre) => [
-                  `${Number(valor ?? 0).toLocaleString("es-ES", {
-                    maximumFractionDigits: 2,
-                  })} h`,
-                  nombre === "cobrables"
-                    ? "Se cobran"
-                    : nombre === "antes"
-                      ? "Periodo anterior"
-                      : "No se cobran",
-                ]}
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null
+                  const punto = payload[0].payload as Punto
+                  const desglose = desglosePunto.get(punto.clave)
+                  return (
+                    <CajaTooltip
+                      titulo={`${punto.etiqueta} · ${formatDurationShort(punto.horas * 3600)}`}
+                      lineas={[
+                        {
+                          texto: `Se cobran: ${formatDurationShort(punto.cobrables * 3600)}`,
+                          tono: "billable",
+                        },
+                        ...(comparar && punto.antes !== undefined
+                          ? [{ texto: `Periodo anterior: ${formatDurationShort(punto.antes * 3600)}` }]
+                          : []),
+                      ]}
+                      proyectos={desglose?.proyectos}
+                      personas={desglose?.personas}
+                    />
+                  )
+                }}
               />
               <Bar
                 dataKey="cobrables"
@@ -731,10 +798,10 @@ export function PanelEstadisticas({
                       paddingAngle={2}
                       strokeWidth={0}
                     >
-                      {porArea.map((g, i) => (
+                      {porArea.map((g) => (
                         <Cell
                           key={g.clave}
-                          fill={PALETA[i % PALETA.length]}
+                          fill={coloresArea.get(g.clave) ?? PALETA[0]}
                           onClick={() =>
                             alternarFoco({ tipo: "area", clave: g.clave, etiqueta: g.etiqueta })
                           }
@@ -753,30 +820,11 @@ export function PanelEstadisticas({
                         if (!grupo) return null
                         const desglose = desgloseArea.get(grupo.clave)
                         return (
-                          <div style={CAJA} className="max-w-60 p-2.5">
-                            <p className="text-sm font-medium">
-                              {grupo.etiqueta} · {formatDurationShort(grupo.segundos)}
-                            </p>
-                            {desglose && desglose.proyectos.length > 0 && (
-                              <div className="mt-1.5 space-y-0.5 border-t border-line pt-1.5 text-xs">
-                                {desglose.proyectos.slice(0, 4).map((p) => (
-                                  <div key={p.clave} className="flex justify-between gap-3">
-                                    <span className="truncate">{p.etiqueta}</span>
-                                    <span className="tabular shrink-0 text-muted">
-                                      {formatDurationShort(p.segundos)}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            {desglose && desglose.personas.length > 0 && (
-                              <p className="mt-1.5 border-t border-line pt-1.5 text-xs text-muted">
-                                {desglose.personas
-                                  .map((p) => `${p.etiqueta} ${formatDurationShort(p.segundos)}`)
-                                  .join(" · ")}
-                              </p>
-                            )}
-                          </div>
+                          <CajaTooltip
+                            titulo={`${grupo.etiqueta} · ${formatDurationShort(grupo.segundos)}`}
+                            proyectos={desglose?.proyectos}
+                            personas={desglose?.personas}
+                          />
                         )
                       }}
                     />
@@ -785,7 +833,7 @@ export function PanelEstadisticas({
               </div>
 
               <ul className="mt-2 space-y-1">
-                {porArea.slice(0, 6).map((g, i) => (
+                {porArea.slice(0, 6).map((g) => (
                   <li
                     key={g.clave}
                     role="button"
@@ -807,7 +855,7 @@ export function PanelEstadisticas({
                     <span
                       aria-hidden
                       className="h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{ background: PALETA[i % PALETA.length] }}
+                      style={{ background: coloresArea.get(g.clave) ?? PALETA[0] }}
                     />
                     <span className="min-w-0 flex-1 truncate">{g.etiqueta}</span>
                     <span className="shrink-0 text-xs text-muted">
@@ -852,6 +900,7 @@ export function PanelEstadisticas({
                   <BarChart
                     layout="vertical"
                     data={porPersona.map((g) => ({
+                      clave: g.clave,
                       nombre: g.etiqueta,
                       horas: Math.round((g.segundos / 3600) * 100) / 100,
                       cobrables: Math.round((g.facturables / 3600) * 100) / 100,
@@ -879,13 +928,24 @@ export function PanelEstadisticas({
                     />
                     <Tooltip
                       cursor={{ fill: "var(--surface-2)" }}
-                      contentStyle={CAJA}
-                      formatter={(v, n) => [
-                        `${Number(v ?? 0).toLocaleString("es-ES", {
-                          maximumFractionDigits: 2,
-                        })} h`,
-                        n === "cobrables" ? "Se cobran" : "Total",
-                      ]}
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null
+                        const fila = payload[0].payload as { clave: string; nombre: string; horas: number; cobrables: number }
+                        const g = porPersona.find((p) => p.clave === fila.clave)
+                        if (!g) return null
+                        return (
+                          <CajaTooltip
+                            titulo={`${g.etiqueta} · ${formatDurationShort(g.segundos)}`}
+                            lineas={[
+                              {
+                                texto: `Se cobran: ${formatDurationShort(g.facturables)}`,
+                                tono: "billable",
+                              },
+                            ]}
+                            proyectos={desglosePersona.get(g.clave)}
+                          />
+                        )
+                      }}
                     />
                     <Bar
                       dataKey="horas"
@@ -1089,8 +1149,16 @@ export function PanelEstadisticas({
                 />
                 <Tooltip
                   cursor={{ fill: "var(--surface-2)" }}
-                  contentStyle={CAJA}
-                  formatter={(v) => [`${Number(v ?? 0)} €/h`, "Por hora"]}
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null
+                    const g = payload[0].payload as (typeof porHoraProyectos)[number]
+                    return (
+                      <CajaTooltip
+                        titulo={`${g.nombre} · ${g.porHora} €/h`}
+                        personas={desgloseProyectoDinero.get(g.clave)}
+                      />
+                    )
+                  }}
                 />
                 {objetivoHora ? (
                   <ReferenceLine
@@ -1146,6 +1214,56 @@ const CAJA = {
 
 function Vacio() {
   return <p className="py-6 text-center text-sm text-muted">Nada en este periodo.</p>
+}
+
+/**
+ * El hover de todas las graficas: un titulo, alguna cifra suelta si hace
+ * falta, y el desglose por proyecto y por persona de lo que hay detras del
+ * dato -no solo el numero, que es la queja que tenia Nicolas del donut-.
+ */
+function CajaTooltip({
+  titulo,
+  lineas,
+  proyectos,
+  personas,
+}: {
+  titulo: string
+  lineas?: { texto: string; tono?: "billable" }[]
+  proyectos?: Grupo[]
+  personas?: Grupo[]
+}) {
+  return (
+    <div style={CAJA} className="max-w-60 p-2.5">
+      <p className="text-sm font-medium">{titulo}</p>
+      {lineas?.map((l, i) => (
+        <p
+          key={i}
+          className={cn("mt-0.5 text-xs", l.tono === "billable" ? "text-billable" : "text-muted")}
+        >
+          {l.texto}
+        </p>
+      ))}
+      {proyectos && proyectos.length > 0 && (
+        <div className="mt-1.5 space-y-0.5 border-t border-line pt-1.5 text-xs">
+          {proyectos.slice(0, 4).map((p) => (
+            <div key={p.clave} className="flex justify-between gap-3">
+              <span className="truncate">{p.etiqueta}</span>
+              <span className="tabular shrink-0 text-muted">
+                {formatDurationShort(p.segundos)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {personas && personas.length > 0 && (
+        <p className="mt-1.5 border-t border-line pt-1.5 text-xs text-muted">
+          {personas
+            .map((p) => `${p.etiqueta} ${formatDurationShort(p.segundos)}`)
+            .join(" · ")}
+        </p>
+      )}
+    </div>
+  )
 }
 
 /** Una fila de "cuanto llevamos" contra un objetivo, con su barra. */

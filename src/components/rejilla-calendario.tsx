@@ -747,6 +747,7 @@ export function RejillaCalendario({
           espacioId={espacioId}
           userId={yoId}
           catalogo={catalogo}
+          miembros={miembros.filter((m) => m.id !== yoId)}
           onCerrar={() => setAceptandoGoogle(null)}
         />
       )}
@@ -886,30 +887,37 @@ function DialogoInvitacion({
  * Aceptar una reunion de Google Calendar la convierte en una hora de verdad:
  * a diferencia de una invitacion de equipo, aqui no hay fila que aceptar en
  * la base -es un evento vivo, traido en el momento-, asi que "aceptar" es
- * sencillamente crear la entrada, con el proyecto que haga falta si el
- * espacio no deja horas sueltas.
+ * sencillamente crear la entrada, con los mismos campos que una entrada
+ * nueva. Lo unico que viene puesto es el dia y las horas, que son las que
+ * ya estan en el calendario; todo lo demas -proyecto, tarea, etiquetas,
+ * facturable, con quien mas cuenta- se elige aqui, igual que al mano.
  */
 function DialogoAceptarGoogle({
   evento,
   espacioId,
   userId,
   catalogo,
+  miembros,
   onCerrar,
 }: {
   evento: EventoGoogle
   espacioId: string
   userId: string
   catalogo: Catalogo
+  miembros: Miembro[]
   onCerrar: () => void
 }) {
   const router = useRouter()
   const { avisar } = useAvisos()
   const { espacio } = useSesion()
+  const [descripcion, setDescripcion] = useState(evento.titulo)
   const [proyecto, setProyecto] = useState<{
     project_id: string | null
     task_id: string | null
   }>({ project_id: null, task_id: null })
   const [edicionId, setEdicionId] = useState<string | null>(null)
+  const [etiquetas, setEtiquetas] = useState<string[]>([])
+  const [compartidos, setCompartidos] = useState<string[]>([])
   const [facturable, setFacturable] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -936,7 +944,8 @@ function DialogoAceptarGoogle({
     setGuardando(true)
     setError(null)
 
-    const { data, error: err } = await createClient()
+    const supabase = createClient()
+    const { data, error: err } = await supabase
       .from("time_entries")
       .insert({
         workspace_id: espacioId,
@@ -944,7 +953,7 @@ function DialogoAceptarGoogle({
         project_id: proyecto.project_id,
         edition_id: edicionId,
         task_id: proyecto.task_id,
-        description: evento.titulo,
+        description: descripcion,
         billable: facturable,
         start_at: evento.inicio,
         end_at: evento.fin,
@@ -954,12 +963,49 @@ function DialogoAceptarGoogle({
       .select("id")
       .single()
 
-    setGuardando(false)
     if (err || !data) {
+      setGuardando(false)
       setError(mensajeError(err))
       return
     }
 
+    if (etiquetas.length > 0) {
+      const { error: errTags } = await supabase
+        .from("time_entry_tags")
+        .insert(etiquetas.map((tag_id) => ({ entry_id: data.id, tag_id })))
+      if (errTags) {
+        setGuardando(false)
+        setError(mensajeError(errTags))
+        return
+      }
+    }
+
+    if (compartidos.length > 0) {
+      const { error: errCompartir } = await supabase.from("entry_invitations").insert(
+        compartidos.map((to_user) => ({
+          workspace_id: espacioId,
+          origin_entry_id: data.id,
+          from_user: userId,
+          to_user,
+          project_id: proyecto.project_id,
+          edition_id: edicionId,
+          task_id: proyecto.task_id,
+          description: descripcion,
+          start_at: evento.inicio,
+          end_at: evento.fin,
+          billable: facturable,
+        })),
+      )
+      if (errCompartir) {
+        setGuardando(false)
+        setError(
+          `Tu hora se ha guardado, pero no se ha podido avisar al resto: ${mensajeError(errCompartir)}`,
+        )
+        return
+      }
+    }
+
+    setGuardando(false)
     onCerrar()
     router.refresh()
     avisar("Hora añadida desde Google Calendar.", async () => {
@@ -982,29 +1028,40 @@ function DialogoAceptarGoogle({
         role="dialog"
         aria-modal="true"
         aria-label="Reunion de Google Calendar"
-        className="card w-full max-w-sm rounded-b-none sm:rounded-xl"
+        className="card flex max-h-[90vh] w-full max-w-sm flex-col rounded-b-none sm:rounded-xl"
         style={{ boxShadow: "var(--shadow-lg)" }}
       >
         <div className="flex items-start gap-3 border-b border-line px-4 py-3">
           <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-muted" aria-hidden />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{evento.titulo}</p>
-            <p className="mt-0.5 text-xs text-muted">Aceptada en tu Google Calendar</p>
-          </div>
-        </div>
-
-        <div className="space-y-3 px-4 py-3 text-sm">
-          <p className="tabular">
-            {formatClock(evento.inicio)}–{formatClock(evento.fin)}
-            <span className="text-muted">
+            <p className="mt-0.5 text-xs tabular text-muted">
+              Aceptada en tu Google Calendar · {formatClock(evento.inicio)}–
+              {formatClock(evento.fin)}
               {" · "}
               {formatDurationShort(
                 Math.round(
                   (new Date(evento.fin).getTime() - new Date(evento.inicio).getTime()) / 1000,
                 ),
               )}
-            </span>
-          </p>
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-3 overflow-y-auto px-4 py-3 text-sm">
+          <div>
+            <label className="label" htmlFor="ag-descripcion">
+              En que has trabajado
+            </label>
+            <input
+              id="ag-descripcion"
+              autoFocus
+              className="field"
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              placeholder="Opcional"
+            />
+          </div>
 
           <div>
             <span className="label">Proyecto y tarea</span>
@@ -1017,6 +1074,45 @@ function DialogoAceptarGoogle({
               }}
             />
           </div>
+
+          <div>
+            <span className="label">Etiquetas</span>
+            <SelectorEtiquetas
+              etiquetas={catalogo.etiquetas}
+              seleccionadas={etiquetas}
+              onChange={setEtiquetas}
+            />
+          </div>
+
+          <div>
+            <span className="label">También cuenta para</span>
+            <SelectorPersonas
+              miembros={miembros}
+              seleccionadas={compartidos}
+              onChange={setCompartidos}
+            />
+            {compartidos.length > 0 && (
+              <p className="mt-1 text-xs text-muted">
+                Les llegara como una propuesta: hasta que la acepten no se les
+                apunta nada.
+              </p>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setFacturable((v) => !v)}
+            aria-pressed={facturable}
+            className={cn(
+              "flex h-9 items-center gap-1.5 rounded-[var(--radio-sm)] border px-3 text-sm transition",
+              facturable
+                ? "border-billable-line bg-billable-soft text-billable"
+                : "border-line-strong bg-surface text-muted hover:bg-surface-2",
+            )}
+          >
+            <Euro className="h-4 w-4" />
+            {facturable ? "Facturable" : "No facturable"}
+          </button>
 
           {error && <p className="text-xs text-danger">{error}</p>}
         </div>
@@ -1237,6 +1333,10 @@ function ColumnaDia({
                 "line-clamp-3 break-all text-[11px] font-medium leading-tight md:truncate md:break-normal",
                 bloque.entrada.billable && "pr-3.5",
               )}
+              // Solo en las horas de verdad: en una pendiente el color ya va
+              // en todo el borde, ponerlo tambien en el texto no suma nada
+              // -y sin proyecto el gris de respaldo se leeria mal como texto.
+              style={!pendiente ? { color } : undefined}
             >
               {bloque.entrada.description || bloque.entrada.project_name || "Sin descripción"}
             </p>

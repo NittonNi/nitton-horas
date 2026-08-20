@@ -293,6 +293,18 @@
     cursor: not-allowed;
   }
 
+  /* Menos de 16px en un campo hace que iOS Safari haga zoom en toda la
+     pagina al enfocarlo -pasa con cualquier input, select o textarea, no
+     solo con los que llevan la clase .field-. Solo en movil/tablet: en
+     escritorio no hay zoom que evitar y el texto mas pequeño se lee mejor. */
+  @media (max-width: 1023.98px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
+
   .btn {
     display: inline-flex;
     align-items: center;

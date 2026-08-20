@@ -226,7 +226,7 @@ export function DialogoEntrada({
         role="dialog"
         aria-modal="true"
         aria-label="Editar entrada"
-        className="card w-full max-w-lg overflow-visible rounded-b-none sm:rounded-xl"
+        className="card flex max-h-[90vh] w-full max-w-lg flex-col rounded-b-none sm:rounded-xl"
         style={{ boxShadow: "var(--shadow-lg)" }}
       >
         <div className="flex items-center justify-between border-b border-line px-4 py-3">
@@ -241,7 +241,7 @@ export function DialogoEntrada({
           </button>
         </div>
 
-        <div className="space-y-4 p-4">
+        <div className="space-y-4 overflow-y-auto p-4">
           <p className="rounded-[var(--radio-sm)] bg-surface-2 px-3 py-2 text-xs text-muted">
             Horas de <span className="text-ink-soft">{entrada.user_name}</span>
             {entrada.updated_by_name &&

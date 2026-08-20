@@ -155,11 +155,67 @@ cada uno dice cual es el suyo.
 
 **Pendiente**:
 
-0. **Repaso de UX en movil, pendiente**. Apuntado por Nicolas el 20-ago-2026:
-   hay varias cosas que comprobar desde el telefono de verdad, no solo en el
-   emulador -barra de abajo, la tabla de informes con las casillas, y el
-   calendario son los primeros candidatos-, y falta un repaso completo de UX
-   pensado para movil, no solo verificar que no rompe.
+0. **Repaso de UX en movil**. Apuntado por Nicolas el 20-ago-2026, y pedido
+   sin esperar respuesta el mismo dia: no solo la distribucion, tambien que
+   pasa al deslizar, si el teclado tapa algo, si se puede deslizar bien.
+
+   **Auditoria hecha por codigo el 20-ago-2026** -aviso honesto: el
+   navegador de esta sesion no deja cambiar el ancho de la ventana de
+   verdad (`resize_window` no cambia lo que de verdad se renderiza), asi
+   que nada de esto se ha visto con los ojos a un ancho de movil real.
+   Falta que Nicolas lo mire desde su telefono, que es justo lo que ya
+   tenia pendiente hacer el mismo-.
+
+   Arreglado, con bastante confianza porque son bugs claros leyendo el
+   codigo:
+   - **Zoom automatico de iOS al tocar un campo**: cualquier `input`,
+     `select` o `textarea` con letra menor de 16px hace que iOS Safari
+     amplie toda la pagina al enfocarlo -pasaba en todos los formularios,
+     `.field` estaba en 14px-. Con un `@media` que solo toca movil/tablet
+     (hasta 1023px, el mismo corte que ya usa el resto de la app para
+     barra lateral/inferior) se sube a 16px ahi sin tocar el tamaño en
+     escritorio.
+   - **El dialogo de editar una hora podia quedarse sin sitio para
+     Guardar**: `dialogo-entrada.tsx` -el que se abre en movil al tocar
+     cualquier hora, y tambien desde informes y la ficha de proyecto- no
+     tenia limite de alto ni scroll propio. Con el teclado ocupando media
+     pantalla, un formulario largo (descripcion, proyecto, fecha, horas,
+     etiquetas, compartir) se podia salir por abajo sin forma de llegar al
+     boton de guardar. Ahora tiene el mismo patron que ya usaba el dialogo
+     de aceptar reuniones de Google -alto maximo 90vh, cabecera y pie
+     fijos, y el cuerpo con scroll propio-. Comprobado que los
+     desplegables de dentro (proyecto, etiquetas, compartir) no se cortan,
+     porque son de Radix y se pintan fuera del dialogo (`Popover.Portal`).
+
+   Revisado y **ya estaba bien hecho**, sin tocar nada:
+   - El arrastre del calendario para crear/mover horas ya usa Pointer
+     Events (raton y dedo con el mismo codigo), con mantener pulsado 350ms
+     en tactil antes de empezar a arrastrar -para no confundirlo con hacer
+     scroll de la pantalla-, tolerancia de 8px de movimiento y vibracion al
+     empezar. Nivel de detalle ya muy por delante de lo tipico.
+   - Las tablas anchas (informes) ya ruedan por dentro de su propio
+     contenedor (`overflow-x-auto`) en vez de estirar toda la pagina.
+   - Las filas de filtros (informes, estadisticas) ya usan `flex-wrap`, y
+     alguna ya cambia a rejilla de 2 columnas en movil a proposito.
+   - Los desplegables de proyecto/etiquetas ya limitan su ancho a
+     `100vw - 2rem` para no salirse en pantallas estrechas.
+   - `min-h-dvh` en el armazon general -la unidad correcta para que la
+     barra del navegador movil no monte encima del contenido-, y la barra
+     inferior ya respeta `env(safe-area-inset-bottom)` del iPhone.
+
+   Queda por mirar con el telefono de verdad, no solo leyendo el codigo:
+   - Si el zoom de iOS queda bien arreglado de verdad en un iPhone real
+     -el `viewport` no lleva `maximum-scale` a proposito: bloquear el zoom
+     del todo es peor, hay quien lo necesita para leer-.
+   - Estadisticas tiene ahora bastantes graficas interactivas (clic para
+     cruzar, hover con desglose): en tactil no hay "hover" de verdad, asi
+     que conviene ver como se siente tocarlas -el primer toque puede que
+     solo enseñe el aviso en vez de filtrar, hay que probarlo-.
+   - Los dialogos cortos (nuevo proyecto, ajustes de Google Calendar) se
+     quedaron sin el mismo tratamiento de alto maximo/scroll -su contenido
+     es corto, pero conviene confirmarlo con el teclado abierto de verdad-.
+   - Tamaño de los botones pequeños (borrar, cerrar) para el dedo: no se
+     ha medido ninguno a proposito.
 
 
 1. **Desplegar**: `DESPLIEGUE.md` lleva los pasos en orden -Vercel, las URLs de

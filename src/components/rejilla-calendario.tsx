@@ -54,6 +54,7 @@ import {
 } from "@/lib/time"
 import type { Catalogo, EntradaVista, Miembro } from "@/lib/tipos"
 import type { Propuesta } from "@/components/propuestas-pendientes"
+import type { EventoGoogle } from "@/lib/google"
 import { useEsMovil } from "@/lib/pantalla"
 import { cn } from "@/lib/utils"
 
@@ -70,9 +71,15 @@ const Minimo = 15
 
 /** Las propuestas se pintan en la rejilla; se reconocen por el id. */
 const MARCA = "propuesta:"
+/** Los eventos de Google llegan por fuera y se marcan igual, con otro prefijo. */
+const MARCA_GOOGLE = "google:"
 
 function esPropuesta(id: string) {
   return id.startsWith(MARCA)
+}
+
+function esGoogle(id: string) {
+  return id.startsWith(MARCA_GOOGLE)
 }
 
 /**
@@ -112,9 +119,47 @@ function propuestaComoEntrada(p: Propuesta): EntradaVista {
   }
 }
 
+/**
+ * Un evento de Google vestido de hora, igual que una propuesta: sin proyecto
+ * -Google no sabe de eso- y sin nadie que lo haya apuntado por ti.
+ */
+function eventoGoogleComoEntrada(e: EventoGoogle): EntradaVista {
+  return {
+    id: MARCA_GOOGLE + e.id,
+    workspace_id: "",
+    user_id: "",
+    user_name: "",
+    updated_by: null,
+    updated_by_name: null,
+    project_id: null,
+    project_name: null,
+    project_color: null,
+    category_id: null,
+    category_name: null,
+    subcategory_name: null,
+    edition_id: null,
+    edition_name: null,
+    task_id: null,
+    task_name: null,
+    description: e.titulo,
+    start_at: e.inicio,
+    end_at: e.fin,
+    local_date: "",
+    duration_seconds: null,
+    hours: null,
+    billable: false,
+    locked: true,
+    tags: [],
+    compartida_con: [],
+    venida_de: null,
+    amount: null,
+  }
+}
+
 export function RejillaCalendario({
   entradas,
   propuestas = [],
+  eventosGoogle = [],
   catalogo,
   lunes,
   espacioId,
@@ -124,6 +169,8 @@ export function RejillaCalendario({
   entradas: EntradaVista[]
   /** Horas que alguien ha apuntado contando conmigo y no he contestado. */
   propuestas?: Propuesta[]
+  /** Reuniones aceptadas en Google Calendar, pendientes de apuntar aqui. */
+  eventosGoogle?: EventoGoogle[]
   catalogo: Catalogo
   lunes: string
   espacioId: string
@@ -139,6 +186,7 @@ export function RejillaCalendario({
   const [nuevo, setNuevo] = useState<Nuevo | null>(null)
   const [editando, setEditando] = useState<EntradaVista | null>(null)
   const [contestando, setContestando] = useState<Propuesta | null>(null)
+  const [aceptandoGoogle, setAceptandoGoogle] = useState<EventoGoogle | null>(null)
   const esMovil = useEsMovil()
   const [diaMovil, setDiaMovil] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -161,12 +209,16 @@ export function RejillaCalendario({
   const visibles = useMemo(() => filtrarHoras(entradas, filtros), [entradas, filtros])
   const filtrando = hayFiltros(filtros)
 
-  /* Las propuestas se colocan en la rejilla igual que las horas -para que no
-     se pisen unas con otras- pero llevan el id marcado: ni se arrastran ni
-     suman en el total del dia, porque no son tuyas hasta que dices que si. */
+  /* Las propuestas y los eventos de Google se colocan en la rejilla igual que
+     las horas -para que no se pisen unas con otras- pero llevan el id
+     marcado: ni se arrastran ni suman en el total del dia, porque no son
+     tuyas hasta que dices que si. */
   const comoEntradas = useMemo(
-    () => propuestas.map(propuestaComoEntrada),
-    [propuestas],
+    () => [
+      ...propuestas.map(propuestaComoEntrada),
+      ...eventosGoogle.map(eventoGoogleComoEntrada),
+    ],
+    [propuestas, eventosGoogle],
   )
 
   const porDia = useMemo(() => {
@@ -638,6 +690,11 @@ export function RejillaCalendario({
                       propuestas.find((p) => MARCA + p.id === id) ?? null,
                     )
                   }
+                  onAceptarGoogle={(id) =>
+                    setAceptandoGoogle(
+                      eventosGoogle.find((e) => MARCA_GOOGLE + e.id === id) ?? null,
+                    )
+                  }
                 />
               ))}
             </div>
@@ -681,6 +738,16 @@ export function RejillaCalendario({
         <DialogoInvitacion
           propuesta={contestando}
           onCerrar={() => setContestando(null)}
+        />
+      )}
+
+      {aceptandoGoogle && (
+        <DialogoAceptarGoogle
+          evento={aceptandoGoogle}
+          espacioId={espacioId}
+          userId={yoId}
+          catalogo={catalogo}
+          onCerrar={() => setAceptandoGoogle(null)}
         />
       )}
     </div>
@@ -813,6 +880,171 @@ function DialogoInvitacion({
   )
 }
 
+/* --------------------------------------------------- un evento de Google */
+
+/**
+ * Aceptar una reunion de Google Calendar la convierte en una hora de verdad:
+ * a diferencia de una invitacion de equipo, aqui no hay fila que aceptar en
+ * la base -es un evento vivo, traido en el momento-, asi que "aceptar" es
+ * sencillamente crear la entrada, con el proyecto que haga falta si el
+ * espacio no deja horas sueltas.
+ */
+function DialogoAceptarGoogle({
+  evento,
+  espacioId,
+  userId,
+  catalogo,
+  onCerrar,
+}: {
+  evento: EventoGoogle
+  espacioId: string
+  userId: string
+  catalogo: Catalogo
+  onCerrar: () => void
+}) {
+  const router = useRouter()
+  const { avisar } = useAvisos()
+  const { espacio } = useSesion()
+  const [proyecto, setProyecto] = useState<{
+    project_id: string | null
+    task_id: string | null
+  }>({ project_id: null, task_id: null })
+  const [edicionId, setEdicionId] = useState<string | null>(null)
+  const [facturable, setFacturable] = useState(false)
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const alPulsar = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCerrar()
+    }
+    window.addEventListener("keydown", alPulsar)
+    return () => window.removeEventListener("keydown", alPulsar)
+  }, [onCerrar])
+
+  function elegirProyecto(sel: { project_id: string | null; task_id: string | null }) {
+    setProyecto(sel)
+    const encontrado = catalogo.proyectos.find((p) => p.id === sel.project_id)
+    if (encontrado) setFacturable(encontrado.billable_default)
+  }
+
+  async function aceptar() {
+    if (espacio.require_project && !proyecto.project_id) {
+      setError("Elige un proyecto: este espacio no guarda horas sueltas.")
+      return
+    }
+    setGuardando(true)
+    setError(null)
+
+    const { data, error: err } = await createClient()
+      .from("time_entries")
+      .insert({
+        workspace_id: espacioId,
+        user_id: userId,
+        project_id: proyecto.project_id,
+        edition_id: edicionId,
+        task_id: proyecto.task_id,
+        description: evento.titulo,
+        billable: facturable,
+        start_at: evento.inicio,
+        end_at: evento.fin,
+        source: "google_calendar",
+        external_id: evento.id,
+      })
+      .select("id")
+      .single()
+
+    setGuardando(false)
+    if (err || !data) {
+      setError(mensajeError(err))
+      return
+    }
+
+    onCerrar()
+    router.refresh()
+    avisar("Hora añadida desde Google Calendar.", async () => {
+      const { error: errQuitar } = await createClient()
+        .from("time_entries")
+        .delete()
+        .eq("id", data.id)
+      if (errQuitar) throw new Error(mensajeError(errQuitar))
+      router.refresh()
+      return "Quitada."
+    })
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
+      onMouseDown={(e) => e.target === e.currentTarget && onCerrar()}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Reunion de Google Calendar"
+        className="card w-full max-w-sm rounded-b-none sm:rounded-xl"
+        style={{ boxShadow: "var(--shadow-lg)" }}
+      >
+        <div className="flex items-start gap-3 border-b border-line px-4 py-3">
+          <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-muted" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold">{evento.titulo}</p>
+            <p className="mt-0.5 text-xs text-muted">Aceptada en tu Google Calendar</p>
+          </div>
+        </div>
+
+        <div className="space-y-3 px-4 py-3 text-sm">
+          <p className="tabular">
+            {formatClock(evento.inicio)}–{formatClock(evento.fin)}
+            <span className="text-muted">
+              {" · "}
+              {formatDurationShort(
+                Math.round(
+                  (new Date(evento.fin).getTime() - new Date(evento.inicio).getTime()) / 1000,
+                ),
+              )}
+            </span>
+          </p>
+
+          <div>
+            <span className="label">Proyecto y tarea</span>
+            <SelectorProyecto
+              catalogo={catalogo}
+              valor={{ ...proyecto, edition_id: edicionId }}
+              onChange={(sel) => {
+                setEdicionId(sel.edition_id)
+                elegirProyecto(sel)
+              }}
+            />
+          </div>
+
+          {error && <p className="text-xs text-danger">{error}</p>}
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-line px-4 py-3">
+          <button type="button" disabled={guardando} onClick={onCerrar} className="btn">
+            <X className="h-3.5 w-3.5" />
+            Ignorar
+          </button>
+          <button
+            type="button"
+            disabled={guardando}
+            onClick={() => void aceptar()}
+            className="btn btn-primary"
+          >
+            {guardando ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Check className="h-3.5 w-3.5" />
+            )}
+            Aceptar
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ------------------------------------------------------------------ un dia */
 
 function ColumnaDia({
@@ -828,6 +1060,7 @@ function ColumnaDia({
   onRedimensionar,
   onAbrir,
   onContestar,
+  onAceptarGoogle,
 }: {
   dia: string
   esHoy: boolean
@@ -848,6 +1081,7 @@ function ColumnaDia({
   ) => void
   onAbrir: (entrada: EntradaVista) => void
   onContestar: (id: string) => void
+  onAceptarGoogle: (id: string) => void
 }) {
   const arriba = (minutos: number) => ((minutos - franja.desde) / 60) * ALTO_HORA
   const minutosDelEvento = (e: React.PointerEvent<HTMLElement>) => {
@@ -918,8 +1152,11 @@ function ColumnaDia({
 
         const color = bloque.entrada.project_color ?? "var(--line-strong)"
         const anchura = 100 / bloque.columnas
-        // Propuesta sin contestar: se pinta como una invitacion, no como tuya
+        // Propuesta sin contestar o reunion de Google: se pintan como una
+        // invitacion, no como una hora tuya
         const invitacion = esPropuesta(bloque.entrada.id)
+        const google = esGoogle(bloque.entrada.id)
+        const pendiente = invitacion || google
 
         return (
           <div
@@ -936,7 +1173,7 @@ function ColumnaDia({
             onPointerDown={(e) => {
               // La continuacion del dia anterior no se arrastra: se toca la de
               // arriba, que es la que lleva la hora de inicio
-              if (invitacion || !editable || bloque.vieneDeAyer || e.button !== 0) return
+              if (pendiente || !editable || bloque.vieneDeAyer || e.button !== 0) return
               e.stopPropagation()
               const caja = e.currentTarget.getBoundingClientRect()
               // los últimos 8 px de alto son el tirador para alargar
@@ -954,6 +1191,10 @@ function ColumnaDia({
                 onContestar(bloque.entrada.id)
                 return
               }
+              if (google) {
+                onAceptarGoogle(bloque.entrada.id)
+                return
+              }
               if (!arrastrandose) onAbrir(bloque.entrada)
             }}
             title={
@@ -964,14 +1205,15 @@ function ColumnaDia({
             className={cn(
               "absolute overflow-hidden rounded-[3px] px-1.5 py-1 text-left transition-shadow",
               /* Una hora tuya va rellena, con su raya de color a la izquierda.
-                 Una propuesta sin contestar va sin rellenar y con todo el borde
-                 a rayas: la misma convencion que una invitacion de calendario
-                 sin responder, para reconocerla sin leer nada. */
-              invitacion
+                 Una propuesta sin contestar -o una reunion de Google sin
+                 apuntar- van sin rellenar y con todo el borde a rayas: la
+                 misma convencion que una invitacion de calendario sin
+                 responder, para reconocerlas sin leer nada. */
+              pendiente
                 ? "cursor-pointer border-2 border-dashed bg-surface/60 hover:bg-surface"
                 : "border-l-[3px] bg-surface shadow-sm ring-1 ring-inset",
-              !invitacion && (bloque.entrada.billable ? "ring-billable-line" : "ring-line"),
-              editable && !invitacion && !bloque.vieneDeAyer && "cursor-grab active:cursor-grabbing",
+              !pendiente && (bloque.entrada.billable ? "ring-billable-line" : "ring-line"),
+              editable && !pendiente && !bloque.vieneDeAyer && "cursor-grab active:cursor-grabbing",
               arrastrandose && "opacity-80 shadow-lg",
               // El corte de medianoche se ve: el bloque no acaba ahi de verdad
               (bloque.sigueManana || cruzaMedianoche) &&
@@ -984,7 +1226,7 @@ function ColumnaDia({
               left: `calc(${bloque.columna * anchura}% + 2px)`,
               width: `calc(${anchura}% - 4px)`,
               // En la invitacion el color va en todo el borde, no solo a un lado
-              borderColor: invitacion ? color : undefined,
+              borderColor: pendiente ? color : undefined,
               borderLeftColor: color,
             }}
           >
@@ -1012,6 +1254,12 @@ function ColumnaDia({
             </p>
             {invitacion ? (
               <Users
+                className="absolute right-1 top-1.5 h-3 w-3"
+                style={{ color }}
+                aria-hidden
+              />
+            ) : google ? (
+              <CalendarDays
                 className="absolute right-1 top-1.5 h-3 w-3"
                 style={{ color }}
                 aria-hidden

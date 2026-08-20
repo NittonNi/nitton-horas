@@ -176,34 +176,45 @@ tiene que responder "como vamos".
 Traer los eventos del calendario y convertirlos en horas con un clic, sin
 teclear.
 
-**Hecho el 20-ago-2026**: conectar y desconectar, desde un icono de ajustes en
-el propio Calendario -al estilo Clockify, donde vive el permiso es donde se
-usa-. Pide el permiso de calendario aparte del login normal (no se le pide a
-quien nunca vaya a usarlo), guarda el token de refresco en su propia tabla
--`google_connections`, RLS por persona, nunca llega al navegador- y ya enseña
-los eventos con hora de los proximos 7 dias dentro del dialogo.
+**Hecho el 20-ago-2026, version completa**: conectar (boton visible "Conectar
+Google Calendar" arriba del calendario, ya no un icono pequeño) pide el
+permiso de calendario aparte del login normal -no se le pide a quien nunca
+vaya a usarlo-, y guarda el token de refresco en su propia tabla
+(`google_connections`, RLS por persona, nunca llega al navegador).
 
-**Probado en local el 20-ago-2026, de principio a fin**: conectar, guardar el
-token y traer los eventos reales -funcionaba todo salvo la Calendar API, que
-no estaba activada en Google Cloud Console; en cuanto Nicolas la activo,
-quedo comprobado que lee el calendario de verdad.
+La primera version enseñaba los eventos dentro del dialogo de ajustes; se
+corrigio el mismo dia porque no era eso lo que hacia falta. Ahora, igual que
+"Clockify": **las reuniones aparecen directamente en la rejilla del
+calendario**, con el mismo aspecto que una hora que ha apuntado otra persona
+del equipo -borde a rayas del color del proyecto (aqui sin color, gris), sin
+sumar al total hasta que se acepta-, y solo el icono de la esquina cambia
+(calendario en vez de personas). Un clic abre un dialogo pequeño para elegir
+proyecto -obligatorio si el espacio no deja horas sueltas- y aceptar: crea la
+hora de verdad, con `source: "google_calendar"` y el id del evento en
+`external_id`, mismo criterio que Clockify para no repetir si se vuelve a
+abrir la semana.
 
-Ojo tambien con las Redirect URLs de Supabase: hacia falta el comodin (`**`)
-al final -`.../auth/callback**`-, porque el `?next=...` que se le añade no
-encajaba con la URL exacta guardada y la sesion caia al Site URL de
-produccion en vez de volver a donde se estaba. Ya esta añadido.
+Solo se traen reuniones **ya aceptadas en el propio Google Calendar** -si
+tiene invitados, hace falta `responseStatus: "accepted"`; si es un evento
+propio sin invitados, cuenta directo-, y solo las de la semana que se esta
+mirando en ese momento, nunca en el cronometro. Probado de principio a fin en
+local con un evento sintetico: aparece en su sitio, aceptar crea la hora con
+el color y el proyecto correctos, e "Ignorar" la descarta sin guardar nada.
 
-**Decisiones que faltan** para el paso siguiente -convertir un evento en hora-:
+Encontrado y arreglado de paso: las Redirect URLs de Supabase no llevaban
+comodin, asi que el `?next=...` que se añade en cada vuelta no encajaba con
+la URL exacta guardada y la sesion caia al Site URL de produccion en vez de
+volver a donde se estaba -afectaba a todo login con Google, no solo a esto-.
 
-- a que proyecto/tarea va cada hora importada: ¿se elige por evento, o uno
-  para toda la tanda de una vez? Los espacios con `require_project` activo no
-  dejan crear una entrada sin proyecto, así que esto no es opcional.
-- como se evita reimportar un evento ya convertido — misma idea que el
-  `external_id` de Clockify -ya usada en el `source: "google_calendar"` que se
-  usara para los inserts-;
-- cada cuanto se sincroniza, y si es a demanda -como ahora, al abrir el
-  dialogo- o de fondo;
-- que hacer cuando el evento cambia de hora despues de haberlo importado.
+**Decisiones que quedan abiertas**:
+
+- "Ignorar" no se guarda en ningun sitio: si se cierra el dialogo sin
+  aceptar, la reunion vuelve a aparecer la proxima vez que se cargue la
+  semana. Si molesta, hace falta una tabla de "descartados" -no se ha hecho
+  porque no esta claro que compense la complejidad para algo que se ve una
+  vez por semana.
+- que hacer cuando el evento cambia de hora en Google despues de haberlo
+  aceptado en hitoo: hoy no se entera, cada uno vive su vida.
 
 ### 3. Proyectos: buscar y ficha mas completa
 

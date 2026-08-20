@@ -5,8 +5,8 @@ import {
   cargarEntradas,
   cargarMiembros,
   cargarPropuestas,
-  estaConectadoGoogle,
 } from "@/lib/datos"
+import { eventosDeGoogle } from "@/app/(app)/calendario/acciones"
 import { RejillaCalendario } from "@/components/rejilla-calendario"
 import { AjustesCalendarioGoogle } from "@/components/ajustes-calendario-google"
 import { addDays, fromDateKey, startOfWeek, toDateKey } from "@/lib/time"
@@ -29,7 +29,7 @@ export default async function PaginaCalendario({
   /* El calendario es personal: siempre las horas de quien mira. Las de otra
      gente se revisan en informes, que es donde eso hace falta. */
 
-  const [catalogo, entradas, miembros, propuestas, googleConectado] = await Promise.all([
+  const [catalogo, entradas, miembros, propuestas, resultadoGoogle] = await Promise.all([
     cargarCatalogo(espacio.id),
     cargarEntradas({
       espacioId: espacio.id,
@@ -39,8 +39,20 @@ export default async function PaginaCalendario({
     }),
     cargarMiembros(espacio.id),
     cargarPropuestas(espacio.id),
-    estaConectadoGoogle(perfil.id),
+    // La misma semana que se esta viendo, ni un dia mas: si se navega a otra
+    // semana, vuelve a pedirse. `hasta` es medianoche del dia siguiente al
+    // domingo, para no perder las horas de ultima hora del domingo.
+    eventosDeGoogle(
+      fromDateKey(lunes).toISOString(),
+      addDays(fromDateKey(domingo), 1).toISOString(),
+      espacio.id,
+    ),
   ])
+
+  const googleConectado = resultadoGoogle.conectado
+  const eventosGoogle = resultadoGoogle.conectado && "eventos" in resultadoGoogle
+    ? resultadoGoogle.eventos
+    : []
 
   /* Las propuestas son mias, asi que solo pintan cuando miro mi semana, y solo
      las de esta semana: en otra no habria donde ponerlas. */
@@ -69,6 +81,7 @@ export default async function PaginaCalendario({
       <RejillaCalendario
         entradas={entradas}
         propuestas={propuestasDeLaSemana}
+        eventosGoogle={eventosGoogle}
         catalogo={catalogo}
         lunes={lunes}
         espacioId={espacio.id}

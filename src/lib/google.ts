@@ -62,11 +62,24 @@ export async function listarEventos(
   if (!respuesta.ok) throw new Error("No se ha podido leer el calendario.")
 
   const datos = (await respuesta.json()) as {
-    items?: { id: string; summary?: string; start?: { dateTime?: string }; end?: { dateTime?: string } }[]
+    items?: {
+      id: string
+      summary?: string
+      start?: { dateTime?: string }
+      end?: { dateTime?: string }
+      attendees?: { self?: boolean; responseStatus?: string }[]
+    }[]
   }
 
   return (datos.items ?? [])
     .filter((e) => e.start?.dateTime && e.end?.dateTime)
+    .filter((e) => {
+      // Sin invitados es un evento propio: no hay nada que aceptar. Con
+      // invitados, solo cuenta si tu respuesta en Google ya fue "si" -si no,
+      // inundaria de reuniones tentativas o rechazadas que no son horas de verdad.
+      const yo = e.attendees?.find((a) => a.self)
+      return !yo || yo.responseStatus === "accepted"
+    })
     .map((e) => ({
       id: e.id,
       titulo: e.summary?.trim() || "Sin título",

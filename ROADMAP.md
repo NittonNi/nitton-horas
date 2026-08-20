@@ -206,6 +206,13 @@ comodin, asi que el `?next=...` que se añade en cada vuelta no encajaba con
 la URL exacta guardada y la sesion caia al Site URL de produccion en vez de
 volver a donde se estaba -afectaba a todo login con Google, no solo a esto-.
 
+Arreglado el 20-ago-2026: al aceptar un evento, el desplegable del selector
+de proyecto tapaba el resto de la tarjeta -etiquetas, facturable,
+compartir-, asi que el clic fuera para cerrar solo el desplegable sacaba sin
+querer del dialogo entero. Ahora el primer clic fuera cierra solo el
+selector; hace falta un segundo clic para salir de la tarjeta. Mismo arreglo
+aplicado a "Nueva entrada", que usa el mismo selector y tenia el mismo roce.
+
 **Decisiones que quedan abiertas**:
 
 - "Ignorar" no se guarda en ningun sitio: si se cierra el dialogo sin

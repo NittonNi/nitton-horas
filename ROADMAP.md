@@ -269,6 +269,13 @@ Probado en vivo: hover en las cuatro graficas con datos reales, y
 comprobado que "PROYECTOS" se queda verde al filtrar aunque quede sola,
 en vez de pasar a azul.
 
+**Mapa de calor sin aviso feo del navegador, el 20-ago-2026**: "Cuándo se
+trabaja" avisaba con el `title` nativo del HTML al pasar el ratón por una
+casilla -el globo gris cutre del navegador-. Ahora sigue al cursor con la
+misma caja (`CajaTooltip`) que el resto de graficas, con `position: fixed`
+para no cortarse contra el scroll horizontal del propio mapa. Mismo dato de
+siempre, solo mejor puesto.
+
 ### 2. Integracion con Google Calendar
 
 Traer los eventos del calendario y convertirlos en horas con un clic, sin

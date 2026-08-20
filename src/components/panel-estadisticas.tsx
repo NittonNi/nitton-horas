@@ -1370,6 +1370,15 @@ function MapaDeCalor({
     { length: franja.max - franja.min + 1 },
     (_, i) => franja.min + i,
   )
+  /* Nada de title nativo -sale el aviso feo del navegador-: se sigue el
+     cursor con una caja igual a la del resto de graficas. */
+  const [hover, setHover] = useState<{ texto: string; x: number; y: number } | null>(
+    null,
+  )
+
+  function mover(e: React.MouseEvent, texto: string) {
+    setHover({ texto, x: e.clientX, y: e.clientY })
+  }
 
   return (
     <div className="scroll-thin overflow-x-auto">
@@ -1387,10 +1396,13 @@ function MapaDeCalor({
               </span>
               {horas.map((h) => {
                 const valor = fila[h]
+                const texto = `${DIAS[d]} a las ${h}:00 · ${formatDurationShort(valor * 3600)}`
                 return (
                   <span
                     key={h}
-                    title={`${DIAS[d]} a las ${h}:00 · ${formatDurationShort(valor * 3600)}`}
+                    onMouseEnter={(e) => mover(e, texto)}
+                    onMouseMove={(e) => mover(e, texto)}
+                    onMouseLeave={() => setHover(null)}
                     className="aspect-square rounded-[2px] bg-accent transition"
                     style={{
                       opacity: valor <= 0 ? 0.06 : 0.15 + (valor / techo) * 0.85,
@@ -1412,6 +1424,15 @@ function MapaDeCalor({
           ))}
         </div>
       </div>
+
+      {hover && (
+        <div
+          className="pointer-events-none fixed z-50"
+          style={{ left: hover.x + 14, top: hover.y + 14 }}
+        >
+          <CajaTooltip titulo={hover.texto} />
+        </div>
+      )}
     </div>
   )
 }

@@ -22,10 +22,21 @@ spinner-, asi que da la sensacion de que se ha quedado colgado. Luego aparece
 todo de golpe. Confunde bastante, sobre todo en conexiones lentas o con listas
 largas.
 
-Falta decidir donde son mas necesarios (candidatos: cronometro/panel al
-cargar, informes al cambiar filtros, calendario al cambiar de semana) y que
-patron usar -esqueleto tipo el que ya usa el propio dashboard de Supabase, o
-un spinner simple-, para que sea el mismo en toda la app.
+**Arreglado el 20-ago-2026** para las paginas principales: `loading.tsx` de
+Next.js (panel, calendario, informes, semana, estadisticas, proyectos
+-incluida la ficha, que cae en el mismo- y gestion -incluidas todas sus
+subpaginas: equipo, categorias, tarifas, importar, ajustes-), con un esqueleto
+generico y reutilizable (`EsqueletoPagina`, el mismo patron de bloques grises
+`animate-pulse` que ya usaba el formulario de `/acceso`). Se nota tanto al
+navegar entre paginas como al recargar, mientras se resuelve la consulta a
+Supabase de esa pagina.
+
+Queda pendiente si hace falta ademas: la recarga completa tambien espera a la
+sesion del layout (`getSesion` + el cronometro en marcha) antes de que
+aparezca el primer esqueleto, un tramo mas corto que no tiene aviso propio
+-se podria cubrir con un `loading.tsx` en la raiz si se nota-, y afinar el
+esqueleto de cada pagina para que se parezca mas a su contenido real en vez
+de bloques genericos.
 
 ### Filtro "marcar todos" se queda atras si se crea algo nuevo mientras esta activo
 

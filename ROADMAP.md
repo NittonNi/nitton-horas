@@ -278,6 +278,96 @@ Segunda pasada el mismo dia, esta vez accesibilidad y movil:
 Verificado ademas `npm run lint` y `npm run build` limpios tras los 4
 arreglos de arriba.
 
+Tercera pasada el mismo dia, esta vez rendimiento:
+
+- **El layout de `(app)` no tenia ningun fallback visual mientras carga**:
+  `layout.tsx` hacia `await getSesion()` (usa `cookies()`, dato "runtime") y
+  la consulta de la entrada en marcha sin ningun `<Suspense>` propio. Sin
+  Cache Components activado (no lo esta, `next.config.ts` no lo declara), un
+  `loading.tsx` de pagina no cubre el fetch del layout de un segmento
+  superior -confirmado contra
+  `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/loading.md`
+  (lineas 88-93) y `layout.md` (lineas 316-345, patron "Interaction with
+  loading.js") de esta instalacion de Next 16.3.1-: la navegacion se
+  bloqueaba sin ningun aviso hasta que el layout entero terminaba. Movido lo
+  que depende de la sesion/entrada en marcha a un componente de servidor
+  dedicado (`MarcoSesion`, dentro del propio `layout.tsx`) envuelto en su
+  propio `<Suspense fallback={<EsqueletoMarco />}>` -`ProveedorAvisos`, que no
+  depende de ningun dato, se queda fuera para que ni el espere-. Nuevo
+  `src/components/esqueleto-marco.tsx`, que solo calca las medidas de
+  `Armazon` (ancho de la barra lateral, alto de la cabecera movil), sin tocar
+  los esqueletos de pagina que ya arreglo la pasada de accesibilidad.
+  Verificado con datos concretos, no solo por lectura del codigo: con un
+  `await new Promise(r => setTimeout(r, 1500))` temporal dentro de
+  `MarcoSesion` y un `fetch` con lector de stream desde la propia pagina
+  (`response.body.getReader()`), el primer chunk -con el esqueleto
+  `animate-pulse`- llego a los 266ms, y el contenido real
+  (`LALCANTARA`, un proyecto real) no aparecio hasta pasados los ~1,9s del
+  delay; sin el delay, el chunk con el esqueleto sigue llegando primero
+  (213ms) y el resto del contenido detras. Delay retirado despues de medir.
+- **`eventosDeGoogle` duplicaba la validacion de auth, fuera del `cache()`
+  del propio 21-ago**: creaba su propio cliente de Supabase y llamaba a
+  `supabase.auth.getUser()` directamente, en vez de recibir el usuario ya
+  resuelto por `getSesion()`/`getPerfil()` (`src/lib/sesion.ts`, envueltas en
+  `cache()` de React) que `calendario/page.tsx` ya tiene a mano -un
+  round-trip real y evitable contra el servidor de Auth de Supabase en cada
+  carga de `/calendario`. Ahora `eventosDeGoogle` (en
+  `src/app/(app)/calendario/acciones.ts`) recibe `userId` por parametro.
+  Verificado con datos concretos: como esta llamada es servidor-a-Supabase
+  -invisible en el Network tab del navegador, que solo ve navegador-a-Next-,
+  se instrumento temporalmente `getPerfil()` para contar llamadas a
+  `auth.getUser()` por request (log en un fichero) y se simulo tambien
+  temporalmente la llamada duplicada que tenia `eventosDeGoogle` antes del
+  arreglo: con la duplicada, 2 llamadas por carga de `/calendario`, la
+  segunda 292ms despues de la primera; sin ella (el codigo real, ya
+  arreglado), 1 sola. Instrumentacion retirada despues de medir.
+- **La entrada en marcha se pedia dos veces**: `layout.tsx` ya la trae via
+  `time_entries` para la barra del cronometro, y por separado
+  `cargarEntradas()` (`src/lib/datos.ts`) la volvia a traer sin querer al
+  consultar `v_entries` para `/panel`, `/calendario` y `/semana` -las tres la
+  descartan despues en cliente (`lista-entradas.tsx`, `src/lib/calendario.ts`
+  y `tabla-semana.tsx` ya ignoraban explicitamente las filas sin `end_at`).
+  Nuevo parametro opcional `soloTerminadas` en `cargarEntradas()` que añade
+  `.not("end_at", "is", null)` a la consulta, activado solo en esas tres
+  paginas -informes, estadisticas, la ficha de proyecto, perfil y
+  gestion/categorias siguen trayendola igual que antes, sin cambios de
+  comportamiento. Confirmado por codigo que `duration_seconds` es `null` para
+  una entrada sin `end_at` (todo el codigo existente ya la trata como `?? 0`,
+  y `trozosDelDia`/`tabla-semana.tsx` ya la descartaban antes de este
+  cambio), asi que quitarla de la consulta no cambia ninguna cifra, solo deja
+  de viajar por la red de mas.
+- **`recharts` sin carga diferida**: `resumen-proyecto.tsx` (la ficha de
+  proyecto) importaba `recharts` -varios cientos de KB- de forma sincrona
+  para un unico grafico de barras, aunque de todas formas necesita medir su
+  contenedor en el navegador antes de pintar nada. Sacado el grafico a
+  `src/components/grafico-resumen-proyecto.tsx` y cargado con
+  `next/dynamic(..., { ssr: false })` desde `resumen-proyecto.tsx`, con un
+  bloque `animate-pulse` como `loading`. Verificado comparando el build de
+  produccion antes/despues: antes, el `page_client-reference-manifest.js` de
+  `/proyectos/[id]` referenciaba dos chunks de recharts (~38KB + ~377KB);
+  despues del cambio, ninguno de los chunks de recharts del build aparece ya
+  en ese manifest -se comprobo tambien que `/estadisticas` y `/informes`
+  (sin tocar, siguen usando recharts sin diferir) los siguen referenciando
+  con normalidad-. Probado ademas en el navegador: la ficha de LALCANTARA
+  sigue pintando el grafico de barras con normalidad tras el cambio.
+  `panel-informes.tsx` (un solo grafico, similar de sencillo) y sobre todo
+  `panel-estadisticas.tsx` (cuatro graficos distintos en un archivo de mas de
+  1400 lineas, bastante mas riesgo de romper algo) tambien importan recharts
+  sin diferir; no se tocaron en esta pasada -se prioriza lo pedido
+  explicitamente- y quedan pendientes si compensa el esfuerzo.
+- **`router.refresh()` en 74 sitios de 31 archivos** -cada arranque/parada de
+  cronometro, cada edicion de una hora, cada cambio de proyecto...-: cada
+  llamada abre un ambito de request nuevo, asi que el ahorro del `cache()` de
+  sesion (getPerfil/getPertenencias/getSesion/cargarCatalogo, del primer
+  arreglo del 21-ago) se dedupe dentro de un request pero se paga entero de
+  nuevo en cada accion del usuario. **No arreglado, solo documentado**:
+  arreglarlo de verdad significa rediseñar hacia invalidacion mas granular
+  -`revalidateTag`, actualizacion optimista de estado en cliente-, un cambio
+  de arquitectura demasiado grande para esta pasada.
+
+Verificado `npm run lint` y `npm run build` limpios tras los arreglos de
+rendimiento de arriba.
+
 ### Google OAuth y correo de produccion
 
 Configurado el 20-ago-2026: cuenta `hitooclock@gmail.com` con proyecto propio

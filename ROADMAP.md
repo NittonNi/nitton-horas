@@ -524,6 +524,22 @@ tres cosas)-:
    selector de proyecto muestra el proyecto de `hitoo` -el creado el
    20-ago-2026 con la cuenta `hitooclock@gmail.com`-, no otro proyecto de
    Google Cloud si la cuenta tiene varios. Boton **Editar aplicacion**:
+   - **Nombre de la aplicacion**: `hitoo` -tal cual, SIN el `.es`-. Esto se
+     nos quedo fuera de esta guia la primera vez y causo dos avisos reales
+     el 21-ago-2026 al pasar la verificacion automatica con `hitoo.es`
+     puesto ahi: "el nombre de la app no coincide con el de la pagina
+     principal" y, en cascada, "en la pagina principal no se explica el
+     proposito de la app" -la pagina principal (`https://www.hitoo.es/`)
+     dice "hitoo" en todas partes, nunca "hitoo.es", asi que el
+     comprobador automatico de Google no conseguia relacionar el nombre
+     configurado con el contenido de la pagina y fallaba los dos avisos a
+     la vez, aunque el titulo y la meta-descripcion de la portada
+     -"Control de horas para equipos LEINN: cronometro, calendario, hoja
+     semanal, proyectos e informes"- ya explican bien el proposito.
+     Cambiando el nombre a `hitoo` deberian desaparecer los dos avisos
+     juntos; si el de "proposito no explicado" sigue apareciendo despues de
+     corregir el nombre y de que Google vuelva a comprobarlo, avisar para
+     ampliar el texto visible de la portada con una frase mas literal.
    - Dominio de la app / Enlace a la politica de privacidad:
      `https://www.hitoo.es/privacidad` -con `www`, que es el dominio
      canonico en Vercel (ver nota del paso 2); el apex `hitoo.es` tambien

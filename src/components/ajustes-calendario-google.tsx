@@ -7,6 +7,7 @@ import { CalendarDays, Loader2, X } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
+import { desconectarGoogle } from "@/app/(app)/calendario/acciones"
 
 /**
  * Conectar y desconectar. Las reuniones que trae se aceptan directamente en
@@ -46,18 +47,13 @@ export function AjustesCalendarioGoogle({ conectado: conectadoInicial }: { conec
     setSaliendo(true)
     setError(null)
 
-    const supabase = createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    const { error: err } = await supabase
-      .from("google_connections")
-      .delete()
-      .eq("user_id", user?.id ?? "")
+    // En el servidor: revoca el token en Google antes de borrar la fila, sin
+    // pasarle el refresh_token al navegador para que lo revoque el mismo.
+    const { error: err } = await desconectarGoogle()
 
     setSaliendo(false)
     if (err) {
-      setError(mensajeError(err))
+      setError(err)
       return
     }
     setConectado(false)

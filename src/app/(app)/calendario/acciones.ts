@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { listarEventos, type EventoGoogle } from "@/lib/google"
+import { mensajeError } from "@/lib/errores"
 
 type ResultadoEventos =
   | { conectado: false }
@@ -65,4 +66,45 @@ export async function eventosDeGoogle(
     }
     return { conectado: true, error: mensaje }
   }
+}
+
+/**
+ * Corta la conexion con Google Calendar: revoca el token en Google antes de
+ * borrar la fila -si no, el consentimiento se queda vivo del lado de Google
+ * aunque aqui ya no quede rastro, y la proxima conexion no pediria consentir
+ * de nuevo-. Se hace en el servidor -nunca desde el navegador- para no tener
+ * que pasarle el refresh_token al cliente para revocarlo el mismo.
+ */
+export async function desconectarGoogle(): Promise<{ error: string | null }> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Hay que iniciar sesion." }
+
+  const { data: conexion } = await supabase
+    .from("google_connections")
+    .select("refresh_token")
+    .eq("user_id", user.id)
+    .maybeSingle()
+
+  if (conexion?.refresh_token) {
+    try {
+      const respuesta = await fetch("https://oauth2.googleapis.com/revoke", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ token: conexion.refresh_token }),
+      })
+      if (!respuesta.ok) {
+        // Token ya invalido, o Google no responde: no bloquea el borrado
+        // local, pero se deja registrado para poder mirarlo si hace falta.
+        console.error("No se ha podido revocar el token de Google:", respuesta.status)
+      }
+    } catch (e) {
+      console.error("No se ha podido revocar el token de Google:", e)
+    }
+  }
+
+  const { error } = await supabase.from("google_connections").delete().eq("user_id", user.id)
+  return { error: error ? mensajeError(error) : null }
 }

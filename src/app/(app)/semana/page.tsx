@@ -29,6 +29,7 @@ export default async function PaginaSemana({
       desde: lunes,
       hasta: domingo,
       userId: perfil.id,
+      soloTerminadas: true,
     }),
     cargarMiembros(espacio.id),
   ])

@@ -13,22 +13,24 @@ type ResultadoEventos =
  * Eventos de Google Calendar de quien mira, entre dos fechas (ISO), quitando
  * los que ya se aceptaron antes -mismo criterio que Clockify: se marcan con
  * su id de Google en `external_id` y no se vuelven a proponer.
+ *
+ * `userId` llega ya resuelto desde quien llama (getSesion()/getPerfil(), que
+ * van envueltos en cache() de React) en vez de volver a pedirlo aquí con
+ * `auth.getUser()`: esa llamada hace un round-trip real contra el servidor de
+ * Auth de Supabase, y calendario/page.tsx ya tiene el usuario resuelto.
  */
 export async function eventosDeGoogle(
   desde: string,
   hasta: string,
   espacioId: string,
+  userId: string,
 ): Promise<ResultadoEventos> {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { conectado: false }
 
   const { data: conexion } = await supabase
     .from("google_connections")
     .select("refresh_token, calendar_id")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .maybeSingle()
 
   if (!conexion) return { conectado: false }
@@ -48,7 +50,7 @@ export async function eventosDeGoogle(
         .from("time_entries")
         .select("external_id")
         .eq("workspace_id", espacioId)
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq("source", "google_calendar")
         .in("external_id", ids)
       yaAceptados = new Set((existentes ?? []).flatMap((f) => (f.external_id ? [f.external_id] : [])))
@@ -61,7 +63,7 @@ export async function eventosDeGoogle(
       /* El permiso se revoco desde fuera de la app (ej. en la cuenta de
          Google): se borra la conexion para que la pantalla vuelva a ofrecer
          conectar, en vez de fallar en silencio cada vez. */
-      await supabase.from("google_connections").delete().eq("user_id", user.id)
+      await supabase.from("google_connections").delete().eq("user_id", userId)
       return { conectado: false }
     }
     return { conectado: true, error: mensaje }

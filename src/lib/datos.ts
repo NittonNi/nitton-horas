@@ -63,6 +63,16 @@ export async function cargarEntradas(opciones: {
   userId?: string
   projectId?: string
   limite?: number
+  /**
+   * La entrada en marcha (`end_at` null) ya la pide el layout -`(app)/layout.tsx`-
+   * para la barra del cronómetro; en /panel, /calendario y /semana esta misma
+   * fila se volvía a traer aquí sin usarla (lista-entradas.tsx, calendario.ts
+   * y tabla-semana.tsx ya la descartan en cuanto llega). Con esto no viaja ni
+   * siquiera por la red. Por defecto se sigue incluyendo, que es lo que
+   * necesitan informes/estadísticas/proyecto para no dejar fuera algo que sí
+   * usan.
+   */
+  soloTerminadas?: boolean
 }): Promise<EntradaVista[]> {
   const supabase = await createClient()
 
@@ -76,6 +86,7 @@ export async function cargarEntradas(opciones: {
 
   if (opciones.userId) consulta = consulta.eq("user_id", opciones.userId)
   if (opciones.projectId) consulta = consulta.eq("project_id", opciones.projectId)
+  if (opciones.soloTerminadas) consulta = consulta.not("end_at", "is", null)
   if (opciones.limite) consulta = consulta.limit(opciones.limite)
 
   const { data, error } = await consulta

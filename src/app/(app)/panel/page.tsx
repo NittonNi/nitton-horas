@@ -26,7 +26,13 @@ export default async function PaginaCronometro() {
 
   const [catalogo, entradas, propuestas, miembros] = await Promise.all([
     cargarCatalogo(espacio.id),
-    cargarEntradas({ espacioId: espacio.id, desde, hasta: hoy, userId: perfil.id }),
+    cargarEntradas({
+      espacioId: espacio.id,
+      desde,
+      hasta: hoy,
+      userId: perfil.id,
+      soloTerminadas: true,
+    }),
     cargarPropuestas(espacio.id),
     cargarMiembros(espacio.id),
   ])

@@ -43,6 +43,7 @@ export default async function PaginaCalendario({
       desde: lunes,
       hasta: domingo,
       userId: perfil.id,
+      soloTerminadas: true,
     }),
     cargarMiembros(espacio.id),
     cargarPropuestas(espacio.id),
@@ -56,6 +57,7 @@ export default async function PaginaCalendario({
       startOfDayInZone(lunes, espacio.timezone).toISOString(),
       startOfDayInZone(siguienteLunes, espacio.timezone).toISOString(),
       espacio.id,
+      perfil.id,
     ),
   ])
 

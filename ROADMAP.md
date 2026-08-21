@@ -5,6 +5,48 @@ Lo que falta, en el orden en que tiene sentido hacerlo. Se va moviendo a
 
 ## Por arreglar
 
+### Revision a fondo del 21-ago-2026
+
+Nicolas pidio repasar la aplicacion entera sin esperar respuesta -codigo,
+usabilidad, backend, seguridad, movil y escritorio- y arreglar lo que
+hiciera falta. Encontrado y arreglado por el camino:
+
+- **Doble consulta de sesion y catalogo en la ficha de proyecto**:
+  `generateMetadata` y la propia pagina de `proyectos/[id]` pedian cada una
+  por su cuenta `getSesion()` y `cargarCatalogo()`, asi que cada carga de
+  esa pagina eran cuatro consultas en vez de dos. `getPerfil`,
+  `getPertenencias`, `getSesion` (en `src/lib/sesion.ts`) y `cargarCatalogo`
+  (en `src/lib/datos.ts`) van ahora envueltas en `cache()` de React, que
+  comparte el resultado entre quien las pida dentro del mismo request. De
+  paso beneficia a `layout.tsx` de `(app)`, que tambien pide `getSesion()`
+  en cada pagina.
+- **Se contaban dos veces las horas de un proyecto con ediciones y un cierre
+  general a la vez**: `resumenDeResultados` (en
+  `src/components/resultados-proyecto.tsx`) sumaba las horas de un cierre
+  sin edicion por rango de fechas, sin excluir las horas que ya pertenecian
+  a una edicion con su propio cierre. Si ese cierre general se reguardaba
+  despues de crear ediciones, su periodo se estiraba hasta hoy y las horas
+  de cada edicion contaban dos veces: una por su `edition_id`, otra por caer
+  dentro del rango del cierre general. Corregido ahi y en
+  `tarjetas-edicion.tsx` -mismo criterio en la tarjeta individual, no solo
+  en el resumen agregado-. Verificado con datos reales: el proyecto CLOCKIFY
+  DUPLICADO tenia exactamente este caso, y las horas facturables pasaron de
+  contar 18s (el doble) a los 9s reales.
+- **No habia paginas propias de error ni de "no encontrado"**: un
+  `notFound()` -por ejemplo, entrar a la ficha de un proyecto borrado- o
+  cualquier excepcion sin capturar caian en las paginas genericas de
+  Next.js, sin marca. Ahora hay `not-found.tsx` y `error.tsx` dentro de
+  `(app)` -mantienen la barra lateral visible, porque el limite de error no
+  envuelve el layout de su propio segmento- y en la raiz, para
+  acceso/auth/bienvenida y para cualquier URL que no case con ninguna ruta;
+  mas `global-error.tsx` por si se rompe el layout raiz -con su propio
+  html/body y el mismo script de tema que el layout real, porque ese
+  archivo no hereda estilos globales de forma automatica-. Los `error.tsx`
+  usan `retry()` en vez de `reset()` -estable desde Next 16.3, vuelve a
+  pedir los datos ademas de limpiar el estado-. Probado en vivo: id de
+  proyecto inexistente, URL fuera de toda ruta, y una excepcion forzada
+  temporalmente para comprobar que el limite la capturaba bien.
+
 ### Google OAuth y correo de produccion
 
 Configurado el 20-ago-2026: cuenta `hitooclock@gmail.com` con proyecto propio

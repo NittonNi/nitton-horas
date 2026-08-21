@@ -163,6 +163,48 @@ hiciera falta. Encontrado y arreglado por el camino:
   workspace) para los dos limites de `eventosDeGoogle`. Verificado con un
   script Node: medianoche del 17-ago-2026 en Europe/Madrid cae en
   `2026-08-16T22:00:00.000Z`, no en el `T10:00:00Z` que daba `fromDateKey`.
+- **El reparto por defecto no daba a cada uno lo que generaron sus propias
+  horas, sino una proporcion de horas en bruto**: `calcularAtribucion` (en
+  `src/lib/reparto.ts`) repartia el `total` de cada ambito proporcional a
+  `duration_seconds`, lo que solo coincide con "cada uno se lleva lo suyo"
+  si todos cobran la misma tarifa -en cuanto hay tarifas distintas por
+  persona (`rates.user_id`), transferia dinero de quien cobra mas caro a
+  quien cobra mas barato-. `total` ya es la suma de los `amount` de ese
+  ambito (cada `amount`, calculado en la vista `v_entries`, viene a la
+  tarifa propia de quien apunto la hora), asi que ahora se atribuye
+  directamente el `amount` de cada persona, sin prorratear. Verificado con
+  un script Node que replica la funcion real: A a 50€/h y B a 30€/h, 1h cada
+  uno en el mismo proyecto -antes daba 40€/40€ a los dos, ahora 50€/30€, los
+  reales-; y un caso con 3 personas y tarifas distintas (80€/75€/30€) donde
+  la suma repartida sigue cuadrando exacto con el `total` del grupo (185€).
+  Los modos "equitativo", "porcentajes" y "equipo" no cambian.
+- **El reparto por porcentajes se podia guardar sin sumar 100%, perdiendo
+  dinero en silencio**: `gestion-reparto.tsx` solo avisaba con un texto
+  ("se guarda igual, pero revisalo") si la suma no daba 100%, y si todos los
+  porcentajes eran ≤0 se filtraban antes del insert y el 100% desaparecia
+  sin repartirse a nadie. Ahora se bloquea el guardado -boton deshabilitado
+  y error explicito con la suma actual y cuanto falta o sobra- cuando la
+  suma de los porcentajes validos (>0) no esta a ±0.5% de 100, incluido el
+  caso de suma efectiva 0. Probado en el navegador sobre el espacio NITTON,
+  ambito KONSULTEK: 60%+40%(otra persona)=60% no dejaba guardar (con error
+  visible y sin crear fila en `revenue_splits`), y al añadir hasta sumar
+  100% exacto si guardo con normalidad; reparto de prueba borrado despues.
+- **Faltaba una restriccion que evitara reintroducir el doble conteo de
+  `project_results` por carrera de escritura**: `Tarjeta.guardar()` (en
+  `tarjetas-edicion.tsx`) hace "buscar y luego insertar", asi que dos
+  guardados casi simultaneos para el mismo ambito podian crear dos filas
+  con el mismo `(project_id, edition_id)` -o dos "cierres generales" con
+  `edition_id` nulo, que una `UNIQUE` normal no pilla porque Postgres trata
+  cada NULL como distinto-. Comprobado antes por SQL que no habia
+  duplicados reales -solo 2 filas en `project_results`, ambitos distintos-,
+  asi que se aplicaron dos indices unicos: `project_results_scope_unique`
+  (`project_id, edition_id`) y `project_results_general_unique`, parcial,
+  sobre `project_id` `WHERE edition_id IS NULL`. Probado con un insert de
+  prueba dentro de una transaccion que se revierte sola: choca con
+  `project_results_general_unique` como se esperaba. Añadido tambien el
+  mensaje en `src/lib/errores.ts` para el error `23505` de estos dos
+  constraints -"Alguien mas acaba de guardar este resultado, recarga y
+  vuelve a intentarlo"-, mismo patron que ya tenia `one_running_per_user`.
 
 ### Google OAuth y correo de produccion
 

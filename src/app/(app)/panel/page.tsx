@@ -12,15 +12,7 @@ import { BarraCronometro } from "@/components/barra-cronometro"
 import { ListaEntradas } from "@/components/lista-entradas"
 import { ResumenCronometro } from "@/components/resumen-cronometro"
 import { PropuestasPendientes } from "@/components/propuestas-pendientes"
-import {
-  addDays,
-  formatDurationShort,
-  formatObjetivoCorto,
-  fromDateKey,
-  startOfWeek,
-  toDateKey,
-  todayKey,
-} from "@/lib/time"
+import { addDays, fromDateKey, startOfWeek, toDateKey, todayKey } from "@/lib/time"
 
 export const metadata = { title: "Cronómetro" }
 
@@ -136,35 +128,3 @@ function nombreDia(clave: string) {
   return "el " + dia
 }
 
-/** "Faltan 1:48" o "Objetivo cumplido", cuando el espacio ha fijado uno. */
-function pieObjetivo(segundos: number, objetivoMinutos: number | null) {
-  if (!objetivoMinutos) return undefined
-  const restante = objetivoMinutos * 60 - segundos
-  return restante > 0
-    ? `Faltan ${formatDurationShort(restante)} de ${formatObjetivoCorto(objetivoMinutos)}`
-    : "Objetivo cumplido"
-}
-
-function Resumen({
-  etiqueta,
-  valor,
-  pie,
-  resaltado = false,
-}: {
-  etiqueta: string
-  valor: string
-  pie?: string
-  resaltado?: boolean
-}) {
-  return (
-    <div className="px-4 py-3">
-      <p className="rotulo">{etiqueta}</p>
-      <p
-        className={`cifra mt-1 text-2xl font-semibold leading-none tracking-tight ${resaltado ? "text-billable" : ""}`}
-      >
-        {valor}
-      </p>
-      <p className="mt-1.5 h-4 text-xs text-muted">{pie}</p>
-    </div>
-  )
-}

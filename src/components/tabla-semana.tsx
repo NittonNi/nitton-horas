@@ -61,7 +61,10 @@ export function TablaSemana({
   lunes,
   espacioId,
   yoId,
-  miembros,
+  // Todavia no se puede compartir desde aqui (ROADMAP: "Horas compartidas,
+  // tercera vuelta"); se recibe ya para no tener que tocar el llamador
+  // cuando se construya.
+  miembros: _miembros,
 }: {
   entradas: EntradaVista[]
   catalogo: Catalogo

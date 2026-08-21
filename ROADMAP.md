@@ -540,20 +540,22 @@ tres cosas)-:
      juntos; si el de "proposito no explicado" sigue apareciendo despues de
      corregir el nombre y de que Google vuelva a comprobarlo, avisar para
      ampliar el texto visible de la portada con una frase mas literal.
-   - **Ojo, son dos campos separados en el formulario de Google, no uno solo
-     -aqui es donde probablemente estuvo el segundo problema real-**:
+   - Son dos campos separados en el formulario de Google, no uno solo:
      - **Pagina principal de la aplicacion** (App home page):
        `https://www.hitoo.es/` -la portada de verdad, la que explica que es
-       hitoo. **Si aqui hay puesto `https://www.hitoo.es/privacidad` en vez
-       de esto, es la causa mas probable de que el aviso de "no se explica
-       el proposito" siga saliendo despues de corregir el nombre**: Google
-       comprobaria el proposito leyendo la pagina de politica de
-       privacidad, que es un documento legal y no un texto de producto, y
-       no la portada real-.
+       hitoo-.
      - **Enlace a la politica de privacidad** (App privacy policy link):
        `https://www.hitoo.es/privacidad` -esta si es la de privacidad-.
      Los dos con `www`, que es el dominio canonico en Vercel (ver nota del
      paso 2); el apex `hitoo.es` tambien vale porque redirige, pero mejor
+     poner el bueno directamente. **Comprobado el 21-ago-2026**: al primer
+     intento la pagina principal se habia escrito sin la barra final
+     (`https://www.hitoo.es` en vez de `https://www.hitoo.es/`) y el aviso
+     de "proposito no explicado" seguia saliendo -aunque el servidor
+     responde 200 exactamente igual con o sin barra, comprobado con curl-;
+     al añadir la barra el aviso se resolvio. El comprobador de Google
+     parece exigir la URL exacta, barra incluida: escribirla tal cual esta
+     aqui arriba, no de memoria.
      poner el bueno directamente.
    - Dominios autorizados: añadir `hitoo.es` (tras verificarlo en el paso 3;
      Google cubre `www.hitoo.es` solo con el dominio raiz, no hace falta

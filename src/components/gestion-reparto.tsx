@@ -95,12 +95,33 @@ export function GestionReparto({
     setNuevoPercent("")
   }
 
-  const sumaPartes = partes.reduce((s, p) => s + (Number(p.percent) || 0), 0)
+  // Solo cuentan para el 100% las partes con persona y porcentaje > 0: son
+  // las mismas que de verdad se insertan (ver filtro de mas abajo). Si se
+  // dejara guardar sin sumar 100%, el resto de `total` desaparece sin
+  // repartirse a nadie y sin ningun aviso claro del dinero perdido.
+  const partesValidas = partes.filter((p) => p.userId && Number(p.percent) > 0)
+  const sumaPartes =
+    Math.round(partesValidas.reduce((s, p) => s + Number(p.percent), 0) * 100) / 100
+  const TOLERANCIA_PORCENTAJE = 0.5
+  const diferenciaPorcentaje = Math.round((100 - sumaPartes) * 100) / 100
+  const porcentajesInvalidos =
+    modo === "porcentajes" &&
+    (partesValidas.length === 0 || Math.abs(diferenciaPorcentaje) > TOLERANCIA_PORCENTAJE)
 
   async function crear() {
-    if (modo === "porcentajes" && partes.length === 0) {
-      setError("Añade al menos una persona con su porcentaje.")
-      return
+    if (modo === "porcentajes") {
+      if (partes.length === 0) {
+        setError("Añade al menos una persona con su porcentaje.")
+        return
+      }
+      if (porcentajesInvalidos) {
+        setError(
+          diferenciaPorcentaje > 0
+            ? `Los porcentajes suman ${sumaPartes}%, no 100% -faltan ${diferenciaPorcentaje}%-.`
+            : `Los porcentajes suman ${sumaPartes}%, no 100% -sobran ${Math.abs(diferenciaPorcentaje)}%-.`,
+        )
+        return
+      }
     }
     setOcupado(true)
     setError(null)
@@ -316,9 +337,12 @@ export function GestionReparto({
                   ))}
                 </ul>
               )}
-              {partes.length > 0 && sumaPartes !== 100 && (
-                <p className="mt-1.5 text-xs text-accent">
-                  Suma {sumaPartes}%, no 100% -se guarda igual, pero revísalo-.
+              {partes.length > 0 && porcentajesInvalidos && (
+                <p className="mt-1.5 text-xs text-danger">
+                  Suma {sumaPartes}%, no 100%
+                  {diferenciaPorcentaje > 0
+                    ? ` -faltan ${diferenciaPorcentaje}%-.`
+                    : ` -sobran ${Math.abs(diferenciaPorcentaje)}%-.`}
                 </p>
               )}
             </div>
@@ -332,7 +356,7 @@ export function GestionReparto({
 
           <button
             type="submit"
-            disabled={ocupado}
+            disabled={ocupado || porcentajesInvalidos}
             className="btn btn-primary w-full"
           >
             {ocupado ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}

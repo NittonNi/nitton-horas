@@ -69,6 +69,57 @@ hiciera falta. Encontrado y arreglado por el camino:
   con `has_function_privilege` antes y despues de cada intento, y en vivo
   arrancando y parando el cronometro de verdad -`set_local_date` sigue
   poniendo bien el dia de cada hora nueva-.
+- **RPC `espacio_por_codigo` se podia llamar sin sesion**: a diferencia de sus
+  funciones hermanas del mismo modulo (`unirse_con_codigo`, `create_workspace`,
+  `join_workspace`...), no comprobaba `auth.uid()` -un
+  `POST /rest/v1/rpc/espacio_por_codigo` con solo la apikey publica, sin
+  sesion, devolvia 200 con el nombre del espacio y la lista de nombres de
+  plazas libres de cualquier `join_code` valido, saltandose la RLS que
+  protege esa misma tabla (`workspace_seats`) para todo lo demas. Convertida
+  de `sql` puro a `plpgsql` -el `sql` puro no admite `if`- para poder añadir
+  la misma comprobacion `if auth.uid() is null then raise exception...` que
+  ya tenian sus hermanas, sin tocar columnas devueltas ni el filtro por
+  `join_code`. Comprobado en vivo: sin sesion (curl con la apikey publica y
+  sin cookie) ahora responde 401 con `{"code":"42501",...}` en vez de datos;
+  y `/unirse/[codigo]` sigue cargando bien con una sesion real -navegador,
+  workspace NITTON, sin llegar a enviar el formulario de unirse-.
+- **`refresh_token` de Google Calendar, legible en teoria desde el
+  navegador**: la RLS de `google_connections` deja `SELECT` a
+  `user_id = auth.uid()`, y el rol `authenticated` tenia privilegio de
+  columna sobre `refresh_token` -el comentario de la tabla dice que nunca
+  sale al navegador, pero nada en la base lo impedia-.
+  - **Arreglado**: `desconectar()` en `ajustes-calendario-google.tsx`
+    borraba la fila desde el cliente sin revocar nada en Google. Ahora hay
+    una accion de servidor (`desconectarGoogle`, en
+    `src/app/(app)/calendario/acciones.ts`) que llama a
+    `https://oauth2.googleapis.com/revoke` con el token antes de borrar la
+    fila -sin bloquear el borrado local si la llamada a Google falla, solo
+    lo deja registrado-.
+  - **Bloqueado, sin tocar**: el
+    `REVOKE SELECT (refresh_token) ON google_connections FROM authenticated`
+    no se ha aplicado. `src/lib/google.ts` y `calendario/acciones.ts` leen
+    hoy ese token con el cliente normal de servidor (rol `authenticated`, la
+    clave publica + cookies de sesion), no con un cliente de service role, asi
+    que revocar el privilegio ahora mismo rompia esa lectura legitima. No
+    existe `SUPABASE_SERVICE_ROLE_KEY` en el proyecto -ni en `.env.local` ni
+    en el codigo, y no hay forma de generarla ni leerla desde aqui-.
+    Documentado en `.env.example` lo que hace falta: añadirla desde el panel
+    de Supabase (Project Settings > API > service_role secret key), montar un
+    cliente de servidor con ella para leer/escribir `refresh_token`, y
+    entonces si aplicar el `REVOKE` y comprobarlo con
+    `has_column_privilege`.
+- **El alta contaba si un correo ya tenia cuenta**: `mensajeError` traducia
+  el error de Supabase "User already registered" a un mensaje que confirmaba
+  la cuenta existente -inconsistente con recuperar contraseña, que responde
+  igual exista o no la cuenta-. Cambiado a un mensaje neutro ("Revisa tu
+  correo para continuar.") en `src/lib/errores.ts`, sin tocar el resto del
+  flujo de `/acceso`.
+- **`join_code` generado con `Math.random()`**: la funcion que genera el
+  codigo de union estaba duplicada en `asistente-inicio.tsx` y
+  `gestion-plazas.tsx`. Sacada a una sola (`nuevoCodigo`, en
+  `src/lib/utils.ts`) que usa `crypto.getRandomValues` sobre el mismo
+  alfabeto de 32 caracteres -sin sesgo de modulo, `2**32` es multiplo de
+  32- y la misma longitud de 10.
 
 ### Google OAuth y correo de produccion
 

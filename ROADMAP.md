@@ -434,33 +434,28 @@ tres cosas)-:
    -si no, el proxy la redirigia a `/acceso`-. Probada en vivo: responde 200
    sin sesion.
 
-2. **Que `hitoo.es` resuelva a la app.** Comprobado en vivo con las tools de
-   Vercel: el proyecto `hitoo` (equipo `nittonnis-projects`) ya existe, ya
-   tiene un despliegue de produccion listo en `hitoo.vercel.app`, pero
-   **`hitoo.es` todavia no esta añadido como dominio del proyecto** -no hay
-   ninguna herramienta en este entorno que pueda añadirlo por API o CLI, hay
-   que hacerlo a mano-:
-   - Panel de Vercel -> proyecto **hitoo** -> **Settings -> Domains** ->
-     escribir `hitoo.es` -> Add.
-   - Vercel va a pedir un registro DNS. Segun la documentacion actual de
-     Vercel (comprobada hoy, puede que el panel muestre el mismo valor u otro
-     si cambia entre tanto -usar siempre el que enseñe el panel en ese
-     momento-): para el dominio raiz, un registro **A** apuntando a
-     `76.76.21.21`; si tambien se quiere `www.hitoo.es`, un **CNAME** a
-     `cname.vercel-dns-0.com`.
-   - Ese registro se añade en **Hostinger** (donde esta comprado el dominio),
-     en su gestor de DNS -zona del dominio `hitoo.es`, no en Vercel-.
-   - Puede tardar de minutos a un par de horas en propagar. Vercel avisa solo
-     cuando lo detecta y emite el certificado.
-   - De paso, revisar en **Settings -> Environment Variables** del mismo
-     proyecto que `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
-     `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` esten
-     puestas para el entorno de **Production** -no se ha podido comprobar
-     desde aqui, ninguna tool de este entorno lista variables de entorno-.
-   - Una vez resuelva: actualizar la pantalla de consentimiento de Google
-     (paso 6) y el **Site URL** / **Redirect URLs** de Supabase -Authentication
-     -> URL Configuration- para que incluyan `https://hitoo.es` (dejar tambien
-     `hitoo.vercel.app` y `http://localhost:3000` para las pruebas).
+2. ✅ **Hecho, `hitoo.es` resuelve** (comprobado en vivo el 21-ago-2026:
+   `hitoo.es` y `www.hitoo.es` ya salen en los dominios del proyecto en
+   Vercel, y ambos responden). **Detalle importante**: Vercel dejo
+   `www.hitoo.es` como canonico -el apex `hitoo.es` hace un 308 permanente
+   hacia `https://www.hitoo.es/`, comprobado con curl-. No es un fallo, es
+   como quedo configurado el dominio, pero significa que **el enlace "de
+   verdad" a usar en todos los sitios (formulario de Google, politica de
+   privacidad, etc.) es `https://www.hitoo.es`, no `https://hitoo.es` a
+   secas** -si se usa el apex funciona igual porque redirige, pero es un
+   salto de mas-.
+
+   Queda por comprobar a mano (ninguna tool de este entorno lista variables
+   de entorno de Vercel ni la configuracion de Auth de Supabase):
+   - **Settings -> Environment Variables** del proyecto en Vercel: que
+     `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXT_PUBLIC_SUPABASE_URL` y
+     `NEXT_PUBLIC_SUPABASE_ANON_KEY` esten puestas para **Production**.
+   - Supabase -> Authentication -> URL Configuration: **Site URL** a
+     `https://www.hitoo.es`, y en **Redirect URLs** añadir
+     `https://www.hitoo.es/auth/callback` -dejando tambien
+     `https://hitoo.vercel.app/auth/callback` y
+     `http://localhost:3000/auth/callback` para no romper el preview ni el
+     desarrollo local-.
 
 3. **Verificar la propiedad de `hitoo.es` en Google Search Console**, con la
    cuenta `hitooclock@gmail.com`:
@@ -513,10 +508,12 @@ tres cosas)-:
 6. **Repasar el resto de la ficha** en Google Cloud Console -> APIs y
    servicios -> Pantalla de consentimiento de OAuth -> Editar aplicacion:
    - Dominio de la app / Enlace a la politica de privacidad:
-     `https://hitoo.es/privacidad` (una vez resuelva el paso 2; hasta
-     entonces se puede dejar `https://hitoo.vercel.app/privacidad`, que ya
-     funciona hoy mismo).
-   - Dominios autorizados: añadir `hitoo.es` (tras verificarlo en el paso 3).
+     `https://www.hitoo.es/privacidad` -con `www`, que es el dominio
+     canonico en Vercel (ver nota del paso 2); el apex `hitoo.es` tambien
+     vale porque redirige, pero mejor poner el bueno directamente-.
+   - Dominios autorizados: añadir `hitoo.es` (tras verificarlo en el paso 3;
+     Google cubre `www.hitoo.es` solo con el dominio raiz, no hace falta
+     añadir el subdominio aparte).
    - Correo de asistencia y correo de contacto del desarrollador:
      `hitooclock@gmail.com`.
    - Logo: `public/hitoo-logo.svg` exportado a PNG cuadrado -Google pide PNG,
@@ -530,10 +527,11 @@ tres cosas)-:
    auditoria CASA) suele tardar dias, no semanas. Google puede escribir por
    correo pidiendo aclaraciones -revisar `hitooclock@gmail.com`-.
 
-Resumen de quien hace que: el paso 1 ya esta hecho. Los pasos 2 (dominio +
-variables de Vercel) y 4-6 (textos e imagenes de la ficha) estan preparados
-para que sea copiar/pegar/subir. Los pasos 3 y 7 son tramites que solo
-Nicolas puede iniciar porque exigen su sesion en Google -no hay atajo-.
+Resumen de quien hace que: los pasos 1 y 2 (dominio) ya estan hechos. Falta
+solo comprobar a mano las variables de entorno de Vercel y la URL de Supabase
+(final del paso 2). Los pasos 4-6 (textos e imagenes de la ficha) estan
+preparados para que sea copiar/pegar/subir. Los pasos 3 y 7 son tramites que
+solo Nicolas puede iniciar porque exigen su sesion en Google -no hay atajo-.
 
 ### Faltan estados de carga: la pantalla se queda parada y de golpe aparece todo
 

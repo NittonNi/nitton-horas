@@ -508,9 +508,13 @@ propios puestos -wordmark en el header y acceso, marca "h" en favicon e
 iconos PWA (192, 512, 512 recortable)-, a partir del SVG que paso Nicolas
 (`hitoo_logo_white_v4_wordmark_only.svg`).
 
+**og:image hecho el 21-ago-2026**: `src/app/opengraph-image.tsx`, generado
+con `next/og` -mismo dibujo que el wordmark, blanco en negrita sobre
+`#0e0e0e`-, prerenderizado en build. Next lo conecta solo a `og:image` y a
+`twitter:image`/`twitter:card` de la portada.
+
 Queda:
 
-- **og:image** para compartir enlaces (redes, WhatsApp): no hay todavia.
 - Renombrar el repositorio de GitHub, que aun se llama `nitton-horas`.
 - Revisar `theme_color`/`background_color` del manifiesto: siguen siendo el
   azul de antes (`#0071e3` / `#f5f5f7`), no se han tocado a proposito -es un

@@ -1,7 +1,8 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
+import * as Dialog from "@radix-ui/react-dialog"
 import {
   Archive,
   ChevronDown,
@@ -56,6 +57,10 @@ export function GestionProyectos({
   const [verArchivados, setVerArchivados] = useState(false)
   const [ocupado, setOcupado] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  /* Radix solo devuelve el foco solo si el boton que abre es un Dialog.Trigger;
+     aqui el dialogo se abre desde el lapiz de cada fila, asi que se guarda a
+     mano cual fue para poder devolverselo al cerrar. */
+  const previoRef = useRef<HTMLElement | null>(null)
 
   const visibles = proyectos.filter((p) => verArchivados || !p.archived)
   const archivados = proyectos.filter((p) => p.archived).length
@@ -196,7 +201,10 @@ export function GestionProyectos({
                       )}
                       <button
                         type="button"
-                        onClick={() => setEditando(proyecto)}
+                        onClick={(e) => {
+                          previoRef.current = e.currentTarget
+                          setEditando(proyecto)
+                        }}
                         className="btn btn-ghost p-1.5 text-muted"
                         aria-label={`Editar ${proyecto.name}`}
                       >
@@ -236,38 +244,38 @@ export function GestionProyectos({
         ))}
       </div>
 
-      {editando && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
-          onMouseDown={(e) => e.target === e.currentTarget && setEditando(null)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Editar proyecto"
-            className="card w-full max-w-lg rounded-b-none p-4 sm:rounded-xl"
+      <Dialog.Root
+        open={editando !== null}
+        onOpenChange={(abierto) => !abierto && setEditando(null)}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
+          <Dialog.Content
+            aria-describedby={undefined}
+            onCloseAutoFocus={(e) => {
+              e.preventDefault()
+              previoRef.current?.focus()
+            }}
+            className="card fixed inset-x-0 bottom-0 z-50 w-full rounded-b-none p-4 sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl"
             style={{ boxShadow: "var(--shadow-lg)" }}
           >
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Editar proyecto</h3>
-              <button
-                type="button"
-                onClick={() => setEditando(null)}
-                className="btn btn-ghost p-1"
-                aria-label="Cerrar"
-              >
+              <Dialog.Title className="text-sm font-semibold">Editar proyecto</Dialog.Title>
+              <Dialog.Close className="btn btn-ghost p-1" aria-label="Cerrar">
                 <X className="h-4 w-4" />
-              </button>
+              </Dialog.Close>
             </div>
-            <FormularioProyecto
-              espacioId={espacioId}
-              proyecto={editando}
-              onHecho={() => setEditando(null)}
-              onCancelar={() => setEditando(null)}
-            />
-          </div>
-        </div>
-      )}
+            {editando && (
+              <FormularioProyecto
+                espacioId={espacioId}
+                proyecto={editando}
+                onHecho={() => setEditando(null)}
+                onCancelar={() => setEditando(null)}
+              />
+            )}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </section>
   )
 }

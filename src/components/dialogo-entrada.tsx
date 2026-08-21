@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
+import * as Dialog from "@radix-ui/react-dialog"
 import { Euro, Loader2, Trash2, X } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
@@ -58,6 +59,13 @@ export function DialogoEntrada({
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  /* Radix solo devuelve el foco solo si el boton que abre es un Dialog.Trigger;
+     aqui se abre desde sitios distintos (fila, calendario, informes...), asi
+     que se guarda a mano quien tenia el foco justo antes de montarse. */
+  const previoRef = useRef<HTMLElement | null>(
+    typeof document !== "undefined" ? (document.activeElement as HTMLElement) : null,
+  )
+
   // Las etiquetas de la vista vienen por nombre; para editarlas hacen falta los ids
   useEffect(() => {
     const supabase = createClient()
@@ -67,12 +75,6 @@ export function DialogoEntrada({
       .eq("entry_id", entrada.id)
       .then(({ data }) => setTagIds((data ?? []).map((f) => f.tag_id)))
   }, [entrada.id])
-
-  useEffect(() => {
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && onCerrar()
-    document.addEventListener("keydown", esc)
-    return () => document.removeEventListener("keydown", esc)
-  }, [onCerrar])
 
   function recalcularDuracion(desde: string, hasta: string) {
     if (!desde || !hasta) return
@@ -218,27 +220,23 @@ export function DialogoEntrada({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
-      onMouseDown={(e) => e.target === e.currentTarget && onCerrar()}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Editar entrada"
-        className="card flex max-h-[90vh] w-full max-w-lg flex-col rounded-b-none sm:rounded-xl"
-        style={{ boxShadow: "var(--shadow-lg)" }}
-      >
+    <Dialog.Root open onOpenChange={(abierto) => !abierto && onCerrar()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
+        <Dialog.Content
+          aria-describedby={undefined}
+          onCloseAutoFocus={(e) => {
+            e.preventDefault()
+            previoRef.current?.focus()
+          }}
+          className="card fixed inset-x-0 bottom-0 z-50 flex max-h-[90vh] w-full flex-col rounded-b-none sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl"
+          style={{ boxShadow: "var(--shadow-lg)" }}
+        >
         <div className="flex items-center justify-between border-b border-line px-4 py-3">
-          <h2 className="text-sm font-semibold">Editar entrada</h2>
-          <button
-            type="button"
-            onClick={onCerrar}
-            className="btn btn-ghost p-1"
-            aria-label="Cerrar"
-          >
+          <Dialog.Title className="text-sm font-semibold">Editar entrada</Dialog.Title>
+          <Dialog.Close className="btn btn-ghost p-1" aria-label="Cerrar">
             <X className="h-4 w-4" />
-          </button>
+          </Dialog.Close>
         </div>
 
         <div className="space-y-4 overflow-y-auto p-4">
@@ -396,9 +394,7 @@ export function DialogoEntrada({
             Borrar
           </button>
 
-          <button type="button" onClick={onCerrar} className="btn">
-            Cancelar
-          </button>
+          <Dialog.Close className="btn">Cancelar</Dialog.Close>
           <button
             type="button"
             onClick={() => void guardar()}
@@ -409,7 +405,8 @@ export function DialogoEntrada({
             Guardar
           </button>
         </div>
-      </div>
-    </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }

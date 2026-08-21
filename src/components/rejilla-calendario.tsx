@@ -773,15 +773,12 @@ function DialogoInvitacion({
   const { avisar } = useAvisos()
   const [ocupado, setOcupado] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  // Escape cierra, como en el resto de tarjetas
-  useEffect(() => {
-    const alPulsar = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCerrar()
-    }
-    window.addEventListener("keydown", alPulsar)
-    return () => window.removeEventListener("keydown", alPulsar)
-  }, [onCerrar])
+  /* Radix solo devuelve el foco solo si el boton que abre es un Dialog.Trigger;
+     aqui se abre al tocar el bloque de la rejilla, asi que se guarda a mano
+     quien tenia el foco justo antes de montarse. */
+  const previoRef = useRef<HTMLElement | null>(
+    typeof document !== "undefined" ? (document.activeElement as HTMLElement) : null,
+  )
 
   async function responder(aceptar: boolean) {
     setOcupado(true)
@@ -801,83 +798,85 @@ function DialogoInvitacion({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
-      onMouseDown={(e) => e.target === e.currentTarget && onCerrar()}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Horas que han apuntado contigo"
-        className="card w-full max-w-sm rounded-b-none sm:rounded-xl"
-        style={{ boxShadow: "var(--shadow-lg)" }}
-      >
-        <div className="flex items-start gap-3 border-b border-line px-4 py-3">
-          <span
-            aria-hidden
-            className="mt-0.5 h-9 w-1 shrink-0 rounded-full"
-            style={{ background: propuesta.project_color ?? "var(--line-strong)" }}
-          />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">
-              {propuesta.description || "Sin descripción"}
-            </p>
-            <p className="mt-0.5 text-xs text-muted">
-              {propuesta.de} ha apuntado estas horas contigo
-            </p>
+    <Dialog.Root open onOpenChange={(abierto) => !abierto && onCerrar()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
+        <Dialog.Content
+          aria-describedby={undefined}
+          onCloseAutoFocus={(e) => {
+            e.preventDefault()
+            previoRef.current?.focus()
+          }}
+          className="card fixed inset-x-0 bottom-0 z-50 w-full max-w-sm rounded-b-none sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl"
+          style={{ boxShadow: "var(--shadow-lg)" }}
+        >
+          <div className="flex items-start gap-3 border-b border-line px-4 py-3">
+            <span
+              aria-hidden
+              className="mt-0.5 h-9 w-1 shrink-0 rounded-full"
+              style={{ background: propuesta.project_color ?? "var(--line-strong)" }}
+            />
+            <div className="min-w-0 flex-1">
+              <Dialog.Title className="truncate text-sm font-semibold">
+                {propuesta.description || "Sin descripción"}
+              </Dialog.Title>
+              <p className="mt-0.5 text-xs text-muted">
+                {propuesta.de} ha apuntado estas horas contigo
+              </p>
+            </div>
           </div>
-        </div>
 
-        <div className="space-y-1 px-4 py-3 text-sm">
-          <p className="tabular">
-            {formatClock(propuesta.start_at)}–{formatClock(propuesta.end_at)}
-            <span className="text-muted">
-              {" · "}
-              {formatDurationShort(
-                Math.round(
-                  (new Date(propuesta.end_at).getTime() -
-                    new Date(propuesta.start_at).getTime()) /
-                    1000,
-                ),
-              )}
-            </span>
-          </p>
-          {propuesta.project_name && (
-            <p className="text-muted">{propuesta.project_name}</p>
-          )}
-          <p className="pt-1 text-xs text-muted">
-            Hasta que no aceptes no se te apunta nada. Si aceptas se crea una
-            hora tuya; la de {propuesta.de} se queda como está.
-          </p>
-          {error && <p className="pt-1 text-xs text-danger">{error}</p>}
-        </div>
-
-        <div className="flex justify-end gap-2 border-t border-line px-4 py-3">
-          <button
-            type="button"
-            disabled={ocupado}
-            onClick={() => void responder(false)}
-            className="btn"
-          >
-            <X className="h-3.5 w-3.5" />
-            No fui
-          </button>
-          <button
-            type="button"
-            disabled={ocupado}
-            onClick={() => void responder(true)}
-            className="btn btn-primary"
-          >
-            {ocupado ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Check className="h-3.5 w-3.5" />
+          <div className="space-y-1 px-4 py-3 text-sm">
+            <p className="tabular">
+              {formatClock(propuesta.start_at)}–{formatClock(propuesta.end_at)}
+              <span className="text-muted">
+                {" · "}
+                {formatDurationShort(
+                  Math.round(
+                    (new Date(propuesta.end_at).getTime() -
+                      new Date(propuesta.start_at).getTime()) /
+                      1000,
+                  ),
+                )}
+              </span>
+            </p>
+            {propuesta.project_name && (
+              <p className="text-muted">{propuesta.project_name}</p>
             )}
-            Aceptar
-          </button>
-        </div>
-      </div>
-    </div>
+            <p className="pt-1 text-xs text-muted">
+              Hasta que no aceptes no se te apunta nada. Si aceptas se crea una
+              hora tuya; la de {propuesta.de} se queda como está.
+            </p>
+            {error && <p className="pt-1 text-xs text-danger">{error}</p>}
+          </div>
+
+          <div className="flex justify-end gap-2 border-t border-line px-4 py-3">
+            <button
+              type="button"
+              disabled={ocupado}
+              onClick={() => void responder(false)}
+              className="btn"
+            >
+              <X className="h-3.5 w-3.5" />
+              No fui
+            </button>
+            <button
+              type="button"
+              disabled={ocupado}
+              onClick={() => void responder(true)}
+              className="btn btn-primary"
+            >
+              {ocupado ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Check className="h-3.5 w-3.5" />
+              )}
+              Aceptar
+            </button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }
 

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useSyncExternalStore } from "react"
+import * as Dialog from "@radix-ui/react-dialog"
 import { BarChart3, FolderTree, Settings2, Timer, Users } from "lucide-react"
 
 /**
@@ -57,6 +58,12 @@ const CLAVE = "guia-vista"
 
 const oyentes = new Set<() => void>()
 
+/* La primera vez la guia se abre sola -no hay boton que la dispare-, pero al
+   volver a abrirla desde el perfil si lo hay: se guarda aqui para poder
+   devolverle el foco al cerrar, ya que Radix solo hace eso solo cuando quien
+   abre es un Dialog.Trigger, y este se controla desde fuera. */
+let disparador: HTMLElement | null = null
+
 function suscribir(oyente: () => void) {
   oyentes.add(oyente)
   return () => {
@@ -105,69 +112,75 @@ export function GuiaInicial({
   const ultimo = paso === pasos.length - 1
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="guia-titulo"
-        className="card w-full max-w-md p-5"
-        style={{ boxShadow: "var(--shadow-lg)" }}
-      >
-        <div className="flex items-center justify-between">
-          <p className="rotulo">
-            Guía rápida · {paso + 1} de {pasos.length}
-          </p>
-          <button
-            type="button"
-            onClick={() => guardar(perfilId)}
-            className="text-xs font-medium text-muted transition hover:text-ink"
-          >
-            Omitir
-          </button>
-        </div>
-
-        <span className="mt-4 flex h-10 w-10 items-center justify-center rounded-[var(--radio-sm)] bg-accent-soft text-accent">
-          <Icono className="h-5 w-5" strokeWidth={1.9} aria-hidden />
-        </span>
-
-        <h2 id="guia-titulo" className="mt-3 text-lg font-semibold tracking-tight">
-          {actual.titulo}
-        </h2>
-        <p className="mt-2 text-sm leading-relaxed text-ink-soft">{actual.texto}</p>
-
-        <div className="mt-5 flex items-center gap-3">
-          <div className="flex flex-1 gap-1.5" aria-hidden>
-            {pasos.map((p, i) => (
-              <span
-                key={p.titulo}
-                className={
-                  "h-1.5 flex-1 rounded-full transition " +
-                  (i <= paso ? "bg-accent" : "bg-surface-3")
-                }
-              />
-            ))}
-          </div>
-
-          {paso > 0 && (
+    <Dialog.Root open onOpenChange={(abierto) => !abierto && guardar(perfilId)}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
+        <Dialog.Content
+          aria-describedby={undefined}
+          onCloseAutoFocus={(e) => {
+            e.preventDefault()
+            disparador?.focus()
+            disparador = null
+          }}
+          className="card fixed inset-x-4 bottom-4 z-50 max-w-md p-5 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2"
+          style={{ boxShadow: "var(--shadow-lg)" }}
+        >
+          <div className="flex items-center justify-between">
+            <p className="rotulo">
+              Guía rápida · {paso + 1} de {pasos.length}
+            </p>
             <button
               type="button"
-              onClick={() => setPaso((p) => p - 1)}
-              className="btn btn-ghost shrink-0 text-muted"
+              onClick={() => guardar(perfilId)}
+              className="text-xs font-medium text-muted transition hover:text-ink"
             >
-              Atrás
+              Omitir
             </button>
-          )}
-          <button
-            type="button"
-            autoFocus
-            onClick={() => (ultimo ? guardar(perfilId) : setPaso((p) => p + 1))}
-            className="btn btn-primary shrink-0"
-          >
-            {ultimo ? "Empezar" : "Siguiente"}
-          </button>
-        </div>
-      </div>
-    </div>
+          </div>
+
+          <span className="mt-4 flex h-10 w-10 items-center justify-center rounded-[var(--radio-sm)] bg-accent-soft text-accent">
+            <Icono className="h-5 w-5" strokeWidth={1.9} aria-hidden />
+          </span>
+
+          <Dialog.Title className="mt-3 text-lg font-semibold tracking-tight">
+            {actual.titulo}
+          </Dialog.Title>
+          <p className="mt-2 text-sm leading-relaxed text-ink-soft">{actual.texto}</p>
+
+          <div className="mt-5 flex items-center gap-3">
+            <div className="flex flex-1 gap-1.5" aria-hidden>
+              {pasos.map((p, i) => (
+                <span
+                  key={p.titulo}
+                  className={
+                    "h-1.5 flex-1 rounded-full transition " +
+                    (i <= paso ? "bg-accent" : "bg-surface-3")
+                  }
+                />
+              ))}
+            </div>
+
+            {paso > 0 && (
+              <button
+                type="button"
+                onClick={() => setPaso((p) => p - 1)}
+                className="btn btn-ghost shrink-0 text-muted"
+              >
+                Atrás
+              </button>
+            )}
+            <button
+              type="button"
+              autoFocus
+              onClick={() => (ultimo ? guardar(perfilId) : setPaso((p) => p + 1))}
+              className="btn btn-primary shrink-0"
+            >
+              {ultimo ? "Empezar" : "Siguiente"}
+            </button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }
 
@@ -176,7 +189,8 @@ export function BotonVerGuia({ perfilId }: { perfilId: string }) {
   return (
     <button
       type="button"
-      onClick={() => {
+      onClick={(e) => {
+        disparador = e.currentTarget
         try {
           localStorage.removeItem(CLAVE + ":" + perfilId)
         } catch {

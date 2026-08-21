@@ -9,7 +9,9 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Todo menos estaticos, imagenes optimizadas, el favicon y el manifiesto PWA
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Todo menos estaticos, imagenes optimizadas, el favicon, el manifiesto
+    // PWA y las rutas de metadatos que generan robots.txt/sitemap.xml/og:image
+    // -tienen que ser publicas siempre, las piden rastreadores sin sesion-.
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|robots.txt|sitemap.xml|opengraph-image|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 }

@@ -13,8 +13,8 @@ export default async function PaginaCategorias() {
     cargarCatalogo(espacio.id, true),
     cargarEntradas({
       espacioId: espacio.id,
-      desde: toDateKey(startOfWeek(new Date())),
-      hasta: todayKey(),
+      desde: toDateKey(startOfWeek(new Date(), espacio.timezone)),
+      hasta: todayKey(espacio.timezone),
       userId: perfil.id,
     }),
   ])

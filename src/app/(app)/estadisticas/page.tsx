@@ -27,7 +27,7 @@ export default async function PaginaEstadisticas() {
     cargarEntradas({
       espacioId: espacio.id,
       desde,
-      hasta: todayKey(),
+      hasta: todayKey(espacio.timezone),
       limite: 40000,
     }),
     cargarMiembros(espacio.id),

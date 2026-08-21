@@ -39,7 +39,7 @@ export default async function PaginaProyecto({
     cargarEntradas({
       espacioId: espacio.id,
       desde: DESDE_SIEMPRE,
-      hasta: todayKey(),
+      hasta: todayKey(espacio.timezone),
       projectId: id,
       limite: 2000,
     }),

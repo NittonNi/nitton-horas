@@ -6,6 +6,61 @@
 
 export const TIMEZONE = "Europe/Madrid"
 
+/* ---------------------------------------------------------- husos horarios */
+
+/** Los campos de un instante tal y como se leen en el reloj de pared de `timeZone`. */
+function wallClockParts(date: Date, timeZone: string) {
+  const partes = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date)
+
+  const num = (tipo: string) => Number(partes.find((p) => p.type === tipo)?.value)
+  return {
+    year: num("year"),
+    month: num("month"),
+    day: num("day"),
+    hour: num("hour"),
+    minute: num("minute"),
+    second: num("second"),
+  }
+}
+
+/**
+ * Un Date cuyos componentes locales (los que leen getFullYear/getMonth/
+ * getDate/getDay/...) son la hora de pared en `timeZone` para ese instante,
+ * sin importar el huso del proceso que ejecuta el código (el servidor corre
+ * en UTC en producción; el navegador, en el huso de quien mira). Solo vale
+ * para volver a leer esos componentes en el mismo proceso justo después: su
+ * instante real (getTime, toISOString) no significa nada.
+ */
+function wallClockDate(date: Date, timeZone: string): Date {
+  const { year, month, day, hour, minute, second } = wallClockParts(date, timeZone)
+  return new Date(year, month - 1, day, hour, minute, second)
+}
+
+/** El instante real (UTC) de esa hora de pared en `timeZone`. */
+function zonedTimeToUtc(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  second: number,
+  timeZone: string,
+): Date {
+  const supuesto = Date.UTC(year, month - 1, day, hour, minute, second)
+  const en = wallClockParts(new Date(supuesto), timeZone)
+  const comoUTC = Date.UTC(en.year, en.month - 1, en.day, en.hour, en.minute, en.second)
+  return new Date(supuesto - (comoUTC - supuesto))
+}
+
 /* ---------------------------------------------------------------- duracion */
 
 /** 5025 -> "1:23:45" */
@@ -107,13 +162,46 @@ export function fromDateKey(key: string): Date {
   return new Date(y, m - 1, d, 12, 0, 0, 0)
 }
 
-export function todayKey(): string {
-  return toDateKey(new Date())
+/**
+ * Medianoche real (00:00, huso `timeZone`) de "2026-08-17". A diferencia de
+ * fromDateKey() -que da mediodía en el huso del proceso, para comparar
+ * fechas sin sustos de DST- esto es el límite real de una ventana horaria:
+ * p.ej. el `desde` que se le manda a una API externa como Google Calendar.
+ */
+export function startOfDayInZone(key: string, timeZone: string): Date {
+  const [y, m, d] = key.split("-").map(Number)
+  return zonedTimeToUtc(y, m, d, 0, 0, 0, timeZone)
 }
 
-/** Lunes de la semana de `date`. */
-export function startOfWeek(date: Date): Date {
-  const d = new Date(date)
+/**
+ * "Hoy" en `timeZone` (por defecto Europe/Madrid). Server Components deben
+ * pasar la zona horaria del workspace (`espacio.timezone`): sin ella, esta
+ * función usaría el reloj del proceso, que en producción corre en UTC y
+ * puede ir hasta 2 horas por detrás de "hoy" en hora local.
+ */
+export function todayKey(timeZone: string = TIMEZONE): string {
+  return toDateKey(wallClockDate(new Date(), timeZone))
+}
+
+/**
+ * Como toDateKey, pero de un instante convertido a `timeZone` en vez del
+ * huso del proceso que ejecuta el código. Para timestamptz que llegan en UTC
+ * desde Postgres (p.ej. start_at) cuando hace falta el día del workspace.
+ */
+export function toDateKeyInZone(date: Date, timeZone: string): string {
+  return toDateKey(wallClockDate(date, timeZone))
+}
+
+/**
+ * Lunes de la semana de `date`. Si se da `timeZone`, el día de la semana se
+ * lee en esa zona horaria en vez de en la del proceso -hace falta cuando
+ * `date` es "ahora mismo" y el proceso no corre en el huso del workspace-;
+ * sin ella, se mantiene el comportamiento de siempre (componentes locales
+ * del propio `date`, que ya viene fijado -p.ej. por fromDateKey- y no debe
+ * reinterpretarse).
+ */
+export function startOfWeek(date: Date, timeZone?: string): Date {
+  const d = timeZone ? wallClockDate(date, timeZone) : new Date(date)
   d.setHours(12, 0, 0, 0)
   const day = (d.getDay() + 6) % 7 // 0 = lunes
   d.setDate(d.getDate() - day)

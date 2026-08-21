@@ -16,7 +16,7 @@ export default async function PaginaSemana({
 
   const lunes = /^\d{4}-\d{2}-\d{2}$/.test(parametros.semana ?? "")
     ? toDateKey(startOfWeek(fromDateKey(parametros.semana!)))
-    : toDateKey(startOfWeek(new Date()))
+    : toDateKey(startOfWeek(new Date(), espacio.timezone))
   const domingo = toDateKey(addDays(fromDateKey(lunes), 6))
 
   /* La hoja es para rellenar lo tuyo, igual que el calendario: las horas de

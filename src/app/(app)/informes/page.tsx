@@ -23,7 +23,9 @@ export default async function PaginaInformes({
   const desde = ES_FECHA.test(parametros.desde ?? "")
     ? parametros.desde!
     : toDateKey(new Date(hoy.getFullYear(), hoy.getMonth(), 1))
-  const hasta = ES_FECHA.test(parametros.hasta ?? "") ? parametros.hasta! : todayKey()
+  const hasta = ES_FECHA.test(parametros.hasta ?? "")
+    ? parametros.hasta!
+    : todayKey(espacio.timezone)
 
   const [catalogo, entradas, miembros] = await Promise.all([
     cargarCatalogo(espacio.id, true),

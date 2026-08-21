@@ -18,8 +18,8 @@ export const metadata = { title: "Cronómetro" }
 
 export default async function PaginaCronometro() {
   const { perfil, espacio, rol } = await getSesion()
-  const hoy = todayKey()
-  const lunes = toDateKey(startOfWeek(new Date()))
+  const hoy = todayKey(espacio.timezone)
+  const lunes = toDateKey(startOfWeek(new Date(), espacio.timezone))
   const inicioMes = toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
   const haceVeinte = toDateKey(addDays(new Date(), -20))
   const desde = inicioMes < haceVeinte ? inicioMes : haceVeinte
@@ -48,7 +48,7 @@ export default async function PaginaCronometro() {
   /* Los dias de esta semana que siguen a cero, de lunes a hoy y sin contar el
      fin de semana: es lo que se descubre tarde y mal, al cerrar el mes. */
   const conHoras = new Set(semana.map((e) => e.local_date))
-  const lunesFecha = startOfWeek(new Date())
+  const lunesFecha = startOfWeek(new Date(), espacio.timezone)
   const vacios: string[] = []
   for (let i = 0; i < 7; i++) {
     const dia = addDays(lunesFecha, i)

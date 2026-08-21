@@ -10,12 +10,12 @@ export default async function PaginaPerfil() {
   const { perfil, espacio, rol, espacios } = await getSesion()
   const supabase = await createClient()
 
-  const lunes = toDateKey(startOfWeek(new Date()))
+  const lunes = toDateKey(startOfWeek(new Date(), espacio.timezone))
   const [entradas, { count }] = await Promise.all([
     cargarEntradas({
       espacioId: espacio.id,
       desde: lunes,
-      hasta: todayKey(),
+      hasta: todayKey(espacio.timezone),
       userId: perfil.id,
     }),
     supabase

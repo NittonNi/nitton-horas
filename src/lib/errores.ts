@@ -18,6 +18,12 @@ export function mensajeError(error: unknown): string {
     if (raw.includes("tasks_name_per_project")) return "Ese proyecto ya tiene una tarea con ese nombre."
     if (raw.includes("tags_name_unique")) return "Ya existe una etiqueta con ese nombre."
     if (raw.includes("rates_scope_unique")) return "Ya hay una tarifa para ese ambito y esa fecha."
+    if (
+      raw.includes("project_results_scope_unique") ||
+      raw.includes("project_results_general_unique")
+    ) {
+      return "Alguien más acaba de guardar este resultado, recarga y vuelve a intentarlo."
+    }
     return "Ese registro ya existe."
   }
   if (code === "23514" && raw.includes("end_after_start")) {

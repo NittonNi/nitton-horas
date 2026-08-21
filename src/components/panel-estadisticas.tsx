@@ -1378,13 +1378,38 @@ function MapaDeCalor({
   const [hover, setHover] = useState<{ texto: string; x: number; y: number } | null>(
     null,
   )
+  /* El hover no existe en tactil: una celda tocada se queda "activa" y su
+     caja se queda puesta hasta que se toca la misma celda otra vez -o se
+     toca fuera-, en vez de depender de un raton que ahi no hay. */
+  const [activa, setActiva] = useState<string | null>(null)
 
   function mover(e: React.MouseEvent, texto: string) {
     setHover({ texto, x: e.clientX, y: e.clientY })
   }
 
+  function tocar(e: React.MouseEvent<HTMLSpanElement>, clave: string, texto: string) {
+    // Sin esto, el clic seguiria hasta el contenedor y su propio manejador
+    // -pensado para cerrar al tocar fuera- borraria lo que se acaba de abrir.
+    e.stopPropagation()
+    if (activa === clave) {
+      setActiva(null)
+      setHover(null)
+      return
+    }
+    setActiva(clave)
+    setHover({ texto, x: e.clientX, y: e.clientY })
+  }
+
   return (
-    <div className="scroll-thin overflow-x-auto">
+    <div
+      className="scroll-thin overflow-x-auto"
+      onClick={() => {
+        if (activa) {
+          setActiva(null)
+          setHover(null)
+        }
+      }}
+    >
       <div className="min-w-[22rem]">
         <div
           className="grid gap-[2px]"
@@ -1400,12 +1425,14 @@ function MapaDeCalor({
               {horas.map((h) => {
                 const valor = fila[h]
                 const texto = `${DIAS[d]} a las ${h}:00 · ${formatDurationShort(valor * 3600)}`
+                const clave = `${d}-${h}`
                 return (
                   <span
                     key={h}
                     onMouseEnter={(e) => mover(e, texto)}
                     onMouseMove={(e) => mover(e, texto)}
                     onMouseLeave={() => setHover(null)}
+                    onClick={(e) => tocar(e, clave, texto)}
                     className="aspect-square rounded-[2px] bg-accent transition"
                     style={{
                       opacity: valor <= 0 ? 0.06 : 0.15 + (valor / techo) * 0.85,

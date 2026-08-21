@@ -59,10 +59,11 @@ export function TarjetasEdicion({
   const sueltas = entradas.filter((e) => !e.edition_id)
   const sinEdiciones = ediciones.length === 0
 
-  /* La vida del proyecto entero, no la de las horas que quedaron sueltas: si
-     manana una de esas horas se mete en una edicion, el periodo del cierre no
-     tiene por que moverse. */
-  const dias = entradas.map((e) => e.local_date).sort()
+  /* El periodo del cierre sin edicion es el de las horas sueltas, no el de
+     todo el proyecto: si contara tambien las horas que ya son de una
+     edicion, se duplicarian al sumar los cierres -esa edicion ya las cuenta
+     por su cuenta-. Sin ediciones, sueltas es todo, asi que no cambia nada. */
+  const dias = sueltas.map((e) => e.local_date).sort()
   const vida = {
     primera: dias[0] ?? null,
     ultima: dias[dias.length - 1] ?? null,
@@ -139,7 +140,7 @@ export function TarjetasEdicion({
           proyectoId={proyectoId}
           edicion={null}
           titulo="Todo el proyecto"
-          entradas={entradas}
+          entradas={sueltas}
           vida={vida}
           resultado={delProyecto}
           objetivoHora={objetivoHora}
@@ -173,7 +174,7 @@ export function TarjetasEdicion({
               proyectoId={proyectoId}
               edicion={null}
               titulo="Resultado del proyecto"
-              entradas={entradas}
+              entradas={sueltas}
               vida={vida}
               resultado={delProyecto}
               objetivoHora={objetivoHora}
@@ -652,7 +653,7 @@ function HorasSueltas({
           {formatDurationShort(segundos)}
         </span>{" "}
         en {entradas.length} {entradas.length === 1 ? "apunte" : "apuntes"} sin
-        edición: no entran en ningún cierre.
+        edición: no cuentan para el cierre de ninguna edición.
       </p>
 
       {ediciones.length > 0 && (

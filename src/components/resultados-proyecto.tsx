@@ -16,8 +16,11 @@ export type Resultado = {
  * la facturacion por hora.
  *
  * Las horas de un cierre son las de su edicion si la lleva, y si no las del
- * proyecto dentro de su periodo. Solo cuentan las que llevan el euro: son las
- * que se han hecho para ganar ese dinero.
+ * proyecto dentro de su periodo -pero solo las que no son ya de otra edicion:
+ * si no, un cierre del proyecto entero que se reguarda despues de crear
+ * ediciones se estira hasta hoy y cuenta dos veces las horas que ya llevaba
+ * cada edicion-. Solo cuentan las que llevan el euro: son las que se han
+ * hecho para ganar ese dinero.
  */
 export function resumenDeResultados(
   entradas: EntradaVista[],
@@ -28,7 +31,7 @@ export function resumenDeResultados(
       .filter((e) => {
         if (!e.end_at || !e.billable) return false
         if (r.edition_id) return e.edition_id === r.edition_id
-        return e.local_date >= r.starts_on && e.local_date <= r.ends_on
+        return !e.edition_id && e.local_date >= r.starts_on && e.local_date <= r.ends_on
       })
       .reduce((s, e) => s + (e.duration_seconds ?? 0), 0)
 

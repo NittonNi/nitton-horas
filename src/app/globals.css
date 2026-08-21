@@ -33,8 +33,12 @@
   --accent-soft: #eaf3fe;
   --accent-fg: #ffffff;
 
-  /* Corriendo ahora */
-  --live: #d1720a;
+  /* Corriendo ahora. #a75b08 en vez del #d1720a original: mismo tono y casi
+     la misma saturacion (H~31°, S~91%), solo mas oscuro -de L 43% a L 34%-
+     para pasar el minimo AA de 4.5:1 en texto normal. Sobre blanco da ~5.1:1
+     y sobre --live-soft (#fff6e9) ~4.7:1; con el original ambos rondaban
+     3.2-3.4:1. */
+  --live: #a75b08;
   --live-fill: #ff9500;
   --live-soft: #fff6e9;
   --live-line: #f5d6a8;

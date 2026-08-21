@@ -1,3 +1,5 @@
+import { Suspense } from "react"
+
 import { getSesion } from "@/lib/sesion"
 import { createClient } from "@/lib/supabase/server"
 import { aEntradaEnMarcha, SELECT_EN_MARCHA } from "@/lib/cronometro"
@@ -6,13 +8,37 @@ import { ProveedorCronometro } from "@/components/proveedor-cronometro"
 import { Armazon } from "@/components/armazon"
 import { ProveedorAvisos } from "@/components/avisos"
 import { GuiaInicial } from "@/components/guia-inicial"
+import { EsqueletoMarco } from "@/components/esqueleto-marco"
 import { veTodo } from "@/lib/roles"
 
-export default async function LayoutApp({
+/**
+ * getSesion() usa cookies() (dato "runtime") y aquí además se consulta la
+ * entrada en marcha: sin Cache Components activado (no lo está, ver
+ * next.config.ts) un layout async sin su propio <Suspense> bloquea la
+ * navegación entera y el loading.tsx de la página no llega a mostrar nada
+ * -ver node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/
+ * loading.md líneas 88-93 ("Good to know") y layout.md líneas 316-345
+ * (patrón "Interaction with loading.js") de esta instalación.
+ *
+ * Por eso todo lo que depende de getSesion()/la entrada en marcha se separa
+ * en MarcoSesion, con su propio limite de Suspense aquí: ProveedorAvisos no
+ * depende de ningún dato y se queda fuera para que ni siquiera él espere.
+ */
+export default function LayoutApp({
   children,
 }: {
   children: React.ReactNode
 }) {
+  return (
+    <ProveedorAvisos>
+      <Suspense fallback={<EsqueletoMarco />}>
+        <MarcoSesion>{children}</MarcoSesion>
+      </Suspense>
+    </ProveedorAvisos>
+  )
+}
+
+async function MarcoSesion({ children }: { children: React.ReactNode }) {
   const sesion = await getSesion()
   const supabase = await createClient()
 
@@ -27,14 +53,13 @@ export default async function LayoutApp({
 
   return (
     <ProveedorSesion sesion={sesion}>
-      {/* Los avisos van por fuera del cronómetro: así el propio cronómetro
-          puede avisar cuando algo le sale mal, en vez de sacar un alert */}
-      <ProveedorAvisos>
-        <ProveedorCronometro espacioId={sesion.espacio.id} inicial={aEntradaEnMarcha(data)}>
-          <Armazon>{children}</Armazon>
-          <GuiaInicial perfilId={sesion.perfil.id} esGestor={veTodo(sesion.rol)} />
-        </ProveedorCronometro>
-      </ProveedorAvisos>
+      {/* Por fuera de esto sigue estando ProveedorAvisos (en LayoutApp): así
+          el propio cronómetro puede avisar cuando algo le sale mal, en vez
+          de sacar un alert */}
+      <ProveedorCronometro espacioId={sesion.espacio.id} inicial={aEntradaEnMarcha(data)}>
+        <Armazon>{children}</Armazon>
+        <GuiaInicial perfilId={sesion.perfil.id} esGestor={veTodo(sesion.rol)} />
+      </ProveedorCronometro>
     </ProveedorSesion>
   )
 }

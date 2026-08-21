@@ -120,6 +120,49 @@ hiciera falta. Encontrado y arreglado por el camino:
   `src/lib/utils.ts`) que usa `crypto.getRandomValues` sobre el mismo
   alfabeto de 32 caracteres -sin sesgo de modulo, `2**32` es multiplo de
   32- y la misma longitud de 10.
+- **`todayKey()` y `startOfWeek()` de servidor usaban el reloj del proceso,
+  no el huso del workspace**: panel, informes, estadisticas, la ficha de
+  proyecto, perfil y gestion/categorias calculaban "hoy" con `todayKey()`
+  sin argumento -en produccion, UTC-, mientras `local_date` la calcula un
+  disparador de Postgres en el huso de cada workspace (`workspaces.timezone`,
+  hay 12 disponibles). Entre las 00:00 y la 1-2 de la madrugada en hora
+  local, una hora recien fichada quedaba fuera del panel y de los informes
+  porque el servidor todavia creia que era ayer. `todayKey()` y
+  `startOfWeek()` (en `src/lib/time.ts`) aceptan ahora la zona horaria como
+  parametro -con `Intl.DateTimeFormat`, sin libreria nueva- y las seis
+  paginas le pasan `espacio.timezone` (mas `calendario` y `semana`, mismo
+  fallo al calcular la semana en curso cuando no hay `?semana=` en la URL).
+  Sin zona horaria caen a Europe/Madrid, para el codigo de cliente que no
+  tiene el workspace a mano. Verificado con un script Node: 21-ago 22:30 UTC
+  da "22-ago" en Europe/Madrid y "21-ago" en UTC; probado tambien con
+  Pacific/Auckland para un huso muy distinto del servidor.
+- **Crear una entrada a mano que cruza un cambio de horario guardaba un fin
+  equivocado**: el dialogo "Nueva entrada" del calendario
+  (`rejilla-calendario.tsx`) y "Añadir a mano" del cronometro
+  (`barra-cronometro.tsx`) calculaban el fin sumando milisegundos de
+  duracion al epoch del inicio, en vez de construirlo con componentes
+  locales como ya hacia `confirmar()` (arrastrar/mover/estirar) en el mismo
+  `rejilla-calendario.tsx`. Si por medio habia un cambio de hora, el fin
+  guardado quedaba desplazado una hora. Corregido en los dos sitios;
+  verificado con un script Node que replica el codigo real: 29-mar-2026
+  (cambio a verano) 01:30-03:15 guardaba antes las 04:15 y ahora las 03:15;
+  25-oct-2026 (vuelta a invierno) 01:30-03:30 guardaba antes las 02:30 y
+  ahora las 03:30.
+- **"Horas que han apuntado contigo" podia mostrar el dia UTC en vez del
+  local**: `propuestas-pendientes.tsx` sacaba la fecha con `.slice(0, 10)`
+  de un `start_at` en UTC -para propuestas de madrugada, el dia UTC y el
+  local no siempre coinciden-. Cambiado a `toDateKeyInZone` (nueva funcion
+  en `src/lib/time.ts`, misma idea que ya usaba bien `calendario/page.tsx`
+  con `toDateKey(new Date(...))`) con `espacio.timezone` via `useSesion()`.
+- **El calendario no pedia a Google los eventos del lunes por la manana**:
+  `calendario/page.tsx` construia el `timeMin` con `fromDateKey(lunes)`, que
+  da mediodia local, no medianoche -para la semana del 17-23 ago 2026 el
+  limite real quedaba en las 12:00 CEST del lunes, asi que cualquier
+  reunion que terminara antes no se pedia nunca-. Nueva funcion
+  `startOfDayInZone` en `src/lib/time.ts` (medianoche real en el huso del
+  workspace) para los dos limites de `eventosDeGoogle`. Verificado con un
+  script Node: medianoche del 17-ago-2026 en Europe/Madrid cae en
+  `2026-08-16T22:00:00.000Z`, no en el `T10:00:00Z` que daba `fromDateKey`.
 
 ### Google OAuth y correo de produccion
 

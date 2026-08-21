@@ -540,10 +540,21 @@ tres cosas)-:
      juntos; si el de "proposito no explicado" sigue apareciendo despues de
      corregir el nombre y de que Google vuelva a comprobarlo, avisar para
      ampliar el texto visible de la portada con una frase mas literal.
-   - Dominio de la app / Enlace a la politica de privacidad:
-     `https://www.hitoo.es/privacidad` -con `www`, que es el dominio
-     canonico en Vercel (ver nota del paso 2); el apex `hitoo.es` tambien
-     vale porque redirige, pero mejor poner el bueno directamente-.
+   - **Ojo, son dos campos separados en el formulario de Google, no uno solo
+     -aqui es donde probablemente estuvo el segundo problema real-**:
+     - **Pagina principal de la aplicacion** (App home page):
+       `https://www.hitoo.es/` -la portada de verdad, la que explica que es
+       hitoo. **Si aqui hay puesto `https://www.hitoo.es/privacidad` en vez
+       de esto, es la causa mas probable de que el aviso de "no se explica
+       el proposito" siga saliendo despues de corregir el nombre**: Google
+       comprobaria el proposito leyendo la pagina de politica de
+       privacidad, que es un documento legal y no un texto de producto, y
+       no la portada real-.
+     - **Enlace a la politica de privacidad** (App privacy policy link):
+       `https://www.hitoo.es/privacidad` -esta si es la de privacidad-.
+     Los dos con `www`, que es el dominio canonico en Vercel (ver nota del
+     paso 2); el apex `hitoo.es` tambien vale porque redirige, pero mejor
+     poner el bueno directamente.
    - Dominios autorizados: añadir `hitoo.es` (tras verificarlo en el paso 3;
      Google cubre `www.hitoo.es` solo con el dominio raiz, no hace falta
      añadir el subdominio aparte).

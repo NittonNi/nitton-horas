@@ -38,6 +38,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# estado local de la herramienta Ruflo (no es del proyecto)
+/.claude-flow/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -206,6 +206,78 @@ hiciera falta. Encontrado y arreglado por el camino:
   constraints -"Alguien mas acaba de guardar este resultado, recarga y
   vuelve a intentarlo"-, mismo patron que ya tenia `one_running_per_user`.
 
+Segunda pasada el mismo dia, esta vez accesibilidad y movil:
+
+- **Los 4 modales caseros de la app no atrapaban el foco, ni bloqueaban el
+  scroll de fondo, ni devolvian el foco al cerrar**: `dialogo-entrada.tsx`,
+  el "Editar proyecto" de `gestion-proyectos.tsx`, "Horas que han apuntado
+  contigo" (`DialogoInvitacion`, dentro de `rejilla-calendario.tsx`) y
+  `guia-inicial.tsx` eran un `<div className="fixed inset-0 ...">` a mano
+  -como mucho con un `useEffect` para Escape, `guia-inicial.tsx` ni eso-,
+  mientras el resto de la app (`nuevo-proyecto.tsx`,
+  `ajustes-calendario-google.tsx`, y los otros dos dialogos que ya conviven
+  en `rejilla-calendario.tsx`) usa `@radix-ui/react-dialog`. Con Tab el foco
+  se escapaba a la fila de debajo, oculta bajo el overlay. Migrados los 4 a
+  Radix, con las mismas clases del patron ya existente en el mismo archivo
+  -tarjeta centrada en escritorio, hoja inferior en movil, mismo overlay y
+  sombra-. **Detalle no obvio**: Radix solo devuelve el foco al cerrar
+  cuando quien abre es un `Dialog.Trigger`; estos 4 se abren desde botones
+  sueltos en otros componentes (una fila de hora, el lapiz de un proyecto,
+  un bloque del calendario, "Ver la guia otra vez" en el perfil), asi que
+  hizo falta guardar a mano el elemento con foco justo antes de montarse
+  -`useRef` con inicializador perezoso en los que se montan de nuevo cada
+  vez que se abren, y una variable de modulo en `guia-inicial.tsx`, que
+  ademas se abre sola sin ningun boton la primera vez que alguien entra- y
+  devolverselo en `onCloseAutoFocus`. Se reviso tambien si
+  `dialogo-entrada.tsx` se abre distinto en movil y escritorio: no lo hace
+  -mismo componente en sus 4 llamadas (`fila-entrada.tsx`,
+  `detalle-proyecto.tsx`, `panel-informes.tsx`, `rejilla-calendario.tsx`),
+  solo cambia por CSS responsivo entre hoja inferior y tarjeta centrada-,
+  aunque en `fila-entrada.tsx` en concreto de escritorio ni se abre desde la
+  fila -ahi la descripcion y la duracion se editan en linea, y el dialogo
+  entero solo hace falta en movil o desde Informes y la ficha de proyecto-.
+  Probado en el navegador, sesion real de NITTON: Tab atrapado dentro del
+  dialogo en `dialogo-entrada.tsx` (via Informes), "Editar proyecto",
+  `guia-inicial.tsx` (reabierta desde el perfil) y el dialogo de editar hora
+  del calendario; Escape cierra los 4; `body { overflow: hidden }` mientras
+  cualquiera esta abierto; y el foco vuelve exactamente al boton que lo
+  abrio en los tres que se pudieron abrir con un elemento enfocable de
+  verdad. "Horas que han apuntado contigo" no se pudo probar en vivo -no
+  habia ninguna invitacion pendiente real en el espacio, y no parecia buena
+  idea fabricar una entre las dos personas reales del workspace solo para
+  probar un dialogo-, pero usa exactamente el mismo patron que
+  `DialogoAceptarGoogle` y `DialogoNuevaEntrada`, ya con Radix, en el mismo
+  archivo.
+- **El mapa de calor de Estadisticas no respondia al tacto**: `MapaDeCalor`
+  en `panel-estadisticas.tsx` solo llevaba `onMouseEnter`/`onMouseMove`/
+  `onMouseLeave` para su propio tooltip -sin `title` nativo desde el
+  20-ago-, asi que tocar una celda en movil no hacia nada. Es el hueco que
+  quedaba apuntado mas abajo, en Estadisticas ("en tactil no hay hover de
+  verdad, conviene ver como se siente tocarlas"): el resto de graficas de la
+  pagina usan el `Tooltip` de `recharts`, que ya responde solo al tacto,
+  pero el mapa de calor es una rejilla de `<span>` a mano, sin ese
+  mecanismo. Añadido `onClick` a cada celda: toca una y el tooltip se queda
+  fijo -tocar la misma celda otra vez lo cierra, tocar otra celda cambia a
+  esa, tocar fuera de la rejilla tambien cierra-. Probado en el navegador
+  con clics reales sobre las celdas (mismo `onClick` que dispara un toque):
+  abre, alterna entre celdas y cierra al tocar fuera, los tres casos.
+- **Contraste insuficiente del naranja "corriendo ahora" en modo claro**:
+  `--live` en `globals.css` (`#d1720a`) daba ~3.2-3.4:1 sobre blanco y sobre
+  `--live-soft`, por debajo del minimo AA de 4.5:1 para texto normal -se usa
+  de verdad, no solo decorativo, en `compartir-con.tsx`,
+  `tarjetas-edicion.tsx` y `barra-cronometro.tsx`. Oscurecido a `#a75b08`:
+  mismo tono y casi la misma saturacion que el original (H~31°, S~91% los
+  dos), solo baja la luminosidad de 43% a 34% -calculado con la formula de
+  luminancia relativa WCAG-, lo que da ~5,1:1 sobre blanco y ~4,7:1 sobre
+  `--live-soft`. Modo oscuro sin tocar, ya estaba bien. Comprobado en el
+  navegador en modo claro: el numero del dia de hoy en el calendario, el
+  chip de "con quien mas cuenta" (`compartir-con.tsx`) y el cronometro en
+  marcha (`barra-cronometro.tsx`, arrancado y descartado de nuevo para no
+  dejar rastro) se siguen leyendo bien como naranja.
+
+Verificado ademas `npm run lint` y `npm run build` limpios tras los 4
+arreglos de arriba.
+
 ### Google OAuth y correo de produccion
 
 Configurado el 20-ago-2026: cuenta `hitooclock@gmail.com` con proyecto propio
@@ -214,6 +286,39 @@ en Supabase. Pendiente de probar el flujo completo una vez despliegue el
 arreglo del boton de cerrar sesion (necesario para probarlo mas de una vez
 seguida). Sigue pendiente el SMTP propio: los correos van con el servicio por
 defecto de Supabase, con limite bajo -no vale para que lo use otro equipo-.
+
+**Pendiente: pedir la verificacion de Google (revisado 21-ago-2026)**. La
+pantalla de consentimiento esta publicada pero sin verificar, y el scope de
+Calendar (`calendar.readonly`, pedido aparte del login en
+`ajustes-calendario-google.tsx`) es de los que Google considera sensibles:
+mientras no este verificada, a cualquiera que conecte el calendario le sale
+el aviso de "app no verificada", y Google corta en seco a partir de ~100
+personas que lo hayan aceptado. El login normal con Google (sin calendario)
+no se ve afectado. Hace falta, en orden:
+
+1. **Pagina de politica de privacidad publica** -no existe ninguna en la app
+   todavia (buscado `privacidad`/`privacy` en `src`, nada)-. Es lo unico que
+   no depende de esperar al dominio, se puede hacer ya.
+2. Que `hitoo.es` este resolviendo (ver dominio propio arriba en "Lo que
+   queda") y actualizar con el la pantalla de consentimiento -hoy sigue
+   apuntando a `hitoo.vercel.app`-.
+3. Verificar la propiedad de `hitoo.es` en Google Search Console con la
+   cuenta `hitooclock@gmail.com` (TXT en Hostinger o archivo HTML), para
+   poder darlo de alta como dominio autorizado.
+4. Justificacion corta del scope (por que hace falta `calendar.readonly` y
+   como se usa) en el formulario de Google.
+5. Video de demostracion (vale no listado en YouTube): pulsar "Conectar
+   Google Calendar", pantalla de consentimiento, y como las reuniones
+   aceptadas aparecen en la semana para apuntarlas con un clic.
+6. Repasar el resto de la ficha (logo, correo de soporte, correo del
+   desarrollador, enlace a terminos si se añade).
+7. Google Cloud Console -> APIs y servicios -> Pantalla de consentimiento de
+   OAuth -> Enviar para verificacion. Revision de scopes sensibles suele
+   tardar dias, no semanas -no es de los restringidos que piden auditoria
+   CASA-.
+
+Necesita las cuentas de Nicolas (Google Cloud, Search Console) desde el paso 3
+en adelante; el paso 1 se puede hacer sin el.
 
 ### Faltan estados de carga: la pantalla se queda parada y de golpe aparece todo
 
@@ -239,8 +344,24 @@ ningun layout a proposito, porque tambien cubre las paginas publicas antes
 del propio `(app)`-. Probado en vivo: la portada publica sigue cargando
 igual que antes.
 
-Queda pendiente si hace falta: afinar el esqueleto de cada pagina para que
-se parezca mas a su contenido real en vez de bloques genericos.
+**Cerrado el 21-ago-2026**: los tres esqueletos que mas se notaban seguian
+siendo bloques genericos sin relacion con su pagina -`panel/loading.tsx` un
+solo bloque de 160px para una pagina con cronometro, resumen y una lista
+larga; `estadisticas/loading.tsx` tres bloques de 112px para mandos, 4
+cifras, un grafico de 256px, mapa de calor y tablas; `calendario/loading.tsx`
+sin la cabecera de dos columnas (titulo+subtitulo a la izquierda, ajustes de
+Google a la derecha)-. Los tres ahora calcan la estructura real -misma
+disposicion en tarjetas/rejilla, mismo orden, alturas del mismo orden de
+magnitud-, compuestos a mano con un nuevo `BloquePulso` (`esqueleto-pagina.tsx`,
+el rectangulo suelto que ya usaba por dentro `EsqueletoPagina`, ahora
+exportado para poder combinarlo en grid/flex en vez de solo apilado). El resto
+de `loading.tsx` que ya usaban `EsqueletoPagina` tal cual (semana, gestion,
+informes, perfil, proyectos) siguen igual, sin tocar. Comparado contra las
+paginas reales en el navegador (sesion NITTON) para calibrar los tamaños;
+capturar el propio parpadeo del esqueleto en las capturas no salio -el
+servidor local responde demasiado rapido para que la captura de pantalla lo
+alcance a tiempo-, asi que quedo verificado por estructura y altura, no visto
+en el momento exacto de la carga.
 
 ### Filtro "marcar todos" se queda atras si se crea algo nuevo mientras esta activo
 

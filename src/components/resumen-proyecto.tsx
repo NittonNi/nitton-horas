@@ -1,21 +1,31 @@
 "use client"
 
 import { useMemo } from "react"
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts"
+import dynamic from "next/dynamic"
 
 import { agrupar, totales } from "@/lib/informes"
 import { formatDurationShort, formatMoney } from "@/lib/time"
 import { resumenDeResultados, type Resultado } from "@/components/resultados-proyecto"
 import type { Edicion, EntradaVista } from "@/lib/tipos"
 import { cn } from "@/lib/utils"
+
+/**
+ * recharts pesa varios cientos de KB: se carga solo en el navegador y solo
+ * cuando hace falta pintar el gráfico, en vez de ir en el primer JS de la
+ * ficha de proyecto (ver grafico-resumen-proyecto.tsx).
+ */
+const GraficoResumenProyecto = dynamic(
+  () =>
+    import("@/components/grafico-resumen-proyecto").then(
+      (mod) => mod.GraficoResumenProyecto,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-full animate-pulse rounded-[var(--radio-sm)] bg-surface-2" />
+    ),
+  },
+)
 
 /**
  * El resumen del proyecto.
@@ -227,60 +237,7 @@ export function ResumenProyecto({
           <p className="py-3 text-sm text-muted">Todavía no hay horas apuntadas.</p>
         ) : (
           <div className="h-56 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={periodos.filas}
-                margin={{ top: 4, right: 4, left: -18, bottom: 0 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="2 4"
-                  vertical={false}
-                  stroke="var(--line)"
-                />
-                <XAxis
-                  dataKey="etiqueta"
-                  tick={{ fontSize: 11, fill: "var(--muted)" }}
-                  tickLine={false}
-                  axisLine={{ stroke: "var(--line)" }}
-                />
-                <YAxis
-                  tick={{ fontSize: 11, fill: "var(--muted)" }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={44}
-                />
-                <Tooltip
-                  cursor={{ fill: "var(--surface-2)" }}
-                  contentStyle={{
-                    background: "var(--surface)",
-                    border: "1px solid var(--line)",
-                    borderRadius: "var(--radio-sm)",
-                    fontSize: 12,
-                    color: "var(--ink)",
-                  }}
-                  formatter={(valor, nombre) => [
-                    `${Number(valor ?? 0).toLocaleString("es-ES", {
-                      maximumFractionDigits: 2,
-                    })} h`,
-                    nombre === "cobrables" ? "Se cobran" : "No se cobran",
-                  ]}
-                />
-                <Bar
-                  dataKey="cobrables"
-                  stackId="h"
-                  fill="var(--billable-fill)"
-                  radius={[0, 0, 3, 3]}
-                  maxBarSize={56}
-                />
-                <Bar
-                  dataKey="resto"
-                  stackId="h"
-                  fill="var(--accent)"
-                  radius={[3, 3, 0, 0]}
-                  maxBarSize={56}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            <GraficoResumenProyecto filas={periodos.filas} />
           </div>
         )}
       </section>

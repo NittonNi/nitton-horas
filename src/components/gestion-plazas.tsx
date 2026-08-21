@@ -7,7 +7,7 @@ import { Check, Copy, Link2, Loader2, Plus, RotateCcw, Trash2 } from "lucide-rea
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import type { Espacio } from "@/lib/tipos"
-import { cn } from "@/lib/utils"
+import { cn, nuevoCodigo } from "@/lib/utils"
 
 export type Plaza = {
   id: string
@@ -64,15 +64,6 @@ export function GestionPlazas({
 
   async function quitar(id: string) {
     await hacer(() => createClient().from("workspace_seats").delete().eq("id", id))
-  }
-
-  /** Un codigo corto y facil de dictar por teléfono. */
-  function nuevoCodigo() {
-    const letras = "abcdefghijkmnpqrstuvwxyz23456789"
-    return Array.from(
-      { length: 10 },
-      () => letras[Math.floor(Math.random() * letras.length)],
-    ).join("")
   }
 
   async function cambiarEnlace(quitarlo = false) {

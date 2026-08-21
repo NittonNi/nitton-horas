@@ -18,7 +18,7 @@ import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
 import { CodigoQr } from "@/components/codigo-qr"
 import { ZONAS_HORARIAS, type Perfil } from "@/lib/tipos"
-import { cn } from "@/lib/utils"
+import { cn, nuevoCodigo } from "@/lib/utils"
 
 /**
  * Montar el espacio, de una sentada.
@@ -42,15 +42,6 @@ function zonaPorDefecto(): string {
   } catch {
     return "Europe/Madrid"
   }
-}
-
-/** Un codigo corto y facil de dictar por teléfono. */
-function nuevoCodigo() {
-  const letras = "abcdefghijkmnpqrstuvwxyz23456789"
-  return Array.from(
-    { length: 10 },
-    () => letras[Math.floor(Math.random() * letras.length)],
-  ).join("")
 }
 
 export function AsistenteInicio({ perfil }: { perfil: Perfil }) {

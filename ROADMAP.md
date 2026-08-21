@@ -436,36 +436,48 @@ tres cosas)-:
 
 2. ✅ **Hecho, `hitoo.es` resuelve** (comprobado en vivo el 21-ago-2026:
    `hitoo.es` y `www.hitoo.es` ya salen en los dominios del proyecto en
-   Vercel, y ambos responden). **Detalle importante**: Vercel dejo
-   `www.hitoo.es` como canonico -el apex `hitoo.es` hace un 308 permanente
-   hacia `https://www.hitoo.es/`, comprobado con curl-. No es un fallo, es
-   como quedo configurado el dominio, pero significa que **el enlace "de
-   verdad" a usar en todos los sitios (formulario de Google, politica de
-   privacidad, etc.) es `https://www.hitoo.es`, no `https://hitoo.es` a
-   secas** -si se usa el apex funciona igual porque redirige, pero es un
-   salto de mas-.
+   Vercel, y ambos responden). ✅ **Variables de entorno confirmadas por
+   Nicolas**: puestas tanto en Preview como en Production
+   -[vercel.com/nittonnis-projects/hitoo/settings/environment-variables](https://vercel.com/nittonnis-projects/hitoo/settings/environment-variables)-.
 
-   Queda por comprobar a mano (ninguna tool de este entorno lista variables
-   de entorno de Vercel ni la configuracion de Auth de Supabase):
-   - **Settings -> Environment Variables** del proyecto en Vercel: que
-     `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXT_PUBLIC_SUPABASE_URL` y
-     `NEXT_PUBLIC_SUPABASE_ANON_KEY` esten puestas para **Production**.
-   - Supabase -> Authentication -> URL Configuration: **Site URL** a
-     `https://www.hitoo.es`, y en **Redirect URLs** añadir
-     `https://www.hitoo.es/auth/callback` -dejando tambien
-     `https://hitoo.vercel.app/auth/callback` y
+   **Detalle importante**: Vercel dejo `www.hitoo.es` como canonico -el apex
+   `hitoo.es` hace un 308 permanente hacia `https://www.hitoo.es/`,
+   comprobado con curl-. No es un fallo, es como quedo configurado el
+   dominio, pero significa que **el enlace "de verdad" a usar en todos los
+   sitios (formulario de Google, politica de privacidad, etc.) es
+   `https://www.hitoo.es`, no `https://hitoo.es` a secas** -si se usa el
+   apex funciona igual porque redirige, pero es un salto de mas-.
+   Panel del proyecto en Vercel, por si hace falta revisar algo mas:
+   [vercel.com/nittonnis-projects/hitoo](https://vercel.com/nittonnis-projects/hitoo).
+
+   Queda por hacer a mano -ninguna tool de este entorno puede tocar la
+   configuracion de Auth de Supabase-:
+   - Entrar en [supabase.com/dashboard/project/zyjtymxkkfpecpfqqvpn/auth/url-configuration](https://supabase.com/dashboard/project/zyjtymxkkfpecpfqqvpn/auth/url-configuration)
+     -es el proyecto `nitton-horas` en Supabase, seccion Authentication ->
+     URL Configuration, ya lleva directo-.
+   - **Site URL**: cambiar a `https://www.hitoo.es`.
+   - **Redirect URLs**: añadir `https://www.hitoo.es/auth/callback` -dejando
+     tambien `https://hitoo.vercel.app/auth/callback` y
      `http://localhost:3000/auth/callback` para no romper el preview ni el
      desarrollo local-.
 
 3. **Verificar la propiedad de `hitoo.es` en Google Search Console**, con la
    cuenta `hitooclock@gmail.com`:
-   - [search.google.com/search-console](https://search.google.com/search-console)
-     -> Añadir propiedad -> "Prefijo de URL" `https://hitoo.es` (o "Dominio"
-     si se prefiere verificar todo `hitoo.es` de una vez, recomendado).
-   - Google ofrece varios metodos; el mas simple con Hostinger es el
-     registro **TXT** que Search Console genera en ese momento -copiarlo tal
-     cual en el gestor de DNS de Hostinger, esperar a que propague y pulsar
-     Verificar-.
+   - Entrar en [search.google.com/search-console](https://search.google.com/search-console/welcome)
+     -pagina principal de Search Console; si pide iniciar sesion, usar
+     `hitooclock@gmail.com`-.
+   - Boton **Añadir propiedad** (o el selector de propiedades arriba a la
+     izquierda -> Añadir propiedad).
+   - Elegir el tipo **"Dominio"** (no "Prefijo de URL") y escribir `hitoo.es`
+     -verifica el dominio entero de una vez, `hitoo.es` y `www.hitoo.es`
+     incluidos, mejor que verificar solo uno de los dos-.
+   - Search Console genera un registro **TXT** en ese momento -copiarlo tal
+     cual-. Añadirlo en Hostinger: entrar en
+     [hpanel.hostinger.com](https://hpanel.hostinger.com/) -> **Dominios** ->
+     `hitoo.es` -> **DNS / Nameservers** -> añadir registro TXT con el valor
+     que dio Search Console.
+   - Esperar a que propague (puede tardar) y volver a Search Console a pulsar
+     **Verificar**.
    - Necesario para poder marcar `hitoo.es` como **dominio autorizado** en la
      pantalla de consentimiento de OAuth (paso 6).
 
@@ -505,8 +517,13 @@ tres cosas)-:
    serie) -> grabar -> el video queda en `Videos\Captures`. Subirlo a YouTube
    como **"Oculto"/"No listado"** y usar ese enlace en el formulario.
 
-6. **Repasar el resto de la ficha** en Google Cloud Console -> APIs y
-   servicios -> Pantalla de consentimiento de OAuth -> Editar aplicacion:
+6. **Repasar el resto de la ficha.** Entrar en
+   [console.cloud.google.com/apis/credentials/consent](https://console.cloud.google.com/apis/credentials/consent)
+   -pagina directa a la Pantalla de consentimiento de OAuth-. **Importante**:
+   arriba a la izquierda, junto al logo de Google Cloud, comprobar que el
+   selector de proyecto muestra el proyecto de `hitoo` -el creado el
+   20-ago-2026 con la cuenta `hitooclock@gmail.com`-, no otro proyecto de
+   Google Cloud si la cuenta tiene varios. Boton **Editar aplicacion**:
    - Dominio de la app / Enlace a la politica de privacidad:
      `https://www.hitoo.es/privacidad` -con `www`, que es el dominio
      canonico en Vercel (ver nota del paso 2); el apex `hitoo.es` tambien
@@ -521,17 +538,20 @@ tres cosas)-:
    - Enlace a terminos de servicio: opcional, se puede dejar en blanco si no
      existen todavia.
 
-7. **Enviar a revision**: Google Cloud Console -> APIs y servicios ->
-   Pantalla de consentimiento de OAuth -> **Enviar para verificacion**. La
-   revision de scopes sensibles (no restringidos, `calendar.readonly` no pide
-   auditoria CASA) suele tardar dias, no semanas. Google puede escribir por
-   correo pidiendo aclaraciones -revisar `hitooclock@gmail.com`-.
+7. **Enviar a revision**: en la misma pagina del paso 6
+   -[console.cloud.google.com/apis/credentials/consent](https://console.cloud.google.com/apis/credentials/consent)-,
+   boton **Enviar para verificacion** (o "Publicar aplicacion" primero, si
+   sigue en modo Prueba, y luego enviar a verificacion). La revision de
+   scopes sensibles (no restringidos, `calendar.readonly` no pide auditoria
+   CASA) suele tardar dias, no semanas. Google puede escribir por correo
+   pidiendo aclaraciones -revisar `hitooclock@gmail.com`-.
 
-Resumen de quien hace que: los pasos 1 y 2 (dominio) ya estan hechos. Falta
-solo comprobar a mano las variables de entorno de Vercel y la URL de Supabase
-(final del paso 2). Los pasos 4-6 (textos e imagenes de la ficha) estan
-preparados para que sea copiar/pegar/subir. Los pasos 3 y 7 son tramites que
-solo Nicolas puede iniciar porque exigen su sesion en Google -no hay atajo-.
+Resumen de quien hace que: los pasos 1 y 2 (dominio + variables de Vercel)
+ya estan hechos. Falta solo el cambio de Site URL/Redirect URLs en Supabase
+-enlace directo en el paso 2-. Los pasos 4-6 (textos e imagenes de la ficha)
+estan preparados para que sea copiar/pegar/subir. Los pasos 3 y 7 son
+tramites que solo Nicolas puede iniciar porque exigen su sesion en Google
+-no hay atajo-.
 
 ### Faltan estados de carga: la pantalla se queda parada y de golpe aparece todo
 

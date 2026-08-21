@@ -579,6 +579,13 @@ function EntradaManual({
       }
       await alGuardar({ id: data.id, start_at, end_at })
       avisar("Hora añadida.", async () => {
+        // Si se propuso a alguien, esas invitaciones tambien se deshacen: que
+        // nadie pueda aceptar una hora que ya se ha retirado.
+        const { error: errInvitaciones } = await supabase
+          .from("entry_invitations")
+          .delete()
+          .eq("origin_entry_id", data.id)
+        if (errInvitaciones) throw new Error(mensajeError(errInvitaciones))
         const { error: errQuitar } = await supabase
           .from("time_entries")
           .delete()

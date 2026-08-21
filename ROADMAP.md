@@ -368,6 +368,42 @@ Tercera pasada el mismo dia, esta vez rendimiento:
 Verificado `npm run lint` y `npm run build` limpios tras los arreglos de
 rendimiento de arriba.
 
+Cuarta pasada el mismo dia, esta vez un bug de "Deshacer" al compartir horas:
+
+- **"Deshacer" al crear+compartir una hora no retiraba las invitaciones ya
+  enviadas**: el aviso de "Deshacer" que sigue a crear una hora -calendario
+  "Nueva entrada", aceptar un evento de Google Calendar, y "Añadir a mano"
+  desde la barra del cronometro- solo borraba la `time_entries` recien
+  creada: `DialogoNuevaEntrada.guardar` y `DialogoAceptarGoogle.aceptar` en
+  `rejilla-calendario.tsx`, y `EntradaManual.guardar` en
+  `barra-cronometro.tsx`. Si esa hora se habia propuesto a algun compañero
+  (checkbox "Tambien cuenta para"), las filas de `entry_invitations` ya
+  insertadas -con proyecto, descripcion y horas ya copiados- se quedaban
+  vivas: el compañero podia seguir aceptando una propuesta que quien la creo
+  ya habia retirado. Comprobado antes de tocar nada que
+  `entry_invitations.origin_entry_id` SI tiene `ON DELETE CASCADE` hacia
+  `time_entries(id)` -consultado `pg_constraint` via MCP de Supabase, solo
+  lectura-, asi que en teoria el borrado de la entrada ya arrastraba las
+  invitaciones sin ayuda del codigo. Pero el arreglo no se apoya en ese
+  detalle de esquema: los 3 sitios borran ahora `entry_invitations` por
+  `origin_entry_id` explicitamente, antes del borrado de `time_entries`,
+  mismo estilo `.from(...).delete().eq(...)` que ya usaba el resto de cada
+  archivo -mejor un borrado explicito de mas que un silencio implicito que
+  dependa de que nadie quite el cascade en una migracion futura-. Probado en
+  vivo, sesion real de NITTON: hora de 2h propuesta a ANE ETXEBARRIA desde
+  "Nueva entrada" del calendario, "Deshacer" pulsado desde el aviso -que
+  cambia a "Quitada." solo si las dos operaciones terminan sin error, justo
+  lo que hace el codigo nuevo-, y confirmado por SQL (solo lectura) que no
+  queda ninguna fila ni en `time_entries` ni en `entry_invitations` para esa
+  entrada. Sin rastro de la prueba en el espacio real al terminar.
+
+Verificado `npm run lint` y `npm run build` limpios tras el arreglo de
+arriba.
+
+Con este ultimo bug se cierran los 6 grupos de la revision a fondo del
+21-ago-2026: seguridad, zona horaria/DST, financiero, accesibilidad/movil,
+rendimiento y este bug de "Deshacer" al compartir horas.
+
 ### Google OAuth y correo de produccion
 
 Configurado el 20-ago-2026: cuenta `hitooclock@gmail.com` con proyecto propio

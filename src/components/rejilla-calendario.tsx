@@ -1003,7 +1003,15 @@ function DialogoAceptarGoogle({
     onCerrar()
     router.refresh()
     avisar("Hora añadida desde Google Calendar.", async () => {
-      const { error: errQuitar } = await createClient()
+      const cliente = createClient()
+      // Si se propuso a alguien, esas invitaciones tambien se deshacen: que
+      // nadie pueda aceptar una hora que ya se ha retirado.
+      const { error: errInvitaciones } = await cliente
+        .from("entry_invitations")
+        .delete()
+        .eq("origin_entry_id", data.id)
+      if (errInvitaciones) throw new Error(mensajeError(errInvitaciones))
+      const { error: errQuitar } = await cliente
         .from("time_entries")
         .delete()
         .eq("id", data.id)
@@ -1540,7 +1548,15 @@ function DialogoNuevaEntrada({
     router.refresh()
     onCerrar()
     avisar("Hora añadida.", async () => {
-      const { error: errQuitar } = await createClient()
+      const cliente = createClient()
+      // Si se propuso a alguien, esas invitaciones tambien se deshacen: que
+      // nadie pueda aceptar una hora que ya se ha retirado.
+      const { error: errInvitaciones } = await cliente
+        .from("entry_invitations")
+        .delete()
+        .eq("origin_entry_id", data.id)
+      if (errInvitaciones) throw new Error(mensajeError(errInvitaciones))
+      const { error: errQuitar } = await cliente
         .from("time_entries")
         .delete()
         .eq("id", data.id)

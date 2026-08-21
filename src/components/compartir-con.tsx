@@ -44,6 +44,14 @@ export function CompartirCon({
   // Con quién se puede compartir: todo el equipo menos la persona de la hora
   const otros = miembros.filter((m) => m.id !== entrada.user_id)
 
+  // Mismo texto para el title del ratón y el aria-label del lector de pantalla
+  const tituloCompartir = vinoDe
+    ? `Este rato lo apuntó ${vinoDe} y lo aceptaste: seguís teniendo el mismo. Si cambias algo, se separan.`
+    : compartida.length === 0
+      ? "Compartir estas horas con alguien más"
+      : "También cuenta para " +
+        compartida.map((c) => `${c.nombre} (${c.estado})`).join(", ")
+
   async function cargar() {
     const { data, error: err } = await createClient()
       .from("entry_invitations")
@@ -156,14 +164,8 @@ export function CompartirCon({
       }}
     >
       <Popover.Trigger
-        title={
-          vinoDe
-            ? `Este rato lo apuntó ${vinoDe} y lo aceptaste: seguís teniendo el mismo. Si cambias algo, se separan.`
-            : compartida.length === 0
-              ? "Compartir estas horas con alguien más"
-              : "También cuenta para " +
-                compartida.map((c) => `${c.nombre} (${c.estado})`).join(", ")
-        }
+        title={tituloCompartir}
+        aria-label={tituloCompartir}
         className={cn(
           "flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[0.6875rem] font-medium transition",
           vinoDe

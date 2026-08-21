@@ -92,6 +92,7 @@ export function SelectorEtiquetas({
     <Popover.Root open={abierto} onOpenChange={setAbierto}>
       <Popover.Trigger
         title="Etiquetas"
+        aria-label="Etiquetas"
         className={cn(
           "flex items-center gap-1.5 rounded-[var(--radio-sm)] border border-line-strong bg-surface px-2.5 text-sm transition hover:bg-surface-2",
           compacto ? "h-8" : "h-9",

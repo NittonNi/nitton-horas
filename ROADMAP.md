@@ -533,8 +533,11 @@ tres cosas)-:
      añadir el subdominio aparte).
    - Correo de asistencia y correo de contacto del desarrollador:
      `hitooclock@gmail.com`.
-   - Logo: `public/hitoo-logo.svg` exportado a PNG cuadrado -Google pide PNG,
-     no SVG-.
+   - Logo: usar `public/icons/icon-512.png` directamente -ya es PNG y ya es
+     cuadrado (512x512, el icono de la app, no el wordmark de
+     `hitoo-logo.svg`, que es rectangular y no sirve para este campo tal
+     cual-. Comprobado visualmente: fondo oscuro redondeado con la "h"
+     blanca, se ve bien como logo pequeño.
    - Enlace a terminos de servicio: opcional, se puede dejar en blanco si no
      existen todavia.
 

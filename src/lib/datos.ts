@@ -1,3 +1,5 @@
+import { cache } from "react"
+
 import { createClient } from "@/lib/supabase/server"
 import type { Catalogo, EntradaVista, Miembro, Reparto, RepartoShare } from "@/lib/tipos"
 
@@ -7,7 +9,12 @@ import type { Catalogo, EntradaVista, Miembro, Reparto, RepartoShare } from "@/l
  * el código, que ninguna consulta se sale de su espacio.
  */
 
-export async function cargarCatalogo(
+/**
+ * cache(): la ficha de proyecto pide el mismo catalogo dos veces en la misma
+ * carga -una vez en generateMetadata, otra en la pagina-; con esto se
+ * convierte en una sola consulta real por request.
+ */
+export const cargarCatalogo = cache(async function cargarCatalogo(
   espacioId: string,
   incluirArchivados = false,
 ): Promise<Catalogo> {
@@ -46,7 +53,7 @@ export async function cargarCatalogo(
     categorias: vivo(categorias.data),
     ediciones: vivo(ediciones.data),
   }
-}
+})
 
 /** Entradas entre dos fechas (inclusive), de la más reciente a la más antigua. */
 export async function cargarEntradas(opciones: {

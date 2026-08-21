@@ -1,3 +1,4 @@
+import { cache } from "react"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
@@ -7,13 +8,17 @@ import type { Perfil, Pertenencia, Sesion } from "@/lib/tipos"
 /**
  * Solo servidor: lee cookies y consulta con la sesion del usuario. Los
  * componentes de cliente reciben la sesion por props o por contexto.
+ *
+ * Las tres funciones van envueltas en cache() de React: layout.tsx y la
+ * pagina (y a veces tambien generateMetadata) piden lo mismo en la misma
+ * carga, y sin esto se repite la consulta una vez por cada quien lo pida.
  */
 
 /** Espacio activo. Vive en una cookie porque no cuelga de la URL. */
 export const COOKIE_ESPACIO = "espacio"
 
 /** Quien esta usando la app. Manda a /acceso si no hay sesion. */
-export async function getPerfil(): Promise<Perfil> {
+export const getPerfil = cache(async function getPerfil(): Promise<Perfil> {
   const supabase = await createClient()
 
   const {
@@ -32,9 +37,11 @@ export async function getPerfil(): Promise<Perfil> {
   if (!perfil) redirect("/auth/salir")
 
   return perfil
-}
+})
 
-export async function getPertenencias(userId: string): Promise<Pertenencia[]> {
+export const getPertenencias = cache(async function getPertenencias(
+  userId: string,
+): Promise<Pertenencia[]> {
   const supabase = await createClient()
 
   const { data } = await supabase
@@ -48,13 +55,13 @@ export async function getPertenencias(userId: string): Promise<Pertenencia[]> {
       fila.workspaces ? [{ espacio: fila.workspaces, rol: fila.role }] : [],
     )
     .sort((a, b) => a.espacio.name.localeCompare(b.espacio.name))
-}
+})
 
 /**
  * Perfil + espacio activo + rol en ese espacio. Manda a /bienvenida a quien
  * todavía no pertenece a ninguno.
  */
-export async function getSesion(): Promise<Sesion> {
+export const getSesion = cache(async function getSesion(): Promise<Sesion> {
   const perfil = await getPerfil()
   const espacios = await getPertenencias(perfil.id)
 
@@ -70,4 +77,4 @@ export async function getSesion(): Promise<Sesion> {
     rol: actual.rol,
     espacios,
   }
-}
+})

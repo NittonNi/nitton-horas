@@ -46,6 +46,29 @@ hiciera falta. Encontrado y arreglado por el camino:
   pedir los datos ademas de limpiar el estado-. Probado en vivo: id de
   proyecto inexistente, URL fuera de toda ruta, y una excepcion forzada
   temporalmente para comprobar que el limite la capturaba bien.
+- **Cinco funciones de base de datos expuestas por RPC sin necesidad**:
+  el asesor de seguridad de Supabase marcaba unas 20 funciones como
+  ejecutables por `anon`/`authenticated` via `/rest/v1/rpc/...`. La mayoria
+  son intencionadas -`create_workspace`, `join_workspace`,
+  `responder_invitacion` y similares, que el cliente llama de verdad, o
+  predicados como `is_admin`/`is_member` que ademas se usan por dentro de
+  varias politicas RLS y **no se pueden tocar sin arriesgarse a romperlas**-,
+  asi que se dejaron como estaban. Pero cinco no tenian ningun motivo para
+  estar expuestas: `aplicar_estilo_descripcion`, `aplicar_estilo_nombre`,
+  `separar_si_cambia` y `set_local_date` son disparadores puros -viven de
+  `new`/`old`, fallan solas si se llaman fuera de un disparador, y el codigo
+  no las llama nunca a mano-, y `normalizar_texto_existente` la llama el
+  cliente pero solo para un administrador ya autenticado (la propia funcion
+  ya rechaza a quien no lo sea). Revocado el `EXECUTE` de las cuatro
+  primeras para `anon` y `authenticated`, y el de la quinta solo para
+  `anon`. **Ojo con el detalle que costo un intento en falso**: revocar de
+  esos dos roles con nombre no sirvio de nada la primera vez porque las
+  funciones tenian `EXECUTE` concedido a PUBLIC desde que se crearon -el
+  comportamiento por defecto de Postgres-, y PUBLIC se aplica pase lo que
+  pase con los roles concretos; hubo que revocarlo de PUBLIC. Comprobado
+  con `has_function_privilege` antes y despues de cada intento, y en vivo
+  arrancando y parando el cronometro de verdad -`set_local_date` sigue
+  poniendo bien el dia de cada hora nueva-.
 
 ### Google OAuth y correo de produccion
 

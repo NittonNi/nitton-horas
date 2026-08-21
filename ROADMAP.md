@@ -513,9 +513,13 @@ con `next/og` -mismo dibujo que el wordmark, blanco en negrita sobre
 `#0e0e0e`-, prerenderizado en build. Next lo conecta solo a `og:image` y a
 `twitter:image`/`twitter:card` de la portada.
 
+**Repositorio de GitHub ya renombrado** -comprobado el 21-ago-2026 con `git
+remote -v`: el remoto ya es `github.com/NittonNi/hitoo`, no hacia falta
+tocar nada-. La carpeta local sigue llamandose `nitton-horas`, que no pinta
+nada de puertas afuera.
+
 Queda:
 
-- Renombrar el repositorio de GitHub, que aun se llama `nitton-horas`.
 - Revisar `theme_color`/`background_color` del manifiesto: siguen siendo el
   azul de antes (`#0071e3` / `#f5f5f7`), no se han tocado a proposito -es un
   cambio de paleta, no de marca-.

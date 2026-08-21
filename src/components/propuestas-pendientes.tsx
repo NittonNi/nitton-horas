@@ -6,7 +6,8 @@ import { Check, Loader2, X } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { mensajeError } from "@/lib/errores"
-import { formatClock, formatDateLong, formatDurationShort } from "@/lib/time"
+import { formatClock, formatDateLong, formatDurationShort, toDateKeyInZone } from "@/lib/time"
+import { useSesion } from "@/components/proveedor-sesion"
 import { cn } from "@/lib/utils"
 
 export type Propuesta = {
@@ -26,6 +27,7 @@ export type Propuesta = {
  */
 export function PropuestasPendientes({ propuestas }: { propuestas: Propuesta[] }) {
   const router = useRouter()
+  const { espacio } = useSesion()
   const [ocupada, setOcupada] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -89,7 +91,8 @@ export function PropuestasPendientes({ propuestas }: { propuestas: Propuesta[] }
                   {propuesta.description || propuesta.project_name || "Sin descripción"}
                 </p>
                 <p className="truncate text-xs text-muted">
-                  {propuesta.de} · {formatDateLong(propuesta.start_at.slice(0, 10))}
+                  {propuesta.de} ·{" "}
+                  {formatDateLong(toDateKeyInZone(new Date(propuesta.start_at), espacio.timezone))}
                   {" · "}
                   <span className="cifra">
                     {formatClock(propuesta.start_at)}-{formatClock(propuesta.end_at)}

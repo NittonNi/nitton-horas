@@ -1470,8 +1470,11 @@ function DialogoNuevaEntrada({
     setGuardando(true)
     setError(null)
 
+    // Componentes locales para los dos extremos, igual que en confirmar():
+    // sumar milisegundos de duracion al epoch del inicio desplaza el fin una
+    // hora si por medio hay un cambio de horario (DST).
     const inicio = instante(fecha, minutosInicio)
-    const fin = new Date(new Date(inicio).getTime() + duracion * 60_000).toISOString()
+    const fin = instante(fecha, minutosInicio + duracion)
 
     const supabase = createClient()
     const { data, error: err } = await supabase

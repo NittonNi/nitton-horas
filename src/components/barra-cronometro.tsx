@@ -546,7 +546,13 @@ function EntradaManual({
     setGuardando(true)
     const supabase = createClient()
     const start_at = combineDateAndTime(fecha, inicio)
-    const end_at = new Date(new Date(start_at).getTime() + segs * 1000).toISOString()
+    // Fin con componentes locales (fecha + segundos del dia desde medianoche),
+    // no sumando milisegundos de duracion al epoch: eso desplaza el fin una
+    // hora si por medio hay un cambio de horario (DST).
+    const [yy, mm, dd] = fecha.split("-").map(Number)
+    const [hh, mi] = inicio.split(":").map(Number)
+    const segundosDelDia = hh * 3600 + mi * 60 + segs
+    const end_at = new Date(yy, mm - 1, dd, 0, 0, segundosDelDia, 0).toISOString()
 
     try {
       const { data, error } = await supabase

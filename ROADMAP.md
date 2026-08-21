@@ -287,38 +287,127 @@ arreglo del boton de cerrar sesion (necesario para probarlo mas de una vez
 seguida). Sigue pendiente el SMTP propio: los correos van con el servicio por
 defecto de Supabase, con limite bajo -no vale para que lo use otro equipo-.
 
-**Pendiente: pedir la verificacion de Google (revisado 21-ago-2026)**. La
-pantalla de consentimiento esta publicada pero sin verificar, y el scope de
-Calendar (`calendar.readonly`, pedido aparte del login en
-`ajustes-calendario-google.tsx`) es de los que Google considera sensibles:
-mientras no este verificada, a cualquiera que conecte el calendario le sale
-el aviso de "app no verificada", y Google corta en seco a partir de ~100
-personas que lo hayan aceptado. El login normal con Google (sin calendario)
-no se ve afectado. Hace falta, en orden:
+**Pendiente: pedir la verificacion de Google.** La pantalla de consentimiento
+esta publicada pero sin verificar, y el scope de Calendar (`calendar.readonly`,
+pedido aparte del login en `ajustes-calendario-google.tsx`) es de los que
+Google considera sensibles: mientras no este verificada, a cualquiera que
+conecte el calendario le sale el aviso de "app no verificada", y Google corta
+en seco a partir de ~100 personas que lo hayan aceptado. El login normal con
+Google (sin calendario) no se ve afectado.
 
-1. **Pagina de politica de privacidad publica** -no existe ninguna en la app
-   todavia (buscado `privacidad`/`privacy` en `src`, nada)-. Es lo unico que
-   no depende de esperar al dominio, se puede hacer ya.
-2. Que `hitoo.es` este resolviendo (ver dominio propio arriba en "Lo que
-   queda") y actualizar con el la pantalla de consentimiento -hoy sigue
-   apuntando a `hitoo.vercel.app`-.
-3. Verificar la propiedad de `hitoo.es` en Google Search Console con la
-   cuenta `hitooclock@gmail.com` (TXT en Hostinger o archivo HTML), para
-   poder darlo de alta como dominio autorizado.
-4. Justificacion corta del scope (por que hace falta `calendar.readonly` y
-   como se usa) en el formulario de Google.
-5. Video de demostracion (vale no listado en YouTube): pulsar "Conectar
-   Google Calendar", pantalla de consentimiento, y como las reuniones
-   aceptadas aparecen en la semana para apuntarlas con un clic.
-6. Repasar el resto de la ficha (logo, correo de soporte, correo del
-   desarrollador, enlace a terminos si se añade).
-7. Google Cloud Console -> APIs y servicios -> Pantalla de consentimiento de
-   OAuth -> Enviar para verificacion. Revision de scopes sensibles suele
-   tardar dias, no semanas -no es de los restringidos que piden auditoria
-   CASA-.
+Guia paso a paso -lo que ya esta hecho, lo que se comprobo en vivo el
+21-ago-2026 y el texto exacto para copiar y pegar en cada paso que solo puede
+hacer Nicolas (necesita sus propias cuentas de Google Cloud/Search Console y
+el panel de Vercel: ninguna herramienta de este entorno tiene acceso a esas
+tres cosas)-:
 
-Necesita las cuentas de Nicolas (Google Cloud, Search Console) desde el paso 3
-en adelante; el paso 1 se puede hacer sin el.
+1. ✅ **Hecho el 21-ago-2026**: pagina publica de politica de privacidad en
+   `/privacidad` (`src/app/privacidad/page.tsx`), enlazada desde el pie de la
+   portada, con la clausula obligatoria de la Google API Services User Data
+   Policy. Tuvo que añadirse a `PUBLIC_PATHS` en `src/lib/supabase/session.ts`
+   -si no, el proxy la redirigia a `/acceso`-. Probada en vivo: responde 200
+   sin sesion.
+
+2. **Que `hitoo.es` resuelva a la app.** Comprobado en vivo con las tools de
+   Vercel: el proyecto `hitoo` (equipo `nittonnis-projects`) ya existe, ya
+   tiene un despliegue de produccion listo en `hitoo.vercel.app`, pero
+   **`hitoo.es` todavia no esta añadido como dominio del proyecto** -no hay
+   ninguna herramienta en este entorno que pueda añadirlo por API o CLI, hay
+   que hacerlo a mano-:
+   - Panel de Vercel -> proyecto **hitoo** -> **Settings -> Domains** ->
+     escribir `hitoo.es` -> Add.
+   - Vercel va a pedir un registro DNS. Segun la documentacion actual de
+     Vercel (comprobada hoy, puede que el panel muestre el mismo valor u otro
+     si cambia entre tanto -usar siempre el que enseñe el panel en ese
+     momento-): para el dominio raiz, un registro **A** apuntando a
+     `76.76.21.21`; si tambien se quiere `www.hitoo.es`, un **CNAME** a
+     `cname.vercel-dns-0.com`.
+   - Ese registro se añade en **Hostinger** (donde esta comprado el dominio),
+     en su gestor de DNS -zona del dominio `hitoo.es`, no en Vercel-.
+   - Puede tardar de minutos a un par de horas en propagar. Vercel avisa solo
+     cuando lo detecta y emite el certificado.
+   - De paso, revisar en **Settings -> Environment Variables** del mismo
+     proyecto que `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
+     `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` esten
+     puestas para el entorno de **Production** -no se ha podido comprobar
+     desde aqui, ninguna tool de este entorno lista variables de entorno-.
+   - Una vez resuelva: actualizar la pantalla de consentimiento de Google
+     (paso 6) y el **Site URL** / **Redirect URLs** de Supabase -Authentication
+     -> URL Configuration- para que incluyan `https://hitoo.es` (dejar tambien
+     `hitoo.vercel.app` y `http://localhost:3000` para las pruebas).
+
+3. **Verificar la propiedad de `hitoo.es` en Google Search Console**, con la
+   cuenta `hitooclock@gmail.com`:
+   - [search.google.com/search-console](https://search.google.com/search-console)
+     -> Añadir propiedad -> "Prefijo de URL" `https://hitoo.es` (o "Dominio"
+     si se prefiere verificar todo `hitoo.es` de una vez, recomendado).
+   - Google ofrece varios metodos; el mas simple con Hostinger es el
+     registro **TXT** que Search Console genera en ese momento -copiarlo tal
+     cual en el gestor de DNS de Hostinger, esperar a que propague y pulsar
+     Verificar-.
+   - Necesario para poder marcar `hitoo.es` como **dominio autorizado** en la
+     pantalla de consentimiento de OAuth (paso 6).
+
+4. **Justificacion del scope `calendar.readonly`** -texto ya redactado,
+   listo para copiar y pegar tal cual en el formulario de verificacion de
+   Google (en ingles, que es lo que revisa el equipo de Google, y mas corto
+   de lo que suelen pedir -~120 palabras-)-:
+
+   > hitoo is a time-tracking app for small teams. Team members can
+   > optionally connect their Google Calendar to see their upcoming meetings
+   > inside hitoo and log them as tracked work hours with one click, instead
+   > of typing the same information twice. We request calendar.readonly
+   > because we only need to read the user's event list (title, start/end
+   > time, attendees) to display it inside the app — hitoo never creates,
+   > edits, or deletes any calendar event. The access token is stored
+   > encrypted and is only ever read server-side; it is never sent to the
+   > browser. Users can disconnect Google Calendar at any time from Settings,
+   > which immediately revokes the grant with Google as well as deleting the
+   > stored token.
+
+5. **Video de demostracion** -vale no listado en YouTube, no hace falta
+   publico-. Guion de ~1-2 minutos, en este orden exacto (es lo que Google
+   quiere ver: la pantalla de consentimiento real y el uso real del scope):
+   1. Entrar en hitoo con una cuenta real (no hace falta que sea admin).
+   2. Ir a **Ajustes -> Calendario** y pulsar **Conectar Google Calendar**.
+   3. Dejar que se vea entera la pantalla de consentimiento de Google -el
+      nombre de la app, el logo y el permiso pedido tienen que leerse bien-.
+   4. Aceptar, volver a hitoo, y enseñar que ahora pone "Conectado".
+   5. Ir a **Calendario** o a **Semana** y enseñar una reunion aceptada de
+      Google apareciendo como invitacion -borde a rayas- en la rejilla.
+   6. Hacer clic para aceptarla y enseñar que se convierte en una hora
+      fichada de verdad.
+   7. Opcional pero recomendable: volver a Ajustes y pulsar **Desconectar**,
+      para que quede grabado que tambien se puede revocar.
+
+   Para grabar la pantalla en Windows: `Win + G` (Xbox Game Bar, viene de
+   serie) -> grabar -> el video queda en `Videos\Captures`. Subirlo a YouTube
+   como **"Oculto"/"No listado"** y usar ese enlace en el formulario.
+
+6. **Repasar el resto de la ficha** en Google Cloud Console -> APIs y
+   servicios -> Pantalla de consentimiento de OAuth -> Editar aplicacion:
+   - Dominio de la app / Enlace a la politica de privacidad:
+     `https://hitoo.es/privacidad` (una vez resuelva el paso 2; hasta
+     entonces se puede dejar `https://hitoo.vercel.app/privacidad`, que ya
+     funciona hoy mismo).
+   - Dominios autorizados: añadir `hitoo.es` (tras verificarlo en el paso 3).
+   - Correo de asistencia y correo de contacto del desarrollador:
+     `hitooclock@gmail.com`.
+   - Logo: `public/hitoo-logo.svg` exportado a PNG cuadrado -Google pide PNG,
+     no SVG-.
+   - Enlace a terminos de servicio: opcional, se puede dejar en blanco si no
+     existen todavia.
+
+7. **Enviar a revision**: Google Cloud Console -> APIs y servicios ->
+   Pantalla de consentimiento de OAuth -> **Enviar para verificacion**. La
+   revision de scopes sensibles (no restringidos, `calendar.readonly` no pide
+   auditoria CASA) suele tardar dias, no semanas. Google puede escribir por
+   correo pidiendo aclaraciones -revisar `hitooclock@gmail.com`-.
+
+Resumen de quien hace que: el paso 1 ya esta hecho. Los pasos 2 (dominio +
+variables de Vercel) y 4-6 (textos e imagenes de la ficha) estan preparados
+para que sea copiar/pegar/subir. Los pasos 3 y 7 son tramites que solo
+Nicolas puede iniciar porque exigen su sesion en Google -no hay atajo-.
 
 ### Faltan estados de carga: la pantalla se queda parada y de golpe aparece todo
 

@@ -5,7 +5,7 @@ import type { Database } from "@/lib/database.types"
 import { RUTA_APP } from "@/lib/rutas"
 
 /** Rutas accesibles sin sesion: la raiz es la landing pública. */
-const PUBLIC_PATHS = ["/", "/acceso", "/auth"]
+const PUBLIC_PATHS = ["/", "/acceso", "/auth", "/privacidad"]
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request })

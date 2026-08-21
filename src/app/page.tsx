@@ -541,6 +541,9 @@ export default async function Portada() {
             <a href="#preguntas" className="transition hover:text-ink">
               Preguntas
             </a>
+            <Link href="/privacidad" className="transition hover:text-ink">
+              Privacidad
+            </Link>
             <Link
               href={dentro ? RUTA_APP : "/acceso"}
               className="transition hover:text-ink"

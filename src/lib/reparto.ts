@@ -30,8 +30,8 @@ export function resolverReparto(
 /**
  * Dinero atribuido a cada persona, sumado entre todos los proyectos/ediciones
  * presentes en `entradas`. Sin reparto configurado para un ambito, se
- * comporta como hoy: cada uno se lleva lo de sus propias horas (mismo
- * resultado que el modo "horas").
+ * comporta como hoy: cada uno se lleva lo que generaron sus propias horas a
+ * su propia tarifa (mismo resultado que el modo "horas").
  */
 export function calcularAtribucion(
   entradas: EntradaVista[],
@@ -79,10 +79,15 @@ export function calcularAtribucion(
     // "horas" (o sin reparto configurado) y "equitativo" reparten entre quien
     // ha metido horas facturables en este grupo; solo cambia el criterio.
     const horasPorPersona = new Map<string, number>()
+    const importePorPersona = new Map<string, number>()
     for (const e of grupo) {
       horasPorPersona.set(
         e.user_id,
         (horasPorPersona.get(e.user_id) ?? 0) + (e.duration_seconds ?? 0),
+      )
+      importePorPersona.set(
+        e.user_id,
+        (importePorPersona.get(e.user_id) ?? 0) + Number(e.amount ?? 0),
       )
     }
     const participantes = [...horasPorPersona.keys()]
@@ -93,13 +98,17 @@ export function calcularAtribucion(
       continue
     }
 
-    const horasTotales = participantes.reduce(
-      (s, id) => s + (horasPorPersona.get(id) ?? 0),
-      0,
-    )
-    if (horasTotales <= 0) continue
+    // "horas" por defecto: cada persona se lleva su propio importe, no una
+    // proporcion de `total` sobre horas en bruto. Repartir por horas en
+    // bruto solo da el mismo resultado que "lo que cada uno genero" cuando
+    // todos cobran la misma tarifa; en cuanto hay tarifas distintas por
+    // persona (`rates.user_id`), transfiere dinero de quien cobra mas caro a
+    // quien cobra mas barato. `total` es la suma de los `amount` de este
+    // grupo y cada `amount` ya viene calculado a la tarifa propia de quien
+    // apunto la hora, asi que atribuir el `amount` de cada uno cuadra exacto
+    // con `total`, sin prorratear nada.
     for (const userId of participantes) {
-      sumar(userId, total * ((horasPorPersona.get(userId) ?? 0) / horasTotales))
+      sumar(userId, importePorPersona.get(userId) ?? 0)
     }
   }
 

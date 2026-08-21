@@ -29,6 +29,14 @@ export function mensajeError(error: unknown): string {
       : "No tienes permisos para hacer eso."
   }
 
+  // El minimo de caracteres se puede cambiar desde el panel de Supabase: se
+  // lee del propio mensaje en vez de dejarlo fijo, que si no se desincroniza
+  // -paso una vez, cuando se subio de 6 a 8-.
+  const minimo = raw.match(/Password should be at least (\d+) characters?/)
+  if (minimo) {
+    return `La contraseña tiene que tener al menos ${minimo[1]} caracteres.`
+  }
+
   // Acceso con Google
   const oauth: Record<string, string> = {
     "Unsupported provider": "El acceso con Google no esta activado en el servidor.",
@@ -47,12 +55,13 @@ export function mensajeError(error: unknown): string {
     "Email not confirmed":
       "Tu correo está sin confirmar. Revisa la bandeja de entrada.",
     "User already registered": "Ya existe una cuenta con ese correo. Inicia sesión.",
-    "Password should be at least 6 characters":
-      "La contraseña tiene que tener al menos 6 caracteres.",
     "Email rate limit exceeded":
       "Se ha superado el límite de correos. Espera unos minutos.",
     "Signups not allowed for this instance":
       "El registro está cerrado. Pide a un administrador que te invite.",
+    "Auth session missing": "Ese enlace ya no vale. Pide uno nuevo.",
+    "New password should be different from the old password":
+      "Pon una contraseña distinta a la que ya tenías.",
   }
   for (const [en, es] of Object.entries(auth)) {
     if (raw.includes(en)) return es

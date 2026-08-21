@@ -9,7 +9,7 @@ import { mensajeError } from "@/lib/errores"
 import { rutaSegura } from "@/lib/rutas"
 import { BotonGoogle } from "@/components/boton-google"
 
-type Modo = "entrar" | "registrarse"
+type Modo = "entrar" | "registrarse" | "recuperar"
 
 export function FormularioAcceso() {
   const router = useRouter()
@@ -47,6 +47,13 @@ export function FormularioAcceso() {
         if (error) throw error
         router.push(volver)
         router.refresh()
+      } else if (modo === "recuperar") {
+        const next = "/auth/nueva-contrasena"
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+          redirectTo: `${window.location.origin}/auth/confirmar?next=${encodeURIComponent(next)}`,
+        })
+        if (error) throw error
+        setRevisaCorreo(true)
       } else {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
@@ -79,8 +86,17 @@ export function FormularioAcceso() {
         <MailCheck className="mx-auto mb-3 h-8 w-8 text-running" />
         <h2 className="font-semibold">Revisa tu correo</h2>
         <p className="mt-2 text-sm text-muted">
-          Te hemos enviado un enlace a <strong>{email}</strong> para confirmar la
-          cuenta. Al pulsarlo entrarás directamente.
+          {modo === "recuperar" ? (
+            <>
+              Te hemos enviado un enlace a <strong>{email}</strong> para poner
+              una contraseña nueva.
+            </>
+          ) : (
+            <>
+              Te hemos enviado un enlace a <strong>{email}</strong> para
+              confirmar la cuenta. Al pulsarlo entrarás directamente.
+            </>
+          )}
         </p>
         <button
           type="button"
@@ -93,6 +109,59 @@ export function FormularioAcceso() {
           Volver al acceso
         </button>
       </div>
+    )
+  }
+
+  if (modo === "recuperar") {
+    return (
+      <form onSubmit={onSubmit} className="card space-y-4 p-6">
+        <div>
+          <h2 className="font-semibold">Restablecer contraseña</h2>
+          <p className="mt-1 text-sm text-muted">
+            Escribe tu correo y te mandamos un enlace para poner una nueva.
+          </p>
+        </div>
+
+        <div>
+          <label className="label" htmlFor="email-recuperar">
+            Correo
+          </label>
+          <input
+            id="email-recuperar"
+            type="email"
+            className="field"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="tu@correo.com"
+            autoComplete="email"
+            autoFocus
+            required
+          />
+        </div>
+
+        {error && (
+          <p className="flex items-start gap-2 rounded-lg bg-danger-soft p-3 text-sm text-danger">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </p>
+        )}
+
+        <button type="submit" className="btn btn-primary w-full" disabled={cargando}>
+          {cargando && <Loader2 className="h-4 w-4 animate-spin" />}
+          Enviar enlace
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setModo("entrar")
+            setError(null)
+          }}
+          className="btn btn-ghost w-full text-accent"
+        >
+          Volver al acceso
+        </button>
+      </form>
     )
   }
 
@@ -160,9 +229,23 @@ export function FormularioAcceso() {
       </div>
 
       <div>
-        <label className="label" htmlFor="password">
-          Contraseña
-        </label>
+        <div className="flex items-baseline justify-between">
+          <label className="label" htmlFor="password">
+            Contraseña
+          </label>
+          {modo === "entrar" && (
+            <button
+              type="button"
+              onClick={() => {
+                setModo("recuperar")
+                setError(null)
+              }}
+              className="mb-1.5 text-xs text-accent hover:underline"
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
+          )}
+        </div>
         <input
           id="password"
           type="password"

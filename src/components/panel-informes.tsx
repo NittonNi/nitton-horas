@@ -276,7 +276,10 @@ export function PanelInformes({
     return !entrada.locked || puedeAbrirCerradas
   }
 
-  const editables = visibles.filter(puedeEditar)
+  /* Sobre lo filtrado entero, no solo lo pintado: elegir no necesita pintar
+     la fila, y si no fuera asi, "elegir todas" con mas de 50 resultados
+     filtrados solo cogeria las primeras 50 sin avisar de que quedan mas. */
+  const editables = filtradas.filter(puedeEditar)
   const todasElegidas =
     editables.length > 0 && editables.every((e) => elegidas.includes(e.id))
 

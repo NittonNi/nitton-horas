@@ -353,10 +353,10 @@ function useDatos({
   ).length
   const horas = datos?.segundos ?? 0
   const presupuesto = proyecto.budget_hours ?? null
+  // Sin topar: si se pasa del presupuesto tiene que poder decir "120%", no
+  // quedarse en "100%" como si fuera lo mismo que ir justo.
   const consumido =
-    presupuesto && presupuesto > 0
-      ? Math.min(100, (horas / 3600 / presupuesto) * 100)
-      : null
+    presupuesto && presupuesto > 0 ? (horas / 3600 / presupuesto) * 100 : null
   return { suyas, horas, presupuesto, consumido }
 }
 
@@ -411,10 +411,18 @@ function FilaProyecto({
           <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
             <div
               className="h-full rounded-full"
-              style={{ width: `${consumido}%`, background: proyecto.color }}
+              style={{
+                width: `${Math.min(100, consumido)}%`,
+                background: consumido > 100 ? "var(--danger)" : proyecto.color,
+              }}
             />
           </div>
-          <p className="cifra mt-1 text-[11px] text-muted">
+          <p
+            className={cn(
+              "cifra mt-1 text-[11px]",
+              consumido > 100 ? "font-medium text-danger" : "text-muted",
+            )}
+          >
             {Math.round(consumido)}% de {presupuesto} h
           </p>
         </div>
@@ -491,10 +499,18 @@ function TarjetaProyecto({
           <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
             <div
               className="h-full rounded-full"
-              style={{ width: `${consumido}%`, background: proyecto.color }}
+              style={{
+                width: `${Math.min(100, consumido)}%`,
+                background: consumido > 100 ? "var(--danger)" : proyecto.color,
+              }}
             />
           </div>
-          <p className="cifra mt-1 text-[11px] text-muted">
+          <p
+            className={cn(
+              "cifra mt-1 text-[11px]",
+              consumido > 100 ? "font-medium text-danger" : "text-muted",
+            )}
+          >
             {Math.round(consumido)}% de {presupuesto} h
           </p>
         </div>

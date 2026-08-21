@@ -9,7 +9,13 @@ import {
 import { eventosDeGoogle } from "@/app/(app)/calendario/acciones"
 import { RejillaCalendario } from "@/components/rejilla-calendario"
 import { AjustesCalendarioGoogle } from "@/components/ajustes-calendario-google"
-import { addDays, fromDateKey, startOfWeek, toDateKey } from "@/lib/time"
+import {
+  addDays,
+  fromDateKey,
+  startOfDayInZone,
+  startOfWeek,
+  toDateKey,
+} from "@/lib/time"
 
 export const metadata = { title: "Calendario" }
 
@@ -23,8 +29,9 @@ export default async function PaginaCalendario({
 
   const lunes = /^\d{4}-\d{2}-\d{2}$/.test(parametros.semana ?? "")
     ? toDateKey(startOfWeek(fromDateKey(parametros.semana!)))
-    : toDateKey(startOfWeek(new Date()))
+    : toDateKey(startOfWeek(new Date(), espacio.timezone))
   const domingo = toDateKey(addDays(fromDateKey(lunes), 6))
+  const siguienteLunes = toDateKey(addDays(fromDateKey(domingo), 1))
 
   /* El calendario es personal: siempre las horas de quien mira. Las de otra
      gente se revisan en informes, que es donde eso hace falta. */
@@ -40,11 +47,14 @@ export default async function PaginaCalendario({
     cargarMiembros(espacio.id),
     cargarPropuestas(espacio.id),
     // La misma semana que se esta viendo, ni un dia mas: si se navega a otra
-    // semana, vuelve a pedirse. `hasta` es medianoche del dia siguiente al
-    // domingo, para no perder las horas de ultima hora del domingo.
+    // semana, vuelve a pedirse. Los dos limites son medianoche real (huso del
+    // workspace), no fromDateKey() -que da mediodia en el huso del proceso y
+    // dejaba fuera cualquier reunion que terminara antes del mediodia del
+    // lunes-. `hasta` es medianoche del dia siguiente al domingo, para no
+    // perder las horas de ultima hora del domingo.
     eventosDeGoogle(
-      fromDateKey(lunes).toISOString(),
-      addDays(fromDateKey(domingo), 1).toISOString(),
+      startOfDayInZone(lunes, espacio.timezone).toISOString(),
+      startOfDayInZone(siguienteLunes, espacio.timezone).toISOString(),
       espacio.id,
     ),
   ])

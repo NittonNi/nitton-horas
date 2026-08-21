@@ -54,7 +54,9 @@ export function mensajeError(error: unknown): string {
     "Invalid login credentials": "Correo o contraseña incorrectos.",
     "Email not confirmed":
       "Tu correo está sin confirmar. Revisa la bandeja de entrada.",
-    "User already registered": "Ya existe una cuenta con ese correo. Inicia sesión.",
+    // Sin confirmar si la cuenta existe -igual que recuperar contraseña,
+    // que responde lo mismo exista o no la cuenta.
+    "User already registered": "Revisa tu correo para continuar.",
     "Email rate limit exceeded":
       "Se ha superado el límite de correos. Espera unos minutos.",
     "Signups not allowed for this instance":

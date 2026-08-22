@@ -5,6 +5,40 @@ Lo que falta, en el orden en que tiene sentido hacerlo. Se va moviendo a
 
 ## Por arreglar
 
+### Escribir en el movil es incomodo (apuntado el 22-ago-2026)
+
+Contado por Nicolas despues de probarlo en su telefono. **Sin diagnosticar
+todavia: esto es lo que dijo, no lo que se ha comprobado.**
+
+1. **Al tocar cualquier campo, hace zoom.** Ojo: el 20-ago ya se subio a 16px
+   la letra de `input`, `select` y `textarea` para evitar el zoom de iOS
+   Safari -esta en la seccion de la auditoria de movil-, asi que o quedan
+   campos por debajo de 16px, o el que usa no es iOS, o el zoom viene de otra
+   cosa. Primero medir de verdad: en que pantalla, en que campo y en que
+   navegador.
+2. **La barra de abajo tapa lo que se escribe.** Con el teclado abierto no
+   puede ni seleccionar ni bajar la pagina: tiene que cerrar el teclado,
+   seleccionar, y si el campo cae por debajo de la barra no ve ni lo que esta
+   apuntando.
+
+Por donde mirar cuando se retome:
+
+- Que barra es la que tapa -la del cronometro del layout de `(app)`, la
+  navegacion inferior, o las dos-, y si esta con `position: fixed`. Con el
+  teclado abierto, en Android el viewport encoge y lo fijo se queda encima de
+  todo; en iOS el teclado ni siquiera cambia `100vh`.
+- `100dvh` / `svh` en vez de `vh` donde haga falta, y probar la
+  `VirtualKeyboard API` -solo Chrome/Android- o `env(keyboard-inset-height)`.
+- `scroll-margin-bottom` en los campos y llevar el foco a la vista al
+  enfocarlos (`scrollIntoView({ block: "center" })`), que es lo que arregla el
+  "no veo lo que escribo".
+- Que la barra inferior se aparte -o se esconda- mientras hay un campo con el
+  foco, en vez de pelearse con el teclado.
+
+**Hace falta probarlo en el telefono de Nicolas**: el navegador de estas
+sesiones no cambia el ancho de verdad ni levanta un teclado virtual, asi que
+esto no se puede ni reproducir ni dar por arreglado desde aqui.
+
 ### Revision a fondo del 21-ago-2026
 
 Nicolas pidio repasar la aplicacion entera sin esperar respuesta -codigo,

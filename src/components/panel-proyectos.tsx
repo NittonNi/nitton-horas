@@ -434,7 +434,7 @@ function BotonVista({ vista }: { vista: Vista }) {
     <div
       role="group"
       aria-label="Cómo se ven los proyectos"
-      className="flex shrink-0 rounded-[4px] border border-line bg-surface-2 p-0.5"
+      className="flex shrink-0 rounded-[6px] border border-line bg-surface-2 p-0.5"
     >
       {(
         [

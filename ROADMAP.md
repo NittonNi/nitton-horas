@@ -64,6 +64,34 @@ Por donde mirar si no funciona:
 sesiones no cambia el ancho de verdad ni levanta un teclado virtual, asi que
 esto no se puede ni reproducir ni dar por arreglado desde aqui.
 
+### El calendario en el movil, y los bordes (22-ago-2026)
+
+Nicolas, con el telefono delante: *"esta demasiado cargado, los filtros creo
+que sobran"*, el texto de la cabecera *"casi que lo quitaria"*, y **la vista de
+un dia** -"que es lo que tienen en Clockify"-. Ademas, los bordes **un pelo
+mas redondos, todo**.
+
+- **Un solo dia en el movil, de serie.** Ya existia -tocando un dia se abria
+  ese solo- pero habia que descubrirlo, y de entrada se veian siete columnas.
+  Ahora en movil se entra directo al dia: hoy si cae en la semana que se mira,
+  y si no el lunes. La tira de la semana se queda arriba para saltar de dia, y
+  las flechas ‹ › **van de dia en dia**, saltando de semana solas cuando hace
+  falta. El titulo dice el dia -"sabado, 22 de agosto"- y el total de al lado
+  cuenta **ese dia**, que mirando un dia el total de la semana no dice nada.
+  "Esta semana" pasa a ser "Hoy". En escritorio no cambia nada.
+- **Los filtros no salen en el movil.** Tres desplegables ocupaban mas que el
+  propio calendario; para acotar estan Informes. Se ocultan en el mismo corte
+  que usa `useEsMovil` -768px-, para que lo que decide el CSS y lo que decide
+  el codigo no se contradigan.
+- **El subtitulo tampoco.** El titulo ya dice donde estas.
+- **Bordes**: `--radio` 8 -> 12 y `--radio-sm` 6 -> 8, mas los `rounded-[4px]`
+  sueltos a 6. Ojo para el futuro: lo que no usa los tokens no se entera de
+  estos cambios, y en el codigo hay unos cuantos `rounded-lg`/`rounded-xl` de
+  Tailwind por su cuenta.
+
+Probado en vivo forzando el corte de `useEsMovil` para poder ver la version de
+movil en el escritorio: el dia, las flechas, el total del dia y el boton Hoy.
+
 ### Mover categorias arrastrando (hecho el 22-ago-2026)
 
 Pedido por Nicolas: en **Categorizacion**, poder coger una categoria y

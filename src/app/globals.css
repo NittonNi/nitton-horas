@@ -67,8 +67,11 @@
      igual sobre el blanco de una tarjeta que sobre el azul de un boton. */
   --pulsado: rgb(0 0 0 / 0.07);
 
-  --radio: 8px;
-  --radio-sm: 6px;
+  /* Un pelo mas redondos que antes -8/6-, que era lo que pedia Nicolas el
+     22-ago. Lo que no use estos dos tokens no se entera, asi que los
+     `rounded-[4px]` sueltos subieron a 6 a mano. */
+  --radio: 12px;
+  --radio-sm: 8px;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.04);
   --shadow-lg: 0 12px 40px -8px rgb(0 0 0 / 0.16), 0 0 0 0.5px rgb(0 0 0 / 0.08);
 }

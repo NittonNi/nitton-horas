@@ -242,7 +242,7 @@ export function GestionCategorias({
                     key={hija.id}
                     data-fila={hija.id}
                     className={cn(
-                      "flex items-center gap-1 rounded-[4px]",
+                      "flex items-center gap-1 rounded-[6px]",
                       arrastre?.id === hija.id &&
                         "relative z-10 bg-surface shadow-[var(--shadow-lg)]",
                     )}
@@ -402,7 +402,7 @@ function Fila({
           }
         }}
         aria-label="Nombre de la categoría"
-        className="min-w-0 flex-1 truncate rounded-[4px] bg-transparent px-1 py-0.5 text-sm font-medium outline-none transition hover:bg-surface-3/60 focus:bg-surface"
+        className="min-w-0 flex-1 truncate rounded-[6px] bg-transparent px-1 py-0.5 text-sm font-medium outline-none transition hover:bg-surface-3/60 focus:bg-surface"
       />
 
       <span className="shrink-0 text-xs text-muted">
@@ -436,14 +436,14 @@ function Fila({
         placeholder="—"
         aria-label="Objetivo semanal"
         title="Objetivo de horas por persona y semana"
-        className="cifra w-16 shrink-0 rounded-[4px] bg-transparent px-1 py-0.5 text-right text-sm outline-none transition hover:bg-surface-3/60 focus:bg-surface"
+        className="cifra w-16 shrink-0 rounded-[6px] bg-transparent px-1 py-0.5 text-right text-sm outline-none transition hover:bg-surface-3/60 focus:bg-surface"
       />
 
       <button
         type="button"
         onClick={onArchivar}
         disabled={ocupado}
-        className="shrink-0 rounded-[4px] p-1 text-muted transition hover:bg-surface-3 hover:text-ink disabled:opacity-40"
+        className="shrink-0 rounded-[6px] p-1 text-muted transition hover:bg-surface-3 hover:text-ink disabled:opacity-40"
         aria-label={categoria.archived ? "Reactivar" : "Archivar"}
         title={categoria.archived ? "Reactivar" : "Archivar"}
       >
@@ -514,7 +514,7 @@ function Asa({
         onLostPointerCapture={() => onSoltar()}
         /* Sin esto, arrastrar hacia abajo en el movil hace rodar la pagina en
            vez de coger la categoria. */
-        className="-ml-1 shrink-0 cursor-grab touch-none rounded-[4px] p-1 text-muted/70 transition hover:bg-surface-3/60 hover:text-ink active:cursor-grabbing"
+        className="-ml-1 shrink-0 cursor-grab touch-none rounded-[6px] p-1 text-muted/70 transition hover:bg-surface-3/60 hover:text-ink active:cursor-grabbing"
       >
         <GripVertical className="h-3.5 w-3.5" aria-hidden />
       </DropdownMenu.Trigger>

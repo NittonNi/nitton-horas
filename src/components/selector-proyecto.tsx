@@ -449,7 +449,7 @@ export function SelectorProyecto({
                               : "Ponerlo arriba del todo"
                           }
                           className={cn(
-                            "shrink-0 rounded-[4px] p-1.5 transition",
+                            "shrink-0 rounded-[6px] p-1.5 transition",
                             favoritos.includes(proyecto.id)
                               ? "text-live"
                               : "text-muted hover:bg-surface-3 hover:text-ink",
@@ -475,7 +475,7 @@ export function SelectorProyecto({
                           aria-expanded={desplegado}
                           /* Se ve que es un boton: sin marco no se sabia que
                              ahi dentro habia ediciones y tareas. */
-                          className="shrink-0 rounded-[4px] border border-line bg-surface p-1.5 text-muted transition hover:border-line-strong hover:bg-surface-2 hover:text-ink"
+                          className="shrink-0 rounded-[6px] border border-line bg-surface p-1.5 text-muted transition hover:border-line-strong hover:bg-surface-2 hover:text-ink"
                         >
                           {desplegado ? (
                             <ChevronDown className="h-4 w-4" />

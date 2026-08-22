@@ -78,7 +78,9 @@ export default async function PaginaCalendario({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">Calendario</h1>
-          <p className="mt-0.5 text-sm text-muted">
+          {/* En el movil la pantalla es el sitio mas caro que hay: el titulo
+              ya dice donde estas, y la frase se queda para el escritorio. */}
+          <p className="mt-0.5 hidden text-sm text-muted md:block">
             Las horas de la semana colocadas donde de verdad ocurrieron.
           </p>
         </div>

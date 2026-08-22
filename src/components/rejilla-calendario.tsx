@@ -438,11 +438,27 @@ export function RejillaCalendario({
 
   const totalSemana = visibles.reduce((s, e) => s + (e.duration_seconds ?? 0), 0)
 
-  /* En movil se ve la semana entera, como el calendario del telefono: siete
-     columnas estrechas y la tira de dias arriba. Tocando un dia se abre solo
-     ese, a lo ancho; tocandolo otra vez se vuelve a la semana. */
-  const diaVisto = diaMovil && dias.includes(diaMovil) ? diaMovil : null
-  const diasPintados = esMovil && diaVisto ? [diaVisto] : dias
+  /**
+   * En el movil se ve **un solo dia**, como en Clockify: siete columnas en una
+   * pantalla de telefono no son un calendario, son una cuadricula ilegible. La
+   * tira de arriba sigue siendo la semana, para saltar de dia con el dedo.
+   *
+   * Empieza en hoy si hoy cae en la semana que se esta mirando, y si no en el
+   * lunes. En escritorio no cambia nada: la semana entera.
+   */
+  const elegido = diaMovil && dias.includes(diaMovil) ? diaMovil : null
+  const diaVisto = esMovil
+    ? (elegido ?? (dias.includes(hoy) ? hoy : dias[0]))
+    : elegido
+  const diasPintados = esMovil ? [diaVisto!] : dias
+
+  /** En movil las flechas van de dia en dia, y saltan de semana si hace falta. */
+  function moverDia(paso: number) {
+    const nuevo = toDateKey(addDays(fromDateKey(diaVisto ?? dias[0]), paso))
+    setDiaMovil(nuevo)
+    const suLunes = toDateKey(startOfWeek(fromDateKey(nuevo)))
+    if (suLunes !== lunes) irA(suLunes)
+  }
 
   /* ---------------------------------------------------------------- vista */
 
@@ -452,56 +468,84 @@ export function RejillaCalendario({
         <div className="flex items-center gap-1">
           <button
             type="button"
-            onClick={() => irA(toDateKey(addDays(fromDateKey(lunes), -7)))}
+            onClick={() =>
+              esMovil
+                ? moverDia(-1)
+                : irA(toDateKey(addDays(fromDateKey(lunes), -7)))
+            }
             className="btn p-2"
-            aria-label="Semana anterior"
+            aria-label={esMovil ? "Día anterior" : "Semana anterior"}
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button
             type="button"
-            onClick={() => irA(toDateKey(addDays(fromDateKey(lunes), 7)))}
+            onClick={() =>
+              esMovil
+                ? moverDia(1)
+                : irA(toDateKey(addDays(fromDateKey(lunes), 7)))
+            }
             className="btn p-2"
-            aria-label="Semana siguiente"
+            aria-label={esMovil ? "Día siguiente" : "Semana siguiente"}
           >
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
 
+        {/* En movil, el dia que se esta mirando; en escritorio, la semana */}
         <p className="text-sm font-medium">
-          {fromDateKey(lunes).toLocaleDateString("es-ES", {
-            day: "numeric",
-            month: "long",
-          })}{" "}
-          -{" "}
-          {fromDateKey(dias[6]).toLocaleDateString("es-ES", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          })}
+          {esMovil && diaVisto
+            ? fromDateKey(diaVisto).toLocaleDateString("es-ES", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+              })
+            : `${fromDateKey(lunes).toLocaleDateString("es-ES", {
+                day: "numeric",
+                month: "long",
+              })} - ${fromDateKey(dias[6]).toLocaleDateString("es-ES", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}`}
         </p>
 
+        {/* Mirando un solo dia, el total de la semana no dice nada de lo que
+            tienes delante: en movil cuenta ese dia. */}
         <span className={cn("chip", filtrando && "border-accent text-accent")}>
-          {formatDurationShort(totalSemana)}
+          {formatDurationShort(
+            esMovil && diaVisto
+              ? visibles
+                  .filter((e) => e.local_date === diaVisto)
+                  .reduce((s, e) => s + (e.duration_seconds ?? 0), 0)
+              : totalSemana,
+          )}
           {filtrando && " filtradas"}
         </span>
 
         {/* Por area, por proyecto y por etiqueta: para mirar una semana con
-            los ojos puestos en una sola cosa. */}
-        <div className="no-print flex flex-wrap items-center gap-2">
+            los ojos puestos en una sola cosa. En el movil no salen -tres
+            desplegables ocupaban mas que el propio calendario, y ahi se mira
+            un dia, no se analiza-. Para eso estan Informes. */}
+        <div className="no-print hidden flex-wrap items-center gap-2 md:flex">
           <FiltrosDeHoras catalogo={catalogo} valor={filtros} onChange={setFiltros} />
         </div>
 
         {/* A la derecha lo de moverse por el tiempo; a la izquierda, donde
             estas. Asi la cabecera no es una fila de cosas sueltas. */}
         <div className="ml-auto flex items-center gap-2">
-          {lunes !== toDateKey(startOfWeek(new Date())) && (
+          {(esMovil
+            ? diaVisto !== hoy
+            : lunes !== toDateKey(startOfWeek(new Date()))) && (
             <button
               type="button"
-              onClick={() => irA(toDateKey(startOfWeek(new Date())))}
+              onClick={() => {
+                irA(toDateKey(startOfWeek(new Date())))
+                if (esMovil) setDiaMovil(hoy)
+              }}
               className="btn h-8 text-sm"
             >
-              Esta semana
+              {esMovil ? "Hoy" : "Esta semana"}
             </button>
           )}
 
@@ -556,11 +600,9 @@ export function RejillaCalendario({
               <button
                 key={dia}
                 type="button"
-                onClick={() => setDiaMovil((antes) => (antes === dia ? null : dia))}
+                onClick={() => setDiaMovil(dia)}
                 aria-current={dia === diaVisto ? "date" : undefined}
-                title={
-                  dia === diaVisto ? "Volver a la semana" : "Ver solo este día"
-                }
+                title={esMovil ? "Ver este día" : undefined}
                 className={cn(
                   "border-l border-line px-1 py-2 text-center transition sm:px-2",
                   esHoy && "bg-live-soft",

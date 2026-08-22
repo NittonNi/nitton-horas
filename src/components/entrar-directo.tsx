@@ -59,7 +59,7 @@ export function EntrarDirecto() {
       <span
         aria-hidden
         className={
-          "flex h-4 w-4 items-center justify-center rounded-[4px] border transition " +
+          "flex h-4 w-4 items-center justify-center rounded-[6px] border transition " +
           (puesto
             ? "border-accent bg-accent text-accent-fg"
             : "border-line-strong bg-surface")

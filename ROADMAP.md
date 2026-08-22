@@ -39,6 +39,36 @@ Por donde mirar cuando se retome:
 sesiones no cambia el ancho de verdad ni levanta un teclado virtual, asi que
 esto no se puede ni reproducir ni dar por arreglado desde aqui.
 
+### Mover categorias arrastrando (apuntado el 22-ago-2026)
+
+Pedido por Nicolas: en **Categorizacion**, poder coger una categoria y
+soltarla en otra area. Hoy, si creas algo dentro de Proyectos y luego lo
+quieres en Backoffice, hay que borrarlo y volver a escribirlo -y con ello se
+pierde lo que colgara de esa categoria-.
+
+Lo que ya esta puesto para que salga bien:
+
+- `categories` tiene `parent_id` y `position`, asi que mover es un `update` de
+  esas dos columnas -no hace falta migracion-.
+- `gestion-categorias.tsx` (373 lineas) ya crea, renombra, pone objetivo y
+  archiva pasando por `conSupabase()`, que refresca al terminar. Mover encaja
+  ahi mismo.
+- `crear()` ya calcula la `position` como el numero de hermanas, asi que el
+  orden dentro de un area existe aunque hoy no se pueda cambiar.
+
+Lo que hay que decidir al hacerlo:
+
+- **Que pasa con los proyectos** que cuelgan de esa categoria: se van con
+  ella -es lo que espera cualquiera- pero conviene decirlo en el aviso, que
+  cambia de area lo que salga en los informes.
+- **Reordenar tambien dentro de un area**, ya que se va a arrastrar: es la
+  misma `position` y sale casi gratis.
+- **Sin `alert`**: mover se deshace desde el aviso de abajo, como el resto.
+- **Que funcione con el dedo y con el teclado**: arrastrar a secas deja fuera
+  a quien va por teclado y es incomodo en movil, asi que hace falta ademas un
+  "mover a" en los tres puntos de cada fila -que es, de hecho, lo que arregla
+  el problema aunque el arrastre no llegue nunca-.
+
 ### Formularios con el tacto de Revolut (22-ago-2026)
 
 **De donde sale la idea**: de un video de Instagram de **zanderwhitehurst**,

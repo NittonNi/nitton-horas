@@ -52,7 +52,7 @@ export function Bienvenida({
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-4 py-10">
+    <main className="tema-claro mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-4 py-10">
       <div className="mb-6 text-center">
         {/* eslint-disable-next-line @next/next/no-img-element -- SVG de marca */}
         <img src="/hitoo-logo.svg" alt="hitoo" className="mx-auto mb-4 h-6 w-auto" />

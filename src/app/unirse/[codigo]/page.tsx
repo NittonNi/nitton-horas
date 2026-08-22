@@ -6,6 +6,9 @@ import { Unirse } from "@/components/unirse"
 
 export const metadata = { title: "Unirse a un equipo" }
 
+/** Se ve antes de entrar al panel, así que va en claro como la portada. */
+export const viewport = { themeColor: "#f5f5f7" }
+
 /** Lo que devuelve `espacio_por_codigo`: el equipo y los nombres libres. */
 type Plaza = { id: string; nombre: string }
 
@@ -24,7 +27,7 @@ export default async function PaginaUnirse({
 
   if (!espacio) {
     return (
-      <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-4 py-10 text-center">
+      <main className="tema-claro mx-auto flex min-h-dvh max-w-md flex-col justify-center px-4 py-10 text-center">
         <h1 className="text-lg font-semibold tracking-tight">
           Este enlace ya no vale
         </h1>

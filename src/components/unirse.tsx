@@ -48,7 +48,7 @@ export function Unirse({
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-4 py-10">
+    <main className="tema-claro mx-auto flex min-h-dvh max-w-md flex-col justify-center px-4 py-10">
       <div className="mb-6 text-center">
         <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-[var(--radio)] bg-accent text-accent-fg">
           <UserPlus className="h-5 w-5" />

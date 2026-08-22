@@ -1158,8 +1158,14 @@ momento, en vez de descubrirlo por casualidad en el perfil. El
 Oscuro, Sistema- en vez de solo con los iconos; sus dos usos de siempre -el
 menu lateral y el perfil- no cambian.
 
-Comprobado en vivo con el tema puesto en **oscuro**: la portada, el alta y la
-politica salen en claro igualmente, y el resto de la aplicacion sigue oscura.
+Y con el mismo criterio, todo lo que se ve **antes de entrar al panel**:
+`/acceso`, `/auth/nueva-contrasena`, `/unirse/<codigo>` -el primer contacto de
+quien escanea el QR- y `/bienvenida`. La regla es esa: hasta el panel, claro;
+del panel para dentro, manda el tema de cada uno.
+
+Comprobado en vivo con el tema puesto en **oscuro**: la portada, el alta, la
+politica y `/bienvenida` salen en claro igualmente, el panel sigue oscuro, y
+sin sesion (curl, sin cookies) las cuatro publicas llevan la clase.
 
 Pendiente: **mirarlo desde el movil**. El navegador de esta sesion no cambia
 el ancho de verdad, asi que el responsive esta razonado por codigo pero no

@@ -105,6 +105,13 @@ mas redondos, todo**.
     si no, vuelve a su sitio.
   - Con un bloque en la mano no hay desliz: arrastrar un rato empieza
     manteniendo el dedo, asi que los dos gestos no se pisan.
+  - **El cambio de semana tambien se suaviza.** Es el unico salto que quedaba
+    -el dia siguiente al domingo vive en otra semana y hay que ir a buscarla
+    al servidor-. Ahora la tira **sale** medio paso hacia donde ibas y se
+    apaga un poco, y cuando llegan los dias nuevos **entra** desde el lado
+    contrario: se coloca fuera sin transicion y solo despues se anima, que si
+    no se veria volver hacia atras. Ni datos de mas ni semanas precargadas:
+    solo el movimiento estirado mientras carga.
 - **Fuera las flechas en movil**: con el desliz y la tira de arriba, un tercer
   mando para lo mismo solo ocupaba sitio.
 - **El circulo naranja va con el dia que estas mirando**, no con hoy. Antes se

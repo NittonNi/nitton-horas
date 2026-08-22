@@ -466,12 +466,39 @@ export function RejillaCalendario({
   const desliz = useRef<{ x: number; y: number; deLado: boolean } | null>(null)
   const [dx, setDx] = useState(0)
 
+  /**
+   * El cambio de semana, que es el unico salto que queda: el dia siguiente al
+   * domingo vive en otra semana y hay que ir a buscarla al servidor. Para que
+   * no aparezca de golpe, la tira **sale** medio paso hacia donde ibas y se
+   * apaga un poco; cuando llegan los dias nuevos **entra** desde el lado
+   * contrario. El movimiento no se corta: solo se estira mientras carga.
+   */
+  const cruzando = useRef(0)
+  const [saliendo, setSaliendo] = useState(0)
+  const [entrando, setEntrando] = useState(0)
+
+  useEffect(() => {
+    if (cruzando.current === 0) return
+    const hacia = cruzando.current
+    cruzando.current = 0
+    setSaliendo(0)
+    // Colocada fuera y sin transicion; en el frame siguiente, a su sitio
+    setEntrando(hacia)
+    const id = requestAnimationFrame(() =>
+      requestAnimationFrame(() => setEntrando(0)),
+    )
+    return () => cancelAnimationFrame(id)
+  }, [lunes])
+
   /** Cambia de dia, saltando de semana cuando el dia cae fuera. */
   function moverDia(paso: number) {
     const nuevo = toDateKey(addDays(fromDateKey(diaVisto ?? dias[0]), paso))
     setDiaMovil(nuevo)
     const suLunes = toDateKey(startOfWeek(fromDateKey(nuevo)))
-    if (suLunes !== lunes) irA(suLunes)
+    if (suLunes === lunes) return
+    cruzando.current = paso
+    setSaliendo(paso)
+    irA(suLunes)
   }
 
   /* ---------------------------------------------------------------- vista */
@@ -757,15 +784,23 @@ export function RejillaCalendario({
               className={cn("grid grid-cols-7", esMovil && "w-[700%]")}
               style={{
                 height: alto,
+                /* Medio dia hacia donde va: lo justo para que se vea salir sin
+                   dejar la pantalla en blanco mientras llega la semana. */
                 transform: esMovil
-                  ? `translateX(calc(${(-indiceDia * 100) / 7}% + ${dx}px))`
+                  ? `translateX(calc(${
+                      (-indiceDia * 100) / 7 -
+                      (saliendo * 100) / 14 +
+                      (entrando * 100) / 14
+                    }% + ${dx}px))`
                   : undefined,
+                opacity: esMovil && (saliendo !== 0 || entrando !== 0) ? 0.45 : 1,
                 /* Mientras el dedo manda no hay transicion -la rejilla va con
                    el-, y al soltar es la transicion la que la deja en su
-                   sitio. */
+                   sitio. Al entrar tampoco: primero se coloca fuera y solo
+                   despues se anima, que si no se veria volver hacia atras. */
                 transition:
-                  esMovil && dx === 0
-                    ? "transform 0.28s cubic-bezier(0.2, 0.7, 0.2, 1)"
+                  esMovil && dx === 0 && entrando === 0
+                    ? "transform 0.28s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.2s"
                     : "none",
               }}
             >

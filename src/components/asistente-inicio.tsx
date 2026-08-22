@@ -1,16 +1,18 @@
 "use client"
 
-import { useEffect, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import {
   ArrowLeft,
   ArrowRight,
   Check,
   Copy,
   Loader2,
+  Minus,
   Plus,
+  Sparkles,
   Timer,
   Upload,
-  X,
+  Users,
 } from "lucide-react"
 
 import { activarEspacio, entrarEnEspacio } from "@/app/acciones"
@@ -25,12 +27,26 @@ import { cn, nuevoCodigo } from "@/lib/utils"
  *
  * Antes esto estaba repartido: el espacio se creaba en un sitio, los nombres
  * del equipo en otro y el enlace en un tercero, cada uno sin saber del
- * anterior. Aquí van los cuatro pasos seguidos y en el orden en que se hacen
- * de verdad: creas, escribes quién sois, lo repartes y eliges por dónde
- * empezar.
+ * anterior. Aquí van seguidos y en el orden en que se hacen de verdad.
+ *
+ * Lo que se pregunta se usa: cuántos sois deja preparados esos huecos de
+ * nombres, y de dónde venís decide dónde acaba el asistente -en el importador
+ * o en el cronómetro-, en vez de preguntarlo otra vez al final. Si vas solo,
+ * los pasos de nombres y de repartir el enlace ni aparecen.
  */
 
-const PASOS = ["El espacio", "El equipo", "Repartirlo", "Empezar"] as const
+type Clave = "espacio" | "vosotros" | "nombres" | "repartir"
+type Origen = "clockify" | "otra" | "cero"
+
+const ETIQUETAS: Record<Clave, string> = {
+  espacio: "El espacio",
+  vosotros: "Cómo sois",
+  nombres: "El equipo",
+  repartir: "Repartirlo",
+}
+
+/** Nadie monta un equipo de tres cifras aquí, y el contador no puede irse. */
+const MAX_EQUIPO = 60
 
 /** Zona del navegador, si es una de las que ofrecemos. */
 function zonaPorDefecto(): string {
@@ -45,31 +61,48 @@ function zonaPorDefecto(): string {
 }
 
 export function AsistenteInicio({ perfil }: { perfil: Perfil }) {
-  const [paso, setPaso] = useState(0)
+  const [activo, setActivo] = useState<Clave>("espacio")
   const [ocupado, setOcupado] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [, empezarTransicion] = useTransition()
 
-  // Paso 1
+  // El espacio
   const [nombre, setNombre] = useState("")
   const [zona, setZona] = useState(zonaPorDefecto)
   const [conPlantilla, setConPlantilla] = useState(true)
 
-  // Lo que se crea en el paso 1 y usan los demás
+  // Cómo sois
+  const [cuantos, setCuantos] = useState(5)
+  const [origen, setOrigen] = useState<Origen>("cero")
+
+  // Lo que se crea en el primer paso y usan los demás
   const [espacioId, setEspacioId] = useState<string | null>(null)
   const [codigo, setCodigo] = useState<string | null>(null)
 
-  // Paso 2
+  // El equipo
   const [gente, setGente] = useState<string[]>([])
-  const [suelto, setSuelto] = useState("")
 
-  // Paso 3
+  // Repartirlo
   const [copiado, setCopiado] = useState(false)
+
+  /* Solo tú: no hay a quién nombrar ni a quién mandarle el enlace, así que
+     esos dos pasos no existen. La lista de arriba lo enseña al momento. */
+  const pasos = useMemo<Clave[]>(
+    () =>
+      cuantos > 1
+        ? ["espacio", "vosotros", "nombres", "repartir"]
+        : ["espacio", "vosotros"],
+    [cuantos],
+  )
+  const indice = Math.max(0, pasos.indexOf(activo))
 
   const enlace =
     codigo && typeof window !== "undefined"
       ? `${window.location.origin}/unirse/${codigo}`
       : null
+
+  /** Dónde se acaba, según de dónde vengan las horas. */
+  const destino = origen === "cero" ? "/panel" : "/gestion/importar"
 
   useEffect(() => {
     if (!copiado) return
@@ -77,7 +110,7 @@ export function AsistenteInicio({ perfil }: { perfil: Perfil }) {
     return () => clearTimeout(t)
   }, [copiado])
 
-  /* -------------------------------------------------------------- paso 1 */
+  /* ------------------------------------------------------------ el espacio */
 
   async function crearEspacio() {
     const limpio = nombre.trim()
@@ -105,51 +138,71 @@ export function AsistenteInicio({ perfil }: { perfil: Perfil }) {
     await activarEspacio(data.id)
     setEspacioId(data.id)
     setOcupado(false)
-    setPaso(1)
+    setActivo("vosotros")
   }
 
-  /* -------------------------------------------------------------- paso 2 */
+  /* ------------------------------------------------------------- cómo sois */
 
-  /** Se puede pegar una lista entera: una por línea o separadas por comas. */
-  function anadir(texto: string) {
+  /** Del contador salen los huecos: uno menos, que tú ya estás dentro. */
+  function irAlEquipo() {
+    setGente((antes) => {
+      const faltan = cuantos - 1 - antes.length
+      return faltan > 0 ? [...antes, ...Array<string>(faltan).fill("")] : antes
+    })
+    setActivo("nombres")
+  }
+
+  /* -------------------------------------------------------------- el equipo */
+
+  function escribir(i: number, valor: string) {
+    setGente((antes) => antes.map((n, j) => (j === i ? valor : n)))
+  }
+
+  /**
+   * Se puede pegar la lista entera en cualquier hueco: se reparte desde ahí
+   * hacia abajo y crece si hace falta. Copiar de un correo y soltarlo es como
+   * llega esto de verdad.
+   */
+  function repartirPegado(desde: number, texto: string) {
     const nuevos = texto
-      .split(/[\n,;]+/)
+      .split(/[\n,;\t]+/)
       .map((n) => n.trim())
       .filter(Boolean)
     if (nuevos.length === 0) return
-    setGente((antes) => [
-      ...antes,
-      ...nuevos.filter(
-        (n) => !antes.some((a) => a.toLowerCase() === n.toLowerCase()),
-      ),
-    ])
-    setSuelto("")
+    setGente((antes) => {
+      const lista = [...antes]
+      nuevos.forEach((n, k) => {
+        lista[desde + k] = n
+      })
+      return lista.slice(0, MAX_EQUIPO)
+    })
   }
 
   async function guardarGente() {
-    if (!espacioId || gente.length === 0) {
-      setPaso(2)
+    const limpios = gente.map((n) => n.trim()).filter(Boolean)
+    if (!espacioId || limpios.length === 0) {
+      setActivo("repartir")
       return
     }
     setOcupado(true)
     setError(null)
     const { error: err } = await createClient()
       .from("workspace_seats")
-      .insert(gente.map((name) => ({ workspace_id: espacioId, name })))
+      .insert(limpios.map((name) => ({ workspace_id: espacioId, name })))
     setOcupado(false)
     if (err) {
       setError(mensajeError(err))
       return
     }
-    setPaso(2)
+    setActivo("repartir")
   }
 
-  /* -------------------------------------------------------------- paso 3 */
+  /* ------------------------------------------------------------- repartirlo */
 
   /* El enlace se prepara al llegar aquí: si nadie pasa por este paso, el
      espacio se queda sin código y no hay puerta abierta de más. */
   useEffect(() => {
-    if (paso !== 2 || !espacioId || codigo) return
+    if (activo !== "repartir" || !espacioId || codigo) return
     let vivo = true
     const generado = nuevoCodigo()
     void createClient()
@@ -168,11 +221,11 @@ export function AsistenteInicio({ perfil }: { perfil: Perfil }) {
     return () => {
       vivo = false
     }
-  }, [paso, espacioId, codigo])
+  }, [activo, espacioId, codigo])
 
-  /* -------------------------------------------------------------- salida */
+  /* ----------------------------------------------------------------- salida */
 
-  function salir(destino: string) {
+  function salir() {
     if (!espacioId) return
     empezarTransicion(() => {
       void entrarEnEspacio(espacioId, destino)
@@ -180,317 +233,510 @@ export function AsistenteInicio({ perfil }: { perfil: Perfil }) {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center px-4 py-10">
-      <div className="mb-6 text-center">
-        <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-fg">
-          <Timer className="h-6 w-6" />
-        </span>
-        <h1 className="text-xl font-semibold tracking-tight">
-          {paso === 0
-            ? `Hola, ${perfil.full_name.split(" ")[0]}`
-            : (nombre.trim() || "Tu espacio")}
-        </h1>
-        <p className="mt-1 text-sm text-muted">
-          {paso === 0
-            ? "Vamos a montar el espacio de tu equipo. Son cuatro pasos."
-            : PASOS[paso]}
-        </p>
-      </div>
+    <main className="relative min-h-dvh overflow-hidden">
+      {/* Un resplandor arriba para que el negro no sea una pared */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-[26rem]"
+        style={{
+          background:
+            "radial-gradient(60% 60% at 50% 0%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 70%)",
+        }}
+      />
 
-      {/* Dónde estás: cuatro puntos, sin números que no dicen nada */}
-      <ol className="mb-4 flex items-center justify-center gap-1.5">
-        {PASOS.map((p, i) => (
-          <li
-            key={p}
-            aria-current={i === paso ? "step" : undefined}
-            title={p}
-            className={cn(
-              "h-1.5 rounded-full transition-all",
-              i === paso ? "w-6 bg-accent" : "w-1.5",
-              i < paso ? "bg-accent" : i > paso ? "bg-surface-3" : "",
-            )}
-          />
-        ))}
-      </ol>
+      <div className="relative mx-auto grid w-full max-w-4xl gap-8 px-5 py-10 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-12 lg:py-20">
+        {/* ------------------------------------------------------ el lateral */}
+        <div>
+          {/* eslint-disable-next-line @next/next/no-img-element -- SVG de marca */}
+          <img src="/hitoo-logo.svg" alt="hitoo" className="h-6 w-auto" />
 
-      <section className="card p-5">
-        {/* ------------------------------------------------------ el espacio */}
-        {paso === 0 && (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              void crearEspacio()
-            }}
-            className="space-y-3"
+          <h1 className="mt-5 text-2xl font-semibold tracking-tight">
+            {activo === "espacio"
+              ? `Hola, ${perfil.full_name.split(" ")[0]}`
+              : nombre.trim() || "Tu espacio"}
+          </h1>
+          <p className="mt-1 text-sm text-muted">
+            {activo === "espacio"
+              ? "Vamos a montar el espacio de tu equipo."
+              : "Así va quedando."}
+          </p>
+
+          {/* En pantalla ancha, los pasos con nombre; en el móvil, la raya */}
+          <ol className="mt-6 hidden space-y-2.5 lg:block">
+            {pasos.map((clave, i) => (
+              <li key={clave} className="flex items-center gap-2.5">
+                <span
+                  className={cn(
+                    "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-medium transition",
+                    i < indice
+                      ? "border-accent bg-accent text-accent-fg"
+                      : i === indice
+                        ? "border-accent text-accent"
+                        : "border-line text-muted",
+                  )}
+                >
+                  {i < indice ? <Check className="h-3 w-3" /> : i + 1}
+                </span>
+                <span
+                  className={cn(
+                    "text-sm transition",
+                    i === indice ? "font-medium text-ink" : "text-muted",
+                  )}
+                >
+                  {ETIQUETAS[clave]}
+                </span>
+              </li>
+            ))}
+          </ol>
+
+          <div
+            aria-hidden
+            className="mt-5 flex items-center gap-1.5 lg:hidden"
           >
-            <div>
-              <label className="label" htmlFor="ai-nombre">
-                Nombre del equipo o la empresa
-              </label>
-              <input
-                id="ai-nombre"
-                autoFocus
-                className="field"
-                value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
-                placeholder="Nitton"
+            {pasos.map((clave, i) => (
+              <span
+                key={clave}
+                className={cn(
+                  "h-1.5 rounded-full transition-all",
+                  i === indice ? "w-6 bg-accent" : "w-1.5",
+                  i < indice ? "bg-accent" : i > indice ? "bg-surface-3" : "",
+                )}
               />
-            </div>
+            ))}
+          </div>
 
-            <div>
-              <label className="label" htmlFor="ai-zona">
-                Zona horaria
-              </label>
-              <select
-                id="ai-zona"
-                className="field"
-                value={zona}
-                onChange={(e) => setZona(e.target.value)}
-              >
-                {ZONAS_HORARIAS.map((z) => (
-                  <option key={z} value={z}>
-                    {z.replace(/_/g, " ")}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1 text-xs text-muted">
-                Decide a qué día cuenta cada hora. Se cambia después.
-              </p>
-            </div>
-
-            <label className="flex items-start gap-2.5 rounded-[var(--radio-sm)] border border-line bg-surface-2/60 p-3">
-              <input
-                type="checkbox"
-                checked={conPlantilla}
-                onChange={(e) => setConPlantilla(e.target.checked)}
-                className="mt-0.5 h-4 w-4 accent-[color:var(--accent)]"
+          {/* Lo que ya se ha decidido, sin repetir lo que aún no se sabe */}
+          {activo !== "espacio" && (
+            <dl className="mt-8 hidden space-y-2 border-t border-line pt-5 text-xs lg:block">
+              <Dato titulo="Zona" valor={zona.replace(/_/g, " ")} />
+              <Dato
+                titulo="Estructura"
+                valor={conPlantilla ? "La de LEINN" : "En blanco"}
               />
-              <span>
-                <span className="block text-sm font-medium">
-                  Empezar con la estructura de LEINN
-                </span>
-                <span className="mt-0.5 block text-xs text-muted">
-                  Backoffice —TLT, Care, Financial y Legal—, Conocimiento y
-                  Proyectos —Eventos, Proyectos y Oportunidades—. Todo se cambia
-                  luego; sin marcar, empiezas en blanco.
-                </span>
-              </span>
-            </label>
+              <Dato
+                titulo="Sois"
+                valor={cuantos === 1 ? "Tú solo" : `${cuantos} personas`}
+              />
+            </dl>
+          )}
+        </div>
 
-            {error && <Fallo texto={error} />}
-
-            <button
-              type="submit"
-              disabled={ocupado || !nombre.trim()}
-              className="btn btn-primary w-full"
-            >
-              {ocupado && <Loader2 className="h-4 w-4 animate-spin" />}
-              Crear el espacio
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </form>
-        )}
-
-        {/* ------------------------------------------------------- el equipo */}
-        {paso === 1 && (
-          <div className="space-y-3">
-            <p className="text-sm text-muted">
-              Escribe los nombres de quienes vais a apuntar horas. Después cada
-              uno entra con su correo y dice cuál es el suyo, sin que tengas que
-              ir pidiendo direcciones.
-            </p>
-
+        {/* --------------------------------------------------------- el paso */}
+        <section key={activo} className="entra">
+          {/* ---------------------------------------------------- el espacio */}
+          {activo === "espacio" && (
             <form
               onSubmit={(e) => {
                 e.preventDefault()
-                anadir(suelto)
+                void crearEspacio()
               }}
-              className="flex gap-2"
+              className="card space-y-5 p-6"
             >
-              <input
-                autoFocus
-                className="field"
-                value={suelto}
-                onChange={(e) => setSuelto(e.target.value)}
-                onPaste={(e) => {
-                  const pegado = e.clipboardData.getData("text")
-                  if (/[\n,;]/.test(pegado)) {
-                    e.preventDefault()
-                    anadir(pegado)
-                  }
-                }}
-                placeholder="Ane Etxebarria"
-                aria-label="Nombre"
-              />
+              <div>
+                <label className="label" htmlFor="ai-nombre">
+                  Nombre del equipo o la empresa
+                </label>
+                <input
+                  id="ai-nombre"
+                  autoFocus
+                  className="field text-base"
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  placeholder="Nitton"
+                />
+              </div>
+
+              <div>
+                <label className="label" htmlFor="ai-zona">
+                  Zona horaria
+                </label>
+                <select
+                  id="ai-zona"
+                  className="field"
+                  value={zona}
+                  onChange={(e) => setZona(e.target.value)}
+                >
+                  {ZONAS_HORARIAS.map((z) => (
+                    <option key={z} value={z}>
+                      {z.replace(/_/g, " ")}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1.5 text-xs text-muted">
+                  Decide a qué día cuenta cada hora. Se cambia después.
+                </p>
+              </div>
+
+              <div>
+                <span className="label">¿Por dónde empezamos?</span>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Opcion
+                    activa={conPlantilla}
+                    onClick={() => setConPlantilla(true)}
+                    icono={Sparkles}
+                    titulo="La estructura de LEINN"
+                    texto="Backoffice, Conocimiento y Proyectos, con sus ramas dentro. Todo se cambia luego."
+                  />
+                  <Opcion
+                    activa={!conPlantilla}
+                    onClick={() => setConPlantilla(false)}
+                    icono={Plus}
+                    titulo="En blanco"
+                    texto="Sin áreas ni categorías. Las montas tú a tu manera."
+                  />
+                </div>
+              </div>
+
+              {error && <Fallo texto={error} />}
+
               <button
                 type="submit"
-                disabled={!suelto.trim()}
-                className="btn btn-primary shrink-0"
+                disabled={ocupado || !nombre.trim()}
+                className="btn btn-primary w-full"
               >
-                <Plus className="h-4 w-4" />
-                Añadir
+                {ocupado && <Loader2 className="h-4 w-4 animate-spin" />}
+                Crear el espacio
+                <ArrowRight className="h-4 w-4" />
               </button>
             </form>
-            <p className="text-xs text-muted">
-              Puedes pegar la lista entera de una vez, una por línea.
-            </p>
+          )}
 
-            {gente.length > 0 && (
-              <ul className="flex flex-wrap gap-1.5">
-                {gente.map((n) => (
-                  <li key={n}>
-                    <span className="chip gap-1">
-                      {n}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setGente((antes) => antes.filter((a) => a !== n))
-                        }
-                        aria-label={`Quitar a ${n}`}
-                        className="text-muted transition hover:text-ink"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
+          {/* ----------------------------------------------------- cómo sois */}
+          {activo === "vosotros" && (
+            <div className="card space-y-6 p-6">
+              <div>
+                <h2 className="text-base font-semibold">¿Cuántos sois?</h2>
+                <p className="mt-1 text-sm text-muted">
+                  Contándote a ti. Dejamos preparados esos huecos para los
+                  nombres; luego se añade o se quita gente cuando quieras.
+                </p>
+
+                <div className="mt-4 flex items-center justify-center gap-6 rounded-[var(--radio)] border border-line bg-surface-2 py-5">
+                  <BotonContador
+                    etiqueta="Uno menos"
+                    icono={Minus}
+                    onClick={() => setCuantos((n) => Math.max(1, n - 1))}
+                    apagado={cuantos <= 1}
+                  />
+                  <div className="w-24 text-center">
+                    <p className="cifra text-4xl font-semibold leading-none">
+                      {cuantos}
+                    </p>
+                    <p className="mt-1.5 text-xs text-muted">
+                      {cuantos === 1 ? "solo tú" : "personas"}
+                    </p>
+                  </div>
+                  <BotonContador
+                    etiqueta="Uno más"
+                    icono={Plus}
+                    onClick={() => setCuantos((n) => Math.min(MAX_EQUIPO, n + 1))}
+                    apagado={cuantos >= MAX_EQUIPO}
+                  />
+                </div>
+
+                <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+                  {[1, 3, 5, 8, 12, 20].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setCuantos(n)}
+                      className={cn(
+                        "chip cifra transition",
+                        cuantos === n && "border-accent text-accent",
+                      )}
+                    >
+                      {n === 1 ? "Solo yo" : n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-line pt-5">
+                <h2 className="text-base font-semibold">¿De dónde venís?</h2>
+                <p className="mt-1 text-sm text-muted">
+                  Para acabar donde toca y no preguntártelo otra vez al final.
+                </p>
+
+                <div className="mt-3 space-y-2">
+                  <Opcion
+                    activa={origen === "clockify"}
+                    onClick={() => setOrigen("clockify")}
+                    icono={Upload}
+                    titulo="De Clockify"
+                    texto="Con el CSV del informe detallado entra el histórico, con su proyecto, su tarea y sus etiquetas."
+                  />
+                  <Opcion
+                    activa={origen === "otra"}
+                    onClick={() => setOrigen("otra")}
+                    icono={Upload}
+                    titulo="De un Excel o de otra herramienta"
+                    texto="Si puedes exportar un CSV con las columnas de Clockify, entra igual. Si no, siempre puedes empezar de cero."
+                  />
+                  <Opcion
+                    activa={origen === "cero"}
+                    onClick={() => setOrigen("cero")}
+                    icono={Timer}
+                    titulo="De cero"
+                    texto="Al cronómetro directo. Los proyectos se van creando sobre la marcha."
+                  />
+                </div>
+              </div>
+
+              {error && <Fallo texto={error} />}
+
+              <button
+                type="button"
+                onClick={() => (cuantos > 1 ? irAlEquipo() : salir())}
+                className="btn btn-primary w-full"
+              >
+                {cuantos > 1 ? "Siguiente" : textoFinal(origen)}
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
+          {/* ----------------------------------------------------- el equipo */}
+          {activo === "nombres" && (
+            <div className="card space-y-4 p-6">
+              <div>
+                <h2 className="text-base font-semibold">
+                  ¿Quiénes son los otros {cuantos - 1}?
+                </h2>
+                <p className="mt-1 text-sm text-muted">
+                  Escribe los nombres y luego cada uno entra con su correo y
+                  dice cuál es el suyo, sin que tengas que ir pidiendo
+                  direcciones. Puedes pegar la lista entera en el primer hueco.
+                </p>
+              </div>
+
+              <ul className="space-y-2">
+                {gente.map((valor, i) => (
+                  <li key={i} className="flex items-center gap-2">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line bg-surface-2 text-xs text-muted">
+                      {i + 2}
                     </span>
+                    <input
+                      autoFocus={i === 0}
+                      className="field"
+                      value={valor}
+                      onChange={(e) => escribir(i, e.target.value)}
+                      onPaste={(e) => {
+                        const pegado = e.clipboardData.getData("text")
+                        if (/[\n,;\t]/.test(pegado)) {
+                          e.preventDefault()
+                          repartirPegado(i, pegado)
+                        }
+                      }}
+                      placeholder={i === 0 ? "Ane Etxebarria" : "Nombre"}
+                      aria-label={`Nombre ${i + 2}`}
+                    />
                   </li>
                 ))}
               </ul>
-            )}
 
-            {error && <Fallo texto={error} />}
-
-            <div className="flex items-center gap-2 pt-1">
               <button
                 type="button"
-                onClick={() => void guardarGente()}
-                disabled={ocupado}
-                className="btn btn-primary"
+                onClick={() =>
+                  setGente((antes) =>
+                    antes.length < MAX_EQUIPO ? [...antes, ""] : antes,
+                  )
+                }
+                disabled={gente.length >= MAX_EQUIPO}
+                className="btn btn-ghost text-muted"
               >
-                {ocupado && <Loader2 className="h-4 w-4 animate-spin" />}
-                {gente.length === 0 ? "Ahora no" : "Siguiente"}
+                <Plus className="h-4 w-4" />
+                Añadir otro hueco
+              </button>
+
+              {error && <Fallo texto={error} />}
+
+              <div className="flex items-center gap-3 border-t border-line pt-4">
+                <button
+                  type="button"
+                  onClick={() => void guardarGente()}
+                  disabled={ocupado}
+                  className="btn btn-primary"
+                >
+                  {ocupado && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Siguiente
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                <span className="text-xs text-muted">
+                  {(() => {
+                    const puestos = gente.filter((n) => n.trim()).length
+                    return puestos === 0
+                      ? "Los huecos vacíos no molestan: se rellenan luego en Equipo."
+                      : `${puestos} ${puestos === 1 ? "nombre" : "nombres"}`
+                  })()}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* ---------------------------------------------------- repartirlo */}
+          {activo === "repartir" && (
+            <div className="card space-y-5 p-6">
+              <div>
+                <h2 className="text-base font-semibold">
+                  Que entre el resto del equipo
+                </h2>
+                <p className="mt-1 text-sm text-muted">
+                  Enseña esto en la reunión y que cada uno lo escanee, o pásales
+                  el enlace. Quien lo tenga entra como miembro y elige su
+                  nombre de la lista.
+                </p>
+              </div>
+
+              {enlace ? (
+                <div className="flex flex-col items-center gap-5 sm:flex-row">
+                  <CodigoQr valor={enlace} />
+
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <input
+                      readOnly
+                      value={enlace}
+                      onFocus={(e) => e.currentTarget.select()}
+                      className="field cifra text-xs"
+                      aria-label="Enlace para unirse"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void navigator.clipboard.writeText(enlace)
+                        setCopiado(true)
+                      }}
+                      className="btn w-full"
+                    >
+                      {copiado ? (
+                        <Check className="h-4 w-4 text-billable" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                      {copiado ? "Copiado" : "Copiar el enlace"}
+                    </button>
+                    <p className="text-xs text-muted">
+                      Si se te va de las manos, en Equipo se cambia y el
+                      anterior deja de valer.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-40 animate-pulse rounded-[var(--radio)] bg-surface-2" />
+              )}
+
+              {error && <Fallo texto={error} />}
+
+              <button
+                type="button"
+                onClick={salir}
+                className="btn btn-primary w-full"
+              >
+                {textoFinal(origen)}
                 <ArrowRight className="h-4 w-4" />
               </button>
-              <span className="text-xs text-muted">
-                {gente.length === 0
-                  ? "También se pueden añadir luego, en Equipo."
-                  : `${gente.length} ${gente.length === 1 ? "persona" : "personas"}`}
-              </span>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* ----------------------------------------------------- repartirlo */}
-        {paso === 2 && (
-          <div className="space-y-4">
-            <p className="text-sm text-muted">
-              Enseña esto en la reunión y que cada uno lo escanee, o pásales el
-              enlace. Quien lo tenga entra como miembro.
-            </p>
-
-            {enlace ? (
-              <div className="flex flex-col items-center gap-4 sm:flex-row">
-                <CodigoQr valor={enlace} />
-
-                <div className="min-w-0 flex-1 space-y-2">
-                  <input
-                    readOnly
-                    value={enlace}
-                    onFocus={(e) => e.currentTarget.select()}
-                    className="field cifra text-xs"
-                    aria-label="Enlace para unirse"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void navigator.clipboard.writeText(enlace)
-                      setCopiado(true)
-                    }}
-                    className="btn w-full"
-                  >
-                    {copiado ? (
-                      <Check className="h-4 w-4 text-billable" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                    {copiado ? "Copiado" : "Copiar el enlace"}
-                  </button>
-                  <p className="text-xs text-muted">
-                    Si se te va de las manos, en Equipo se cambia y el anterior
-                    deja de valer.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="h-40 animate-pulse rounded-[var(--radio)] bg-surface-2" />
-            )}
-
-            {error && <Fallo texto={error} />}
-
+          {/* Volver, sin perder lo hecho: el espacio existe desde el paso 1 */}
+          {indice > 0 && (
             <button
               type="button"
-              onClick={() => setPaso(3)}
-              className="btn btn-primary w-full"
+              onClick={() => setActivo(pasos[indice - 1])}
+              className="mt-4 inline-flex items-center gap-1.5 text-xs text-muted transition hover:text-ink"
             >
-              Siguiente
-              <ArrowRight className="h-4 w-4" />
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Atrás
             </button>
-          </div>
-        )}
-
-        {/* -------------------------------------------------------- empezar */}
-        {paso === 3 && (
-          <div className="space-y-3">
-            <p className="text-sm text-muted">
-              Ya está montado. ¿Traes horas de Clockify o empiezas de cero?
-            </p>
-
-            <button
-              type="button"
-              onClick={() => salir("/gestion/importar")}
-              className="flex w-full items-start gap-3 rounded-[var(--radio-sm)] border border-line p-3 text-left transition hover:bg-surface-2"
-            >
-              <Upload className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-              <span className="min-w-0">
-                <span className="block text-sm font-medium">
-                  Traer lo de Clockify
-                </span>
-                <span className="mt-0.5 block text-xs text-muted">
-                  Un CSV del informe detallado y no se pierde el año pasado.
-                </span>
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => salir("/panel")}
-              className="flex w-full items-start gap-3 rounded-[var(--radio-sm)] border border-line p-3 text-left transition hover:bg-surface-2"
-            >
-              <Timer className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-              <span className="min-w-0">
-                <span className="block text-sm font-medium">
-                  Empezar a contar ya
-                </span>
-                <span className="mt-0.5 block text-xs text-muted">
-                  Al cronómetro. Los proyectos se crean sobre la marcha.
-                </span>
-              </span>
-            </button>
-          </div>
-        )}
-      </section>
-
-      {/* Volver, sin perder lo hecho: el espacio ya existe desde el paso 1 */}
-      {paso > 0 && paso < 3 && (
-        <button
-          type="button"
-          onClick={() => setPaso((p) => p - 1)}
-          className="mx-auto mt-4 inline-flex items-center gap-1.5 text-xs text-muted transition hover:text-ink"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Atrás
-        </button>
-      )}
+          )}
+        </section>
+      </div>
     </main>
+  )
+}
+
+/** El último botón dice adónde va, que es lo que se acaba de elegir. */
+function textoFinal(origen: Origen) {
+  return origen === "cero" ? "Empezar a contar" : "Traer las horas"
+}
+
+/* ------------------------------------------------------------------ piezas */
+
+/** Una tarjeta de elegir: se pulsa entera, y la elegida se ve sin leerla. */
+function Opcion({
+  activa,
+  onClick,
+  icono: Icono,
+  titulo,
+  texto,
+}: {
+  activa: boolean
+  onClick: () => void
+  icono: typeof Users
+  titulo: string
+  texto: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={activa}
+      className={cn(
+        "flex w-full items-start gap-3 rounded-[var(--radio-sm)] border p-3 text-left transition",
+        activa
+          ? "border-accent bg-accent-soft"
+          : "border-line hover:bg-surface-2",
+      )}
+    >
+      <Icono
+        className={cn(
+          "mt-0.5 h-4 w-4 shrink-0",
+          activa ? "text-accent" : "text-muted",
+        )}
+      />
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-medium">{titulo}</span>
+        <span className="mt-0.5 block text-xs leading-relaxed text-muted">
+          {texto}
+        </span>
+      </span>
+      {activa && <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" />}
+    </button>
+  )
+}
+
+function BotonContador({
+  etiqueta,
+  icono: Icono,
+  onClick,
+  apagado,
+}: {
+  etiqueta: string
+  icono: typeof Plus
+  onClick: () => void
+  apagado: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={apagado}
+      aria-label={etiqueta}
+      className="flex h-10 w-10 items-center justify-center rounded-full border border-line-strong bg-surface transition hover:bg-surface-2 disabled:opacity-30"
+    >
+      <Icono className="h-4 w-4" />
+    </button>
+  )
+}
+
+/** Una línea del resumen del lateral. */
+function Dato({ titulo, valor }: { titulo: string; valor: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <dt className="text-muted">{titulo}</dt>
+      <dd className="min-w-0 truncate text-right font-medium text-ink-soft">
+        {valor}
+      </dd>
+    </div>
   )
 }
 

@@ -450,16 +450,29 @@ tres cosas)-:
    Panel del proyecto en Vercel, por si hace falta revisar algo mas:
    [vercel.com/nittonnis-projects/hitoo](https://vercel.com/nittonnis-projects/hitoo).
 
-   Queda por hacer a mano -ninguna tool de este entorno puede tocar la
-   configuracion de Auth de Supabase-:
-   - Entrar en [supabase.com/dashboard/project/zyjtymxkkfpecpfqqvpn/auth/url-configuration](https://supabase.com/dashboard/project/zyjtymxkkfpecpfqqvpn/auth/url-configuration)
-     -es el proyecto `nitton-horas` en Supabase, seccion Authentication ->
-     URL Configuration, ya lleva directo-.
-   - **Site URL**: cambiar a `https://www.hitoo.es`.
-   - **Redirect URLs**: añadir `https://www.hitoo.es/auth/callback` -dejando
-     tambien `https://hitoo.vercel.app/auth/callback` y
-     `http://localhost:3000/auth/callback` para no romper el preview ni el
-     desarrollo local-.
+   **HECHO el 22-ago-2026** en
+   [supabase.com/dashboard/project/zyjtymxkkfpecpfqqvpn/auth/url-configuration](https://supabase.com/dashboard/project/zyjtymxkkfpecpfqqvpn/auth/url-configuration)
+   (proyecto `nitton-horas`, Authentication -> URL Configuration):
+   - **Site URL**: `https://hitoo.vercel.app` -> `https://www.hitoo.es`.
+   - **Redirect URLs añadidas**: `https://www.hitoo.es/auth/callback**`,
+     `https://www.hitoo.es/auth/confirmar` y
+     `https://www.hitoo.es/auth/confirmar**`. Se dejaron las de
+     `hitoo.vercel.app` y `localhost:3000` para no romper el preview ni el
+     desarrollo local.
+
+   Ojo con el comodín: ya estaba `https://www.hitoo.es/auth/callback` **sin
+   `**`**, y no servía de nada. Supabase compara el `redirect_to` entero,
+   query incluida, y `boton-google.tsx` siempre manda `?next=...`, así que la
+   URL exacta no encajaba y GoTrue caía callado al Site URL: entrar con Google
+   desde www.hitoo.es te sacaba a hitoo.vercel.app. Es el mismo fallo que ya se
+   arregló el 20-ago-2026 para vercel.app y localhost (por eso esos llevan
+   `**`); al añadir el dominio nuevo se volvió a colar.
+
+   Para comprobarlo sin efectos secundarios, en cualquier proyecto Supabase:
+   `GET /auth/v1/verify?token=bogus&type=signup&redirect_to=<url>` y mirar la
+   cabecera `Location` -si la URL está permitida redirige a ella; si no, al
+   Site URL-. No manda correos ni crea sesiones. `/authorize` no vale para
+   esto: acepta cualquier `redirect_to` sin quejarse.
 
 3. **Verificar la propiedad de `hitoo.es` en Google Search Console**, con la
    cuenta `hitooclock@gmail.com`:
@@ -579,8 +592,8 @@ tres cosas)-:
    pidiendo aclaraciones -revisar `hitooclock@gmail.com`-.
 
 Resumen de quien hace que: los pasos 1 y 2 (dominio + variables de Vercel)
-ya estan hechos. Falta solo el cambio de Site URL/Redirect URLs en Supabase
--enlace directo en el paso 2-. Los pasos 4-6 (textos e imagenes de la ficha)
+ya estan hechos, y el cambio de Site URL/Redirect URLs en Supabase tambien
+(22-ago-2026, detalle en el paso 2). Los pasos 4-6 (textos e imagenes de la ficha)
 estan preparados para que sea copiar/pegar/subir. Los pasos 3 y 7 son
 tramites que solo Nicolas puede iniciar porque exigen su sesion en Google
 -no hay atajo-.
@@ -1048,6 +1061,81 @@ al filtrar, el aviso de "01:15:00 sin cerrar - ≈ 12,50 €" en LALCANTARA, y e
 reparto por etiqueta con dos etiquetas de prueba creadas y borradas al
 terminar (el espacio no tenia ninguna). Comprobado por SQL al acabar que no
 queda rastro: 0 etiquetas, 0 horas etiquetadas y ningun presupuesto.
+
+### 3 bis. La portada y el alta (22-ago-2026)
+
+Nicolas: lo que menos le gustaba a la vista era la portada y el alta. De la
+portada, que estaba "demasiado centrada" -todo dentro de una columna de 1024
+px con doscientos y pico pixeles de negro a cada lado- y que no tenia nada
+visual: una sola pieza -el cronometro- en toda la pagina. Del alta, que no
+preguntaba nada: queria un formulario de los de "cuantos sois", corto y con
+diseno.
+
+**Antes de tocarla se comprobo la duda que traia**: rehacer la portada no
+complica la verificacion de Google. Lo que revisan de la pagina principal es
+que el dominio sea el de la ficha OAuth, que el nombre y el logo coincidan
+con los de la pantalla de consentimiento, que el enlace a la politica de
+privacidad este visible y en el mismo dominio, que se entienda que hace la
+aplicacion, y que no se usen marcas de Google como si fuera un producto suyo.
+El aspecto no entra. Se conservaron los cuatro: nombre, logo, pie con
+Privacidad y dominio; y se **anadio una seccion propia de Google Calendar**
+-solo lectura, no crea ni borra, se desconecta cuando quieras- porque eso es
+justo lo que revisan del scope y juega a favor.
+
+**El alta** (`asistente-inicio.tsx`, reescrito):
+
+- Dos columnas: a la izquierda la marca, los pasos con su estado y un resumen
+  vivo de lo que se lleva decidido -zona, estructura, cuantos sois-; a la
+  derecha el paso. En movil, la raya de puntos de siempre.
+- **Paso nuevo, "Como sois"**, con dos preguntas que se usan de verdad:
+  **cuantos sois** -contador grande con atajos, que deja preparados esos
+  huecos de nombres en el paso siguiente- y **de donde venis** -Clockify,
+  otra herramienta o de cero-, que decide donde acaba el asistente en vez de
+  preguntarlo otra vez al final. Se descartaron las preguntas de objetivo
+  semanal y de €/h: alargaban el alta y ya viven en Gestion > Ajustes.
+- **Si vas solo, los pasos de nombres y de repartir el enlace no existen**: la
+  lista de pasos se acorta en el momento de decir "solo yo".
+- El paso del equipo pasa de chips a **filas numeradas** (2, 3, 4...), con
+  pegar la lista repartiendola por los huecos.
+- La estructura de LEINN deja de ser una casilla y son **dos tarjetas**.
+- La marca: `/bienvenida` y el alta usaban el icono generico de cronometro;
+  ahora llevan el wordmark de hitoo.
+
+**La portada** (`page.tsx`, rehecha):
+
+- De `max-w-5xl` a `max-w-6xl`, hero y cierre **a sangre** con un resplandor
+  del color de marca detras, y el titular sin `<br>` a mano -a ese tamano
+  partia en cuatro lineas en cuanto la columna se estrechaba-.
+- **Secciones en dos columnas que alternan lado** (`Cara`), cada una con un
+  trozo de la aplicacion al lado del texto, en vez de una columna de bloques
+  centrados uno debajo de otro.
+- **Maquetas nuevas**: la semana del hero -rejilla de lunes a viernes con los
+  ratos apareciendo escalonados, el de "ahora" latiendo y la barra del
+  objetivo creciendo-, la del dinero -la aguja del €/h dibujandose, con
+  ingresos y gastos- y la de Google Calendar -la invitacion a rayas-. Todas
+  dibujadas con los mismos tokens que la app: no se desactualizan, no pesan
+  y no ensenan datos de nadie.
+- **Aparecer al llegar** (`al-entrar.tsx`): dos cuidados a proposito -sin
+  JavaScript no esconde nada, porque la clase que oculta la pone el propio
+  efecto al montar; y lo que ya se ve al cargar no se anima, que eso es un
+  parpadeo y no una entrada-. Con `prefers-reduced-motion` no hay nada de
+  esto: la hoja de estilos ya apagaba las animaciones.
+- Seccion nueva de **El dinero** en el menu y en la pagina: era lo que
+  diferencia a hitoo de otro cronometro y no salia por ningun lado.
+- Corregido de paso el vocabulario: quedaban "Categoria / Subcategoria" en el
+  Excel y en los textos, cuando desde el 19-ago se llaman **Area y
+  Categoria**.
+
+Verificado con `tsc`, `eslint` y `npm run build` limpios; el alta entera
+recorrida en el navegador -espacio de prueba creado, los cuatro pasos, el
+QR, el final en el importador- y **borrado despues** (comprobado por SQL que
+no quedan plazas huerfanas); y la portada mirada entera, ademas de comprobar
+sin sesion -con curl, sin cookies- que salen los botones de crear cuenta y
+el enlace a la politica de privacidad.
+
+Pendiente: **mirarlo desde el movil**. El navegador de esta sesion no cambia
+el ancho de verdad, asi que el responsive esta razonado por codigo pero no
+visto con los ojos, igual que en el repaso del 20-ago.
 
 ### 4. Equipo
 

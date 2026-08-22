@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react"
 import Link from "next/link"
-import { ArrowRight, Building2, LogOut, Mail, Plus, Timer } from "lucide-react"
+import { ArrowRight, Building2, LogOut, Mail, Plus } from "lucide-react"
 
 import { cambiarEspacio } from "@/app/acciones"
 import { createClient } from "@/lib/supabase/client"
@@ -54,9 +54,8 @@ export function Bienvenida({
   return (
     <main className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-4 py-10">
       <div className="mb-6 text-center">
-        <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-fg">
-          <Timer className="h-6 w-6" />
-        </span>
+        {/* eslint-disable-next-line @next/next/no-img-element -- SVG de marca */}
+        <img src="/hitoo-logo.svg" alt="hitoo" className="mx-auto mb-4 h-6 w-auto" />
         <h1 className="text-xl font-semibold tracking-tight">
           Hola, {perfil.full_name.split(" ")[0]}
         </h1>

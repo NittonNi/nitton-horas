@@ -1,9 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu"
 import {
   Archive,
+  CornerDownRight,
   GripVertical,
   Loader2,
   Plus,
@@ -43,9 +45,19 @@ export function GestionCategorias({
   const router = useRouter()
   const { avisar } = useAvisos()
   const [ocupado, setOcupado] = useState(false)
-  /** La categoria que se esta arrastrando y el area sobre la que se suelta. */
-  const [arrastrando, setArrastrando] = useState<string | null>(null)
-  const [encima, setEncima] = useState<string | null>(null)
+  /**
+   * El arrastre, hecho con eventos de puntero y no con el `draggable` de HTML:
+   * el de HTML no existe en el movil, que es justo donde hace mas falta.
+   * `id` es lo que se lleva en la mano, `dy` cuanto se ha movido y `encima` el
+   * area por la que va pasando.
+   */
+  const [arrastre, setArrastre] = useState<{
+    id: string
+    dy: number
+    encima: string | null
+  } | null>(null)
+  /** Desde donde empezo el dedo, para saber si esto es un arrastre o un toque. */
+  const inicio = useRef<{ y: number; movido: boolean } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [nueva, setNueva] = useState("")
   const [anadiendoEn, setAnadiendoEn] = useState<string | null>(null)
@@ -203,30 +215,14 @@ export function GestionCategorias({
           return (
             <li
               key={padre.id}
-              /* El area entera es la zona donde soltar: apuntar a una linea
-                 fina de un pixel con el raton es un castigo. */
-              onDragOver={(e) => {
-                if (!arrastrando) return
-                e.preventDefault()
-                setEncima(padre.id)
-              }}
-              onDragLeave={(e) => {
-                // Solo cuando se sale de verdad, no al pasar por un hijo
-                if (e.currentTarget.contains(e.relatedTarget as Node)) return
-                setEncima((a) => (a === padre.id ? null : a))
-              }}
-              onDrop={(e) => {
-                e.preventDefault()
-                const id = e.dataTransfer.getData("text/plain") || arrastrando
-                const suelta = categorias.find((c) => c.id === id)
-                setEncima(null)
-                setArrastrando(null)
-                if (suelta) void mover(suelta, padre.id)
-              }}
+              /* El area entera es la zona donde soltar -apuntar a una linea de
+                 un pixel es un castigo, con el raton y mas con el dedo-. Quien
+                 esta debajo se busca con `elementFromPoint`, y por eso hace
+                 falta la marca. */
+              data-area={padre.id}
               className={cn(
                 "rounded-[var(--radio-sm)] bg-surface-2/60 p-1.5 transition",
-                encima === padre.id &&
-                  arrastrando &&
+                arrastre?.encima === padre.id &&
                   "ring-2 ring-accent ring-offset-1 ring-offset-[color:var(--surface)]",
               )}
             >
@@ -244,35 +240,69 @@ export function GestionCategorias({
                 {hijas.map((hija) => (
                   <li
                     key={hija.id}
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData("text/plain", hija.id)
-                      e.dataTransfer.effectAllowed = "move"
-                      setArrastrando(hija.id)
-                    }}
-                    onDragEnd={() => {
-                      setArrastrando(null)
-                      setEncima(null)
-                    }}
+                    data-fila={hija.id}
                     className={cn(
-                      "flex items-center gap-1 rounded-[4px] transition",
-                      arrastrando === hija.id && "opacity-40",
+                      "flex items-center gap-1 rounded-[4px]",
+                      arrastre?.id === hija.id &&
+                        "relative z-10 bg-surface shadow-[var(--shadow-lg)]",
                     )}
+                    /* Nada de `pointer-events: none` aqui: anula la captura
+                       del puntero y entonces el "solte el dedo" no llega
+                       nunca, asi que la fila se quedaba levantada. Para saber
+                       por encima de que area va se mira la pila de debajo del
+                       dedo, saltandose esta misma fila. */
+                    style={
+                      arrastre?.id === hija.id
+                        ? {
+                            transform: `translateY(${arrastre.dy}px) scale(1.02)`,
+                          }
+                        : undefined
+                    }
                   >
-                    <GripVertical
-                      className="h-3.5 w-3.5 shrink-0 cursor-grab text-muted/60 active:cursor-grabbing"
-                      aria-hidden
+                    <Asa
+                      areas={raiz.filter((a) => a.id !== padre.id)}
+                      arrastrando={arrastre?.id === hija.id}
+                      onEmpezar={(y) => {
+                        inicio.current = { y, movido: false }
+                        setArrastre({ id: hija.id, dy: 0, encima: null })
+                      }}
+                      onMoverse={(y, x) => {
+                        const desde = inicio.current
+                        if (!desde) return
+                        const dy = y - desde.y
+                        if (Math.abs(dy) > 6) desde.movido = true
+                        const area = document
+                          .elementsFromPoint(x, y)
+                          .find(
+                            (el) =>
+                              el.closest("[data-area]") &&
+                              !el.closest(`[data-fila="${hija.id}"]`),
+                          )
+                          ?.closest("[data-area]")
+                        setArrastre({
+                          id: hija.id,
+                          dy,
+                          encima: area?.getAttribute("data-area") ?? null,
+                        })
+                      }}
+                      onSoltar={() => {
+                        const movido = inicio.current?.movido
+                        const destino = arrastre?.encima
+                        inicio.current = null
+                        setArrastre(null)
+                        if (movido && destino) void mover(hija, destino)
+                        return Boolean(movido)
+                      }}
+                      onElegir={(destino) => void mover(hija, destino)}
                     />
                     <Fila
                       categoria={hija}
                       proyectos={proyectos}
                       segundos={segundosPorRama[hija.id] ?? 0}
                       ocupado={ocupado}
-                      areas={raiz}
                       onRenombrar={(n) => void renombrar(hija, n)}
                       onObjetivo={(t) => void ponerObjetivo(hija, t)}
                       onArchivar={() => void archivar(hija)}
-                      onMover={(destino) => void mover(hija, destino)}
                     />
                   </li>
                 ))}
@@ -339,22 +369,17 @@ function Fila({
   proyectos,
   segundos,
   ocupado,
-  areas,
   onRenombrar,
   onObjetivo,
   onArchivar,
-  onMover,
 }: {
   categoria: Categoria
   proyectos: Proyecto[]
   segundos: number
   ocupado: boolean
-  /** Las areas a las que puede irse, si esta es de las que se mueven. */
-  areas?: Categoria[]
   onRenombrar: (nombre: string) => void
   onObjetivo: (texto: string) => void
   onArchivar: () => void
-  onMover?: (destinoId: string) => void
 }) {
   const cuantos = proyectos.filter((p) => p.category_id === categoria.id).length
 
@@ -414,25 +439,6 @@ function Fila({
         className="cifra w-16 shrink-0 rounded-[4px] bg-transparent px-1 py-0.5 text-right text-sm outline-none transition hover:bg-surface-3/60 focus:bg-surface"
       />
 
-      {/* Arrastrar es comodo con raton y no existe con el dedo ni con el
-          teclado, asi que la misma mudanza esta tambien aqui. */}
-      {onMover && areas && areas.length > 1 && (
-        <select
-          value={categoria.parent_id ?? ""}
-          onChange={(e) => onMover(e.target.value)}
-          disabled={ocupado}
-          aria-label={`Mover ${categoria.name} a otra área`}
-          title="Mover a otra área"
-          className="w-24 shrink-0 rounded-[4px] border-0 bg-transparent px-1 py-0.5 text-xs text-muted outline-none transition hover:bg-surface-3/60 focus:bg-surface"
-        >
-          {areas.map((area) => (
-            <option key={area.id} value={area.id}>
-              {area.name}
-            </option>
-          ))}
-        </select>
-      )}
-
       <button
         type="button"
         onClick={onArchivar}
@@ -448,6 +454,98 @@ function Fila({
         )}
       </button>
     </div>
+  )
+}
+
+/**
+ * El asa de una categoria. Dos gestos en un solo mando, que es lo que evita
+ * llenar la fila de botones:
+ *
+ * - **Arrastrarla** la lleva a otra area. Con el dedo tambien: por eso son
+ *   eventos de puntero y no el `draggable` de HTML, que en el movil no
+ *   existe.
+ * - **Tocarla** sin mover abre la lista de areas **a las que puede ir** -la
+ *   suya no sale: decirle a alguien que Backoffice esta en Backoffice es
+ *   repetir lo que ya dice el sitio donde esta pintada-.
+ */
+function Asa({
+  areas,
+  arrastrando,
+  onEmpezar,
+  onMoverse,
+  onSoltar,
+  onElegir,
+}: {
+  /** Solo las otras: la propia no se ofrece. */
+  areas: Categoria[]
+  arrastrando: boolean
+  onEmpezar: (y: number) => void
+  onMoverse: (y: number, x: number) => void
+  /** Devuelve si hubo arrastre de verdad; si no, es un toque. */
+  onSoltar: () => boolean
+  onElegir: (destinoId: string) => void
+}) {
+  const [abierto, setAbierto] = useState(false)
+
+  return (
+    <DropdownMenu.Root open={abierto} onOpenChange={setAbierto}>
+      <DropdownMenu.Trigger
+        aria-label="Mover a otra área"
+        title="Arrástrala a otra área, o tócala para elegirla"
+        onPointerDown={(e) => {
+          // Solo el boton principal o el dedo
+          if (e.button !== 0) return
+          /* Radix abre el menu en `pointerdown`, y entonces se queda con el
+             puntero y aqui no llega ni el `move` ni el `up`: la fila se
+             quedaba levantada. Con esto el menu no abre solo, y lo abrimos
+             nosotros al soltar, pero solo si no ha habido arrastre. */
+          e.preventDefault()
+          e.currentTarget.setPointerCapture(e.pointerId)
+          onEmpezar(e.clientY)
+        }}
+        onPointerMove={(e) => {
+          if (!arrastrando) return
+          onMoverse(e.clientY, e.clientX)
+        }}
+        onPointerUp={() => {
+          if (!onSoltar()) setAbierto(true)
+        }}
+        onPointerCancel={() => onSoltar()}
+        onLostPointerCapture={() => onSoltar()}
+        /* Sin esto, arrastrar hacia abajo en el movil hace rodar la pagina en
+           vez de coger la categoria. */
+        className="-ml-1 shrink-0 cursor-grab touch-none rounded-[4px] p-1 text-muted/70 transition hover:bg-surface-3/60 hover:text-ink active:cursor-grabbing"
+      >
+        <GripVertical className="h-3.5 w-3.5" aria-hidden />
+      </DropdownMenu.Trigger>
+
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          align="start"
+          sideOffset={6}
+          className="z-50 min-w-44 overflow-hidden rounded-[var(--radio)] border border-line bg-surface p-1"
+          style={{ boxShadow: "var(--shadow-lg)" }}
+        >
+          <p className="rotulo px-2 py-1.5">Mover a</p>
+          {areas.length === 0 ? (
+            <p className="px-2 py-1.5 text-sm text-muted">
+              No hay otra área todavía.
+            </p>
+          ) : (
+            areas.map((area) => (
+              <DropdownMenu.Item
+                key={area.id}
+                onSelect={() => onElegir(area.id)}
+                className="pulsable flex cursor-pointer items-center gap-2 rounded-[var(--radio-sm)] px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-surface-2"
+              >
+                <CornerDownRight className="h-3.5 w-3.5 text-muted" aria-hidden />
+                {area.name}
+              </DropdownMenu.Item>
+            ))
+          )}
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   )
 }
 

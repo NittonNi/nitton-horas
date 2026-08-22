@@ -71,22 +71,44 @@ soltarla en otra area. Antes, si creabas algo dentro de Proyectos y luego lo
 querias en Backoffice, habia que borrarlo y volver a escribirlo -y con ello se
 perdia lo que colgara de esa categoria-.
 
-**Hecho**: cada categoria lleva un asa a la izquierda y se arrastra al area
-que sea -el area entera es la zona de soltado, con un aro azul mientras esta
-encima: apuntar a una linea de un pixel con el raton es un castigo-. Mover es
-un `update` de `parent_id` y `position`, sin migracion. Los proyectos que
-cuelgan se van con ella y **el aviso lo dice** -"loca ahora esta en
-Conocimiento, y con ella sus 3 proyectos"-, con Deshacer.
+**Primer intento, rechazado por Nicolas el mismo dia**: arrastre con el
+`draggable` de HTML mas un `<select>` con el area en cada fila. Sus dos
+palabras: *"con el movil no puedo cogerlo"* y *"te da informacion repetida,
+es una manera cutre"*. Tenia razon en las dos: el arrastre de HTML **no
+existe en tactil**, y el selector enseñaba en cada fila el area en la que ya
+estaba -decirle a alguien que Care team esta en Backoffice, dentro del bloque
+de Backoffice, es exactamente lo que el pidio no hacer nunca-.
 
-Y como arrastrar no existe con el dedo ni con el teclado, **cada fila lleva
-tambien un selector con el area**, que hace exactamente lo mismo. Esa es la
-via que arregla el problema aunque el arrastre no se use nunca.
+**Como quedo**: un **asa** por categoria, con dos gestos y ningun texto de
+mas.
 
-Probado en vivo: mover con el selector, el aviso, Deshacer, y el ciclo
-completo de arrastre (`dragstart` guarda el id, `dragover` resalta el area,
-`drop` mueve). El arrastre con raton de verdad **no se puede disparar desde
-estas sesiones** -el protocolo del navegador no genera eventos de arrastre
-nativos-, asi que ese ultimo tramo lo tiene que ver Nicolas.
+- **Arrastrarla** la lleva a otra area, con **eventos de puntero** en vez del
+  `draggable` de HTML: eso es lo que hace que funcione con el dedo. El area
+  entera es la zona de soltado -apuntar a una linea de un pixel es un castigo,
+  y con el dedo mas-, se ilumina con un aro al pasar por encima, y quien esta
+  debajo se busca con `elementsFromPoint` saltandose la propia fila.
+- **Tocarla** sin arrastrar abre un menu con **las areas a las que puede ir**,
+  sin la suya.
+
+Mover es un `update` de `parent_id` y `position`, sin migracion. Los proyectos
+que cuelgan se van con ella y **el aviso lo dice** -"Financial team ahora esta
+en Conocimiento"-, con Deshacer.
+
+Dos trampas que costaron un rato, las dos del mismo sitio:
+
+- Radix abre el menu en `pointerdown` y entonces **se queda con el puntero**:
+  no llegaban ni el `move` ni el `up`, y la fila se quedaba levantada. Se
+  corrige con `preventDefault()` en `pointerdown` y abriendo el menu nosotros
+  al soltar, solo si no hubo arrastre.
+- La fila arrastrada llevaba `pointer-events: none` -para que no estorbara al
+  mirar que hay debajo- y eso **anula la captura del puntero**, con el mismo
+  resultado. Fuera: para saber sobre que area va, se mira la pila de debajo
+  del dedo ignorando la propia fila.
+
+Probado en vivo, y esta vez **el arrastre tambien**: con eventos de puntero si
+se puede disparar desde estas sesiones, al contrario que el `draggable` de
+HTML. Financial team arrastrada de Conocimiento a Backoffice, aviso, y
+devuelta con el menu.
 
 Queda: **reordenar dentro de un area**, que es la misma `position` pero pide
 zonas de soltado entre filas.

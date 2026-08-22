@@ -15,6 +15,7 @@ import {
 import { createClient } from "@/lib/supabase/server"
 import { RUTA_APP } from "@/lib/rutas"
 import { AlEntrar } from "@/components/al-entrar"
+import { BotonGoogle } from "@/components/boton-google"
 import { CronometroDemo } from "@/components/cronometro-demo"
 
 /**
@@ -604,12 +605,27 @@ export default async function Portada() {
               Preguntas
             </a>
           </nav>
-          <Link
-            href={dentro ? RUTA_APP : "/acceso"}
-            className="btn btn-ghost ml-auto text-accent md:ml-0"
-          >
-            {dentro ? "Ir a mi espacio" : "Entrar"}
-          </Link>
+          {/* Con la sesión abierta, la barra solo tiene que hacer una cosa:
+              devolverte adentro. Sin ella, entrar con Google es el camino
+              corto -y el que usa casi todo el mundo-, así que va aquí mismo
+              y no escondido detrás de /acceso. */}
+          <div className="ml-auto flex items-center gap-2 md:ml-0">
+            {dentro ? (
+              <Link href={RUTA_APP} className="btn btn-ghost text-accent">
+                Ir a mi espacio
+              </Link>
+            ) : (
+              <>
+                <Link href="/acceso" className="btn btn-ghost text-accent">
+                  Entrar
+                </Link>
+                {/* En el móvil no cabe: ahí se entra desde /acceso */}
+                <span className="hidden sm:block">
+                  <BotonGoogle compacto texto="Entrar con Google" />
+                </span>
+              </>
+            )}
+          </div>
         </div>
       </header>
 

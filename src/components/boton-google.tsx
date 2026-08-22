@@ -31,7 +31,16 @@ function LogoGoogle() {
   )
 }
 
-export function BotonGoogle({ volver }: { volver?: string }) {
+export function BotonGoogle({
+  volver,
+  compacto = false,
+  texto = "Continuar con Google",
+}: {
+  volver?: string
+  /** Para la barra de la portada: ni ocupa el ancho ni empuja lo de al lado. */
+  compacto?: boolean
+  texto?: string
+}) {
   const destino = rutaSegura(volver)
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -56,20 +65,28 @@ export function BotonGoogle({ volver }: { volver?: string }) {
   }
 
   return (
-    <div className="space-y-2">
+    <div className={compacto ? "relative" : "space-y-2"}>
       <button
         type="button"
         onClick={() => void entrar()}
         disabled={cargando}
-        className="btn w-full"
+        className={compacto ? "btn" : "btn w-full"}
       >
         {cargando ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogoGoogle />}
-        Continuar con Google
+        {texto}
       </button>
 
-      {error && (
-        <p className="rounded-lg bg-danger-soft p-2.5 text-sm text-danger">{error}</p>
-      )}
+      {error &&
+        (compacto ? (
+          /* En la barra el error no puede empujar nada: cuelga por debajo */
+          <p className="absolute right-0 top-full z-10 mt-1 whitespace-nowrap rounded-[var(--radio-sm)] bg-danger-soft p-2 text-xs text-danger">
+            {error}
+          </p>
+        ) : (
+          <p className="rounded-lg bg-danger-soft p-2.5 text-sm text-danger">
+            {error}
+          </p>
+        ))}
     </div>
   )
 }

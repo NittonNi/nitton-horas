@@ -1167,6 +1167,35 @@ Comprobado en vivo con el tema puesto en **oscuro**: la portada, el alta, la
 politica y `/bienvenida` salen en claro igualmente, el panel sigue oscuro, y
 sin sesion (curl, sin cookies) las cuatro publicas llevan la clase.
 
+**Entrar sin pasar por la portada, y Google en la barra (22-ago-2026)**, las
+dos pedidas por Nicolas mirando como lo hace Clockify:
+
+- **Entrar con Google desde la barra de la portada**. Se reutiliza
+  `boton-google.tsx` -la G oficial en colores y el texto que piden las guias
+  de marca de Google, que conviene respetar justo ahora que se va a pedir la
+  verificacion-, con una variante `compacto` que no ocupa el ancho y que, si
+  da error, lo cuelga por debajo en vez de empujar la barra. Con sesion no
+  sale -ahi la barra solo tiene que devolverte adentro- y en el movil tampoco,
+  que no cabe.
+- **"Llevame directo la proxima vez"**, casilla debajo del boton del hero, que
+  solo ve quien tiene la sesion abierta. Se descarto redirigir siempre: la
+  portada tiene que poder ensenarse a otro equipo sin cerrar sesion. Va en una
+  **cookie** y no en `localStorage` para que la decision la tome el servidor y
+  el salto ocurra antes de pintar, sin el fogonazo de ver la portada un
+  instante. La portada sigue accesible con `/?portada`, que ademas es donde se
+  desmarca.
+
+  **Gotcha que costo un rato**: el nombre de la cookie estaba exportado desde
+  el propio componente, que es `"use client"`. Una constante exportada desde un
+  modulo cliente **no llega al servidor como su valor**, sino como una
+  referencia de cliente, asi que `cookies().get(...)` no encontraba nada aunque
+  la cookie si viajara en la peticion -se vio con un log: la cookie estaba en
+  `getAll()` pero `get(CONSTANTE)` daba `undefined`-. Los nombres de cookies
+  compartidas viven ahora en `src/lib/cookies.ts`, que no es de nadie.
+
+  Probado en vivo: marcada, `/` lleva al panel; `/?portada` la ensena con la
+  casilla marcada; desmarcada, todo vuelve a como estaba.
+
 Pendiente: **mirarlo desde el movil**. El navegador de esta sesion no cambia
 el ancho de verdad, asi que el responsive esta razonado por codigo pero no
 visto con los ojos, igual que en el repaso del 20-ago.

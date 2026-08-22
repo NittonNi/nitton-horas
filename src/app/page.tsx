@@ -1,4 +1,6 @@
 import Link from "next/link"
+import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
 import {
   BarChart3,
   CalendarCheck,
@@ -16,6 +18,8 @@ import { createClient } from "@/lib/supabase/server"
 import { RUTA_APP } from "@/lib/rutas"
 import { AlEntrar } from "@/components/al-entrar"
 import { BotonGoogle } from "@/components/boton-google"
+import { EntrarDirecto } from "@/components/entrar-directo"
+import { COOKIE_DIRECTO } from "@/lib/cookies"
 import { CronometroDemo } from "@/components/cronometro-demo"
 
 /**
@@ -572,14 +576,29 @@ function MaquetaColumnas() {
   )
 }
 
-export default async function Portada() {
+export default async function Portada({
+  searchParams,
+}: {
+  searchParams: Promise<{ portada?: string }>
+}) {
   // Con la sesión abierta la portada sigue siendo visible -sirve para
   // enseñársela a otro equipo- pero los botones llevan al espacio.
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const [{ data: { user } }, galletas, parametros] = await Promise.all([
+    supabase.auth.getUser(),
+    cookies(),
+    searchParams,
+  ])
   const dentro = Boolean(user)
+
+  /* Quien lo haya pedido -la casilla de abajo- entra directo, y el salto lo
+     da el servidor: así no se ve la portada un instante antes de irse. Con
+     `?portada` se ve igualmente, que si no, quien la marca no puede volver a
+     enseñarla ni desmarcarla. */
+  const aPelo = parametros.portada !== undefined
+  if (dentro && !aPelo && galletas.get(COOKIE_DIRECTO)?.value === "1") {
+    redirect(RUTA_APP)
+  }
 
   return (
     /* Siempre en claro, mire quien la mire y tenga lo que tenga puesto: es la
@@ -658,9 +677,12 @@ export default async function Portada() {
 
             <div className="mt-7 flex flex-wrap items-center gap-3">
               {dentro ? (
-                <Link href={RUTA_APP} className="btn btn-primary">
-                  Ir a mi espacio
-                </Link>
+                <div>
+                  <Link href={RUTA_APP} className="btn btn-primary">
+                    Ir a mi espacio
+                  </Link>
+                  <EntrarDirecto />
+                </div>
               ) : (
                 <>
                   <Link href="/acceso?modo=registrarse" className="btn btn-primary">

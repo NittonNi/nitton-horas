@@ -16,7 +16,8 @@
    Una sola tipografia, con cifras tabulares donde hay numeros en columna.
    ========================================================================== */
 
-:root {
+:root,
+.tema-claro {
   --paper: #f5f5f7;
   --surface: #ffffff;
   --surface-2: #f0f0f3;
@@ -145,6 +146,31 @@
 
   --shadow: none;
   --shadow-lg: 0 12px 40px -8px rgb(0 0 0 / 0.7), 0 0 0 0.5px rgb(255 255 255 / 0.1);
+}
+
+/**
+ * Un trozo de pagina siempre en claro, mande lo que mande el sistema o lo que
+ * tenga guardado quien mira: la portada y el alta se ven igual para todo el
+ * mundo. Funciona porque las variables se heredan -las de aqui pisan a las de
+ * `:root`, esten en el `@media` oscuro o en `[data-theme="dark"]`, para todo
+ * lo que cuelgue de este elemento- y no toca el tema de la aplicacion.
+ */
+.tema-claro {
+  color-scheme: light;
+  color: var(--ink);
+}
+
+/**
+ * El fondo claro se pinta a pantalla completa por detrás, no en la caja del
+ * elemento: si no, una página de una sola columna -la política de privacidad-
+ * saldría como una tira blanca con el negro del body a los lados.
+ */
+.tema-claro::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--paper);
 }
 
 @theme inline {

@@ -233,7 +233,9 @@ export function AsistenteInicio({ perfil }: { perfil: Perfil }) {
   }
 
   return (
-    <main className="relative min-h-dvh overflow-hidden">
+    /* En claro siempre, como la portada: el alta es la primera pantalla que
+       ve alguien y va antes de tener ningún gusto guardado. */
+    <main className="tema-claro relative min-h-dvh overflow-hidden">
       {/* Un resplandor arriba para que el negro no sea una pared */}
       <div
         aria-hidden

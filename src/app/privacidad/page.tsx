@@ -2,9 +2,14 @@ import Link from "next/link"
 
 export const metadata = { title: "Política de privacidad" }
 
+/** Cuelga de la portada, así que va en claro como ella. */
+export const viewport = { themeColor: "#f5f5f7" }
+
 export default function PaginaPrivacidad() {
   return (
-    <main className="mx-auto w-full max-w-2xl px-5 py-16">
+    /* En claro: se llega pulsando en el pie de la portada, y saltar de blanco
+       a negro al hacerlo no tenía ningún sentido. */
+    <main className="tema-claro mx-auto w-full max-w-2xl px-5 py-16">
       <Link href="/" className="text-sm text-muted transition hover:text-ink">
         ← Volver a hitoo
       </Link>

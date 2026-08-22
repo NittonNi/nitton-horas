@@ -1133,6 +1133,34 @@ no quedan plazas huerfanas); y la portada mirada entera, ademas de comprobar
 sin sesion -con curl, sin cookies- que salen los botones de crear cuenta y
 el enlace a la politica de privacidad.
 
+**La cara publica, siempre en claro (22-ago-2026)**: Nicolas lo pidio despues
+de verlo -"que tanto la landing como el formulario de onboarding sean en
+blanco"-. Hecho con una clase, `.tema-claro`, en vez de tocar el tema de
+nadie: el bloque de tokens claros pasa a valer para `:root` **y** para esa
+clase, y como las variables se heredan, las de la clase pisan a las de `:root`
+-esten en el `@media` oscuro o en `[data-theme="dark"]`- para todo lo que
+cuelgue de ese elemento. No toca `localStorage`, no toca el `<html>` y no
+parpadea. La llevan la portada, `/empezar` y `/privacidad` -esta ultima porque
+se llega desde el pie de la portada y saltar de blanco a negro al pulsar no
+tenia sentido-, cada una con su `viewport.themeColor` claro para la barra del
+navegador en el movil.
+
+Detalle que costo un intento: el fondo claro **no puede pintarse en la caja
+del elemento**. La politica de privacidad es una columna de `max-w-2xl`
+centrada, asi que salia como una tira blanca con el negro del body a los
+lados. Se pinta con un `::before` fijo a pantalla completa por detras del
+contenido.
+
+Y en la **guia inicial** hay ahora un sexto paso, "Y con la cara que
+prefieras", con el selector de tema dentro: se elige ahi mismo y se ve al
+momento, en vez de descubrirlo por casualidad en el perfil. El
+`SelectorTema` gana una prop `conTexto` para salir con las palabras -Claro,
+Oscuro, Sistema- en vez de solo con los iconos; sus dos usos de siempre -el
+menu lateral y el perfil- no cambian.
+
+Comprobado en vivo con el tema puesto en **oscuro**: la portada, el alta y la
+politica salen en claro igualmente, y el resto de la aplicacion sigue oscura.
+
 Pendiente: **mirarlo desde el movil**. El navegador de esta sesion no cambia
 el ancho de verdad, asi que el responsive esta razonado por codigo pero no
 visto con los ojos, igual que en el repaso del 20-ago.

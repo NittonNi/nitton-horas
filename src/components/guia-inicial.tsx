@@ -2,7 +2,16 @@
 
 import { useState, useSyncExternalStore } from "react"
 import * as Dialog from "@radix-ui/react-dialog"
-import { BarChart3, FolderTree, Settings2, Timer, Users } from "lucide-react"
+import {
+  BarChart3,
+  FolderTree,
+  Settings2,
+  SunMoon,
+  Timer,
+  Users,
+} from "lucide-react"
+
+import { SelectorTema } from "@/components/selector-tema"
 
 /**
  * La primera vez que entras, lo justo para empezar: donde se apuntan las horas,
@@ -18,6 +27,8 @@ type Paso = {
   titulo: string
   texto: string
   soloGestores?: boolean
+  /** Este paso no solo cuenta algo: se elige aquí mismo. */
+  conTema?: boolean
 }
 
 const PASOS: Paso[] = [
@@ -51,6 +62,13 @@ const PASOS: Paso[] = [
     texto:
       "En Gestión están las áreas del equipo, los objetivos, las tarifas, los ajustes del espacio y la importación de lo que ya tenéis en Clockify.",
     soloGestores: true,
+  },
+  {
+    icono: SunMoon,
+    titulo: "Y con la cara que prefieras",
+    texto:
+      "Claro, oscuro o lo que diga tu ordenador. Se cambia cuando quieras, aquí mismo o desde tu perfil.",
+    conTema: true,
   },
 ]
 
@@ -146,6 +164,13 @@ export function GuiaInicial({
             {actual.titulo}
           </Dialog.Title>
           <p className="mt-2 text-sm leading-relaxed text-ink-soft">{actual.texto}</p>
+
+          {/* El único paso que se toca: se elige aquí y se ve al momento */}
+          {actual.conTema && (
+            <div className="mt-4">
+              <SelectorTema conTexto />
+            </div>
+          )}
 
           <div className="mt-5 flex items-center gap-3">
             <div className="flex flex-1 gap-1.5" aria-hidden>

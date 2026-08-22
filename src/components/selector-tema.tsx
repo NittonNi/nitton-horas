@@ -35,7 +35,7 @@ function leerTema(): Tema {
 /** En el servidor no hay localStorage: se pinta como "sistema". */
 const temaEnServidor = (): Tema => "system"
 
-export function SelectorTema() {
+export function SelectorTema({ conTexto = false }: { conTexto?: boolean }) {
   const tema = useSyncExternalStore(suscribir, leerTema, temaEnServidor)
 
   function cambiar(nuevo: Tema) {
@@ -51,22 +51,29 @@ export function SelectorTema() {
   }
 
   return (
-    <div className="flex rounded-lg border border-line bg-surface-2 p-0.5">
+    <div
+      className={`flex rounded-lg border border-line bg-surface-2 p-0.5 ${
+        conTexto ? "w-full" : ""
+      }`}
+    >
       {OPCIONES.map(({ valor, icono: Icono, etiqueta }) => (
         <button
           key={valor}
           type="button"
           onClick={() => cambiar(valor)}
-          title={etiqueta}
+          title={conTexto ? undefined : etiqueta}
           aria-label={`Tema ${etiqueta.toLowerCase()}`}
           aria-pressed={tema === valor}
-          className={`rounded-md p-1.5 transition ${
+          className={`flex items-center justify-center gap-1.5 rounded-md transition ${
+            conTexto ? "flex-1 py-1.5 text-xs font-medium" : "p-1.5"
+          } ${
             tema === valor
               ? "bg-surface text-ink shadow-sm"
               : "text-muted hover:text-ink"
           }`}
         >
           <Icono className="h-3.5 w-3.5" />
+          {conTexto && etiqueta}
         </button>
       ))}
     </div>

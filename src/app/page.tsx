@@ -17,6 +17,12 @@ import { RUTA_APP } from "@/lib/rutas"
 import { AlEntrar } from "@/components/al-entrar"
 import { CronometroDemo } from "@/components/cronometro-demo"
 
+/**
+ * La portada va siempre en claro -ver `.tema-claro` en globals.css-, así que
+ * la barra del navegador en el móvil no puede seguir al tema del sistema.
+ */
+export const viewport = { themeColor: "#f5f5f7" }
+
 export const metadata = {
   title: { absolute: "hitoo · Las horas del equipo, en su sitio" },
   description:
@@ -575,7 +581,9 @@ export default async function Portada() {
   const dentro = Boolean(user)
 
   return (
-    <>
+    /* Siempre en claro, mire quien la mire y tenga lo que tenga puesto: es la
+       cara de hitoo, no una pantalla más de la aplicación. */
+    <div className="tema-claro flex min-h-dvh flex-col">
       <header className="sticky top-0 z-20 border-b border-line bg-bg/90 backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-6 px-5">
           <Marca />
@@ -950,6 +958,6 @@ export default async function Portada() {
           </nav>
         </div>
       </footer>
-    </>
+    </div>
   )
 }

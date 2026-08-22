@@ -452,7 +452,10 @@ export function RejillaCalendario({
     : elegido
   const diasPintados = esMovil ? [diaVisto!] : dias
 
-  /** En movil las flechas van de dia en dia, y saltan de semana si hace falta. */
+  /** Donde empezo el dedo, para saber si el gesto fue un desliz de lado. */
+  const desliz = useRef<{ x: number; y: number } | null>(null)
+
+  /** Cambia de dia, saltando de semana cuando el dia cae fuera. */
   function moverDia(paso: number) {
     const nuevo = toDateKey(addDays(fromDateKey(diaVisto ?? dias[0]), paso))
     setDiaMovil(nuevo)
@@ -465,32 +468,29 @@ export function RejillaCalendario({
   return (
     <div className="space-y-4">
       <div className="no-print flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() =>
-              esMovil
-                ? moverDia(-1)
-                : irA(toDateKey(addDays(fromDateKey(lunes), -7)))
-            }
-            className="btn p-2"
-            aria-label={esMovil ? "Día anterior" : "Semana anterior"}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() =>
-              esMovil
-                ? moverDia(1)
-                : irA(toDateKey(addDays(fromDateKey(lunes), 7)))
-            }
-            className="btn p-2"
-            aria-label={esMovil ? "Día siguiente" : "Semana siguiente"}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
+        {/* En movil no hay flechas: se pasa de dia deslizando sobre la
+            rejilla, o tocando el dia en la tira de arriba. Dos mandos para lo
+            mismo, uno de ellos ocupando sitio, no valen la pena. */}
+        {!esMovil && (
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => irA(toDateKey(addDays(fromDateKey(lunes), -7)))}
+              className="btn p-2"
+              aria-label="Semana anterior"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => irA(toDateKey(addDays(fromDateKey(lunes), 7)))}
+              className="btn p-2"
+              aria-label="Semana siguiente"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
 
         {/* En movil, el dia que se esta mirando; en escritorio, la semana */}
         <p className="text-sm font-medium">
@@ -549,22 +549,36 @@ export function RejillaCalendario({
             </button>
           )}
 
-          {/* Saltar a cualquier semana sin ir de una en una: se elige un dia
-              cualquiera y se abre la semana que lo contiene. */}
-          <label className="relative flex items-center" title="Ir a una semana">
-            <CalendarDays
-              className="pointer-events-none absolute left-2 h-4 w-4 text-muted"
-              aria-hidden
-            />
+          {/* Saltar a cualquier dia sin ir de uno en uno. En escritorio abre la
+              semana que lo contiene; en movil va a ese dia. */}
+          <label
+            className="relative flex items-center"
+            title={esMovil ? "Ir a un día" : "Ir a una semana"}
+          >
+            {/* El icono propio solo en escritorio: en el movil el campo de
+                fecha del sistema ya trae el suyo y se montaban uno encima del
+                otro -mas desde que los campos van a 16px en movil, que el
+                texto ensancho y se comio el hueco-. */}
+            {!esMovil && (
+              <CalendarDays
+                className="pointer-events-none absolute left-2 h-4 w-4 text-muted"
+                aria-hidden
+              />
+            )}
             <input
               type="date"
-              value={lunes}
+              value={esMovil ? (diaVisto ?? lunes) : lunes}
               onChange={(e) => {
                 if (!e.target.value) return
-                irA(toDateKey(startOfWeek(fromDateKey(e.target.value))))
+                const elegido = toDateKey(fromDateKey(e.target.value))
+                if (esMovil) setDiaMovil(elegido)
+                irA(toDateKey(startOfWeek(fromDateKey(elegido))))
               }}
-              className="field tabular h-8 w-[9.5rem] pl-7 text-sm"
-              aria-label="Ir a la semana de este día"
+              className={cn(
+                "field tabular h-8 text-sm",
+                esMovil ? "w-auto px-2" : "w-[9.5rem] pl-7",
+              )}
+              aria-label={esMovil ? "Ir a este día" : "Ir a la semana de este día"}
             />
           </label>
         </div>
@@ -577,7 +591,27 @@ export function RejillaCalendario({
         </p>
       )}
 
-      <div className="card overflow-hidden">
+      <div
+        className="card overflow-hidden"
+        /* Deslizar de lado pasa de dia, como en el calendario del telefono.
+           Solo cuenta si el gesto es claramente horizontal y no hay un bloque
+           en la mano: arrastrar un rato empieza manteniendo el dedo, asi que
+           los dos gestos no se pisan. */
+        onTouchStart={(e) => {
+          if (!esMovil || e.touches.length !== 1) return
+          desliz.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+        }}
+        onTouchEnd={(e) => {
+          const empezo = desliz.current
+          desliz.current = null
+          if (!empezo || !esMovil || arrastre) return
+          const fin = e.changedTouches[0]
+          const dx = fin.clientX - empezo.x
+          const dy = fin.clientY - empezo.y
+          if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return
+          moverDia(dx < 0 ? 1 : -1)
+        }}
+      >
         {/* cabecera de dias */}
         <div
           className={cn(
@@ -623,8 +657,13 @@ export function RejillaCalendario({
                     esMovil
                       ? "mx-auto grid h-7 w-7 place-items-center leading-none"
                       : "leading-tight",
-                    esHoy && (esMovil ? "rounded-full bg-live-fill text-white" : "text-live"),
-                    esMovil && !esHoy && dia === diaVisto && "rounded-full bg-surface-3",
+                    /* En movil el circulo naranja va con el dia que estas
+                       mirando, que es lo que cambia al deslizar; hoy, si no
+                       es ese, se queda con el numero en naranja. En
+                       escritorio no hay dia elegido: el naranja es hoy. */
+                    esMovil && dia === diaVisto && "rounded-full bg-live-fill text-white",
+                    esMovil && esHoy && dia !== diaVisto && "text-live",
+                    !esMovil && esHoy && "text-live",
                   )}
                 >
                   {fecha.getDate()}

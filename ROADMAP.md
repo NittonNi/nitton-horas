@@ -89,8 +89,28 @@ mas redondos, todo**.
   estos cambios, y en el codigo hay unos cuantos `rounded-lg`/`rounded-xl` de
   Tailwind por su cuenta.
 
-Probado en vivo forzando el corte de `useEsMovil` para poder ver la version de
-movil en el escritorio: el dia, las flechas, el total del dia y el boton Hoy.
+**Segunda vuelta, el mismo dia, probandolo el en el telefono:**
+
+- **Se pasa de dia deslizando de lado**, como el calendario del movil. Solo
+  cuenta si el gesto es claramente horizontal -60 px y mas ancho que alto- y
+  no hay un bloque en la mano; arrastrar un rato empieza manteniendo el dedo,
+  asi que los dos gestos no se pisan.
+- **Fuera las flechas en movil**: con el desliz y la tira de arriba, un tercer
+  mando para lo mismo solo ocupaba sitio.
+- **El circulo naranja va con el dia que estas mirando**, no con hoy. Antes se
+  quedaba clavado en hoy y no acompañaba al desliz. Hoy, cuando no es el dia
+  que se mira, se queda con el numero en naranja sin circulo: se siguen
+  distinguiendo las dos cosas.
+- **El selector de fecha ya no se pisa consigo mismo**: en movil llevaba
+  encima nuestro icono de calendario y debajo el del sistema, y desde que los
+  campos van a 16px el texto ensancho y se montaban. En movil se quita el
+  nuestro, y de paso ese campo salta **al dia** en vez de a la semana.
+
+Probado en vivo forzando el corte de `useEsMovil` para ver la version de movil
+en el escritorio -incluido el desliz, con eventos tactiles sinteticos-. Aviso
+para la proxima: al cambiar ese corte a mano, el componente no se entera hasta
+que algo dispara un `change` del media query; con un `resize_window` se
+despierta.
 
 ### Mover categorias arrastrando (hecho el 22-ago-2026)
 

@@ -91,10 +91,20 @@ mas redondos, todo**.
 
 **Segunda vuelta, el mismo dia, probandolo el en el telefono:**
 
-- **Se pasa de dia deslizando de lado**, como el calendario del movil. Solo
-  cuenta si el gesto es claramente horizontal -60 px y mas ancho que alto- y
-  no hay un bloque en la mano; arrastrar un rato empieza manteniendo el dedo,
-  asi que los dos gestos no se pisan.
+- **Se pasa de dia deslizando de lado**, como el calendario del movil. Primer
+  intento: el desliz saltaba de dia de golpe, y Nicolas lo llamo
+  *"hiperbrusco"* -queria que **el calendario se moviera** con el dedo-. Asi
+  que en movil se pintan **los siete dias** en una tira que mide siete
+  pantallas y se desplaza con `translateX`: el dedo la mueve en vivo -asoma el
+  dia de al lado- y al soltar cae en su sitio con una transicion de 0,28 s. No
+  cuesta datos: las horas de la semana ya estaban cargadas.
+  - El gesto se declara por donde tira mas -12 px de margen- y hasta entonces
+    no mueve nada, que si no rodar la pagina desplazaba el calendario un pelin
+    en cada roce. `touch-action: pan-y` deja el gesto vertical al navegador.
+  - Cambia de dia si el desliz pasa de un tercio del ancho -tope de 110 px-;
+    si no, vuelve a su sitio.
+  - Con un bloque en la mano no hay desliz: arrastrar un rato empieza
+    manteniendo el dedo, asi que los dos gestos no se pisan.
 - **Fuera las flechas en movil**: con el desliz y la tira de arriba, un tercer
   mando para lo mismo solo ocupaba sitio.
 - **El circulo naranja va con el dia que estas mirando**, no con hoy. Antes se

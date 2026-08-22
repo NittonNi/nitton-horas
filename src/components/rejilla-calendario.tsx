@@ -450,10 +450,21 @@ export function RejillaCalendario({
   const diaVisto = esMovil
     ? (elegido ?? (dias.includes(hoy) ? hoy : dias[0]))
     : elegido
-  const diasPintados = esMovil ? [diaVisto!] : dias
+  /* Los siete se pintan siempre. En movil se ve uno -la tira mide siete
+     pantallas y se desplaza-, pero estan los siete en su sitio: eso es lo que
+     deja que al deslizar asome el dia de al lado en vez de cambiar de golpe.
+     Las horas de la semana ya estaban cargadas, asi que no cuesta nada. */
+  const diasPintados = dias
+  const indiceDia = Math.max(0, dias.indexOf(diaVisto ?? dias[0]))
 
-  /** Donde empezo el dedo, para saber si el gesto fue un desliz de lado. */
-  const desliz = useRef<{ x: number; y: number } | null>(null)
+  /**
+   * El desliz de lado. `desliz` es donde empezo el dedo -y si el gesto ya se
+   * ha decidido horizontal-, y `dx` lo que se ha movido: la rejilla lo sigue
+   * en vivo, y al soltar cae en su sitio con una transicion corta. Un salto
+   * seco de un dia a otro se lee como un parpadeo, no como pasar de pagina.
+   */
+  const desliz = useRef<{ x: number; y: number; deLado: boolean } | null>(null)
+  const [dx, setDx] = useState(0)
 
   /** Cambia de dia, saltando de semana cuando el dia cae fuera. */
   function moverDia(paso: number) {
@@ -591,27 +602,7 @@ export function RejillaCalendario({
         </p>
       )}
 
-      <div
-        className="card overflow-hidden"
-        /* Deslizar de lado pasa de dia, como en el calendario del telefono.
-           Solo cuenta si el gesto es claramente horizontal y no hay un bloque
-           en la mano: arrastrar un rato empieza manteniendo el dedo, asi que
-           los dos gestos no se pisan. */
-        onTouchStart={(e) => {
-          if (!esMovil || e.touches.length !== 1) return
-          desliz.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
-        }}
-        onTouchEnd={(e) => {
-          const empezo = desliz.current
-          desliz.current = null
-          if (!empezo || !esMovil || arrastre) return
-          const fin = e.changedTouches[0]
-          const dx = fin.clientX - empezo.x
-          const dy = fin.clientY - empezo.y
-          if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return
-          moverDia(dx < 0 ? 1 : -1)
-        }}
-      >
+      <div className="card overflow-hidden">
         {/* cabecera de dias */}
         <div
           className={cn(
@@ -713,15 +704,70 @@ export function RejillaCalendario({
             </div>
 
             {/* columnas de dias */}
+            {/* En movil, la ventana por la que se ve un dia: la tira de dentro
+                mide siete y se mueve con el dedo. */}
+            <div className={cn(esMovil && "overflow-hidden", !esMovil && "col-span-7")}
+              /* `pan-y`: el navegador se queda con el gesto vertical -que es
+                 rodar la pagina- y nos deja el horizontal, que es el nuestro.
+                 Con un bloque en la mano no hay ninguno de los dos. */
+              style={{ touchAction: arrastre ? "none" : esMovil ? "pan-y" : undefined }}
+              onTouchStart={(e) => {
+                if (!esMovil || arrastre || e.touches.length !== 1) return
+                desliz.current = {
+                  x: e.touches[0].clientX,
+                  y: e.touches[0].clientY,
+                  deLado: false,
+                }
+              }}
+              onTouchMove={(e) => {
+                const empezo = desliz.current
+                if (!empezo || arrastre) return
+                const toca = e.touches[0]
+                const avanceX = toca.clientX - empezo.x
+                const avanceY = toca.clientY - empezo.y
+                /* Hasta que el gesto no se declara -y se declara por donde
+                   tira mas-, no se mueve nada: si no, rodar la pagina movia
+                   el calendario de lado un pelin en cada roce. */
+                if (!empezo.deLado) {
+                  if (Math.abs(avanceX) < 12 && Math.abs(avanceY) < 12) return
+                  empezo.deLado = Math.abs(avanceX) > Math.abs(avanceY)
+                  if (!empezo.deLado) {
+                    desliz.current = null
+                    return
+                  }
+                }
+                setDx(avanceX)
+              }}
+              onTouchEnd={(e) => {
+                const empezo = desliz.current
+                desliz.current = null
+                if (!empezo?.deLado || arrastre) return setDx(0)
+                const avanceX = e.changedTouches[0].clientX - empezo.x
+                setDx(0)
+                // Un tercio de la pantalla, o un gesto corto pero decidido
+                const suficiente = Math.min(
+                  110,
+                  (refColumnas.current?.getBoundingClientRect().width ?? 700) / 7 / 3,
+                )
+                if (Math.abs(avanceX) >= suficiente) moverDia(avanceX < 0 ? 1 : -1)
+              }}
+            >
             <div
               ref={refColumnas}
-              className={cn(
-                "grid",
-                esMovil && diaVisto ? "grid-cols-1" : "grid-cols-7",
-                !esMovil && "col-span-7",
-              )}
-              // Mientras se arrastra, el dedo mueve el bloque y no la pagina
-              style={{ height: alto, touchAction: arrastre ? "none" : undefined }}
+              className={cn("grid grid-cols-7", esMovil && "w-[700%]")}
+              style={{
+                height: alto,
+                transform: esMovil
+                  ? `translateX(calc(${(-indiceDia * 100) / 7}% + ${dx}px))`
+                  : undefined,
+                /* Mientras el dedo manda no hay transicion -la rejilla va con
+                   el-, y al soltar es la transicion la que la deja en su
+                   sitio. */
+                transition:
+                  esMovil && dx === 0
+                    ? "transform 0.28s cubic-bezier(0.2, 0.7, 0.2, 1)"
+                    : "none",
+              }}
             >
               {diasPintados.map((dia) => (
                 <ColumnaDia
@@ -778,6 +824,7 @@ export function RejillaCalendario({
                   }
                 />
               ))}
+            </div>
             </div>
           </div>
         </div>

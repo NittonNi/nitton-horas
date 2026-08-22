@@ -508,7 +508,7 @@ function FilaProyecto({
     <Link
       href={`/proyectos/${proyecto.id}`}
       className={cn(
-        "flex items-center gap-3 px-4 py-3 transition hover:bg-surface-2",
+        "pulsable flex items-center gap-3 px-4 py-3 hover:bg-surface-2",
         proyecto.archived && "opacity-55",
       )}
     >
@@ -590,7 +590,7 @@ function TarjetaProyecto({
     <Link
       href={`/proyectos/${proyecto.id}`}
       className={cn(
-        "card flex flex-col gap-3 border-t-[3px] p-4 transition hover:bg-surface-2",
+        "pulsable card flex flex-col gap-3 border-t-[3px] p-4 hover:bg-surface-2",
         proyecto.archived && "opacity-55",
       )}
       style={{ borderTopColor: proyecto.color }}

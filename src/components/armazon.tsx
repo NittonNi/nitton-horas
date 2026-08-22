@@ -29,6 +29,7 @@ import { cambiarEspacio } from "@/app/acciones"
 import { useSesion } from "@/components/proveedor-sesion"
 import { useCronometro } from "@/components/proveedor-cronometro"
 import { SelectorTema } from "@/components/selector-tema"
+import { BarraTeclado } from "@/components/barra-teclado"
 import { formatDuration } from "@/lib/time"
 import { NOMBRE_ROL } from "@/lib/roles"
 import { RUTA_APP } from "@/lib/rutas"
@@ -186,6 +187,7 @@ export function Armazon({ children }: { children: React.ReactNode }) {
         </main>
 
         <BarraInferior />
+        <BarraTeclado />
       </div>
     </div>
   )
@@ -341,7 +343,7 @@ function BarraInferior() {
   const pathname = usePathname()
 
   return (
-    <nav className="no-print fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-surface/90 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+    <nav className="no-print no-teclado fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-surface/90 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
       {enlaces.map(({ href, etiqueta, icono: Icono, exacto }) => {
         const activo = estaActivo(pathname, href, exacto)
         return (

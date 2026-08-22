@@ -2,9 +2,16 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Archive, ChevronRight, Loader2, Plus, RotateCcw } from "lucide-react"
+import {
+  Archive,
+  GripVertical,
+  Loader2,
+  Plus,
+  RotateCcw,
+} from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
+import { useAvisos } from "@/components/avisos"
 import { mensajeError } from "@/lib/errores"
 import {
   categoriasRaiz,
@@ -34,7 +41,11 @@ export function GestionCategorias({
   segundosPorRama?: Record<string, number>
 }) {
   const router = useRouter()
+  const { avisar } = useAvisos()
   const [ocupado, setOcupado] = useState(false)
+  /** La categoria que se esta arrastrando y el area sobre la que se suelta. */
+  const [arrastrando, setArrastrando] = useState<string | null>(null)
+  const [encima, setEncima] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [nueva, setNueva] = useState("")
   const [anadiendoEn, setAnadiendoEn] = useState<string | null>(null)
@@ -103,6 +114,52 @@ export function GestionCategorias({
     )
   }
 
+  /**
+   * Cambiar una categoria de area. Antes habia que borrarla y volver a
+   * escribirla, y con ella se iba lo que colgara debajo; ahora es mover el
+   * `parent_id` y ponerla la ultima de su nueva area.
+   *
+   * Los proyectos que cuelgan se van con ella -es lo que espera cualquiera-,
+   * y por eso el aviso lo dice: cambia el area con la que salen en los
+   * informes. Se deshace desde ahi mismo.
+   */
+  async function mover(categoria: Categoria, destinoId: string) {
+    if (categoria.parent_id === destinoId || categoria.id === destinoId) return
+    const antes = categoria.parent_id
+    const hermanas = subcategoriasDe(categorias, destinoId)
+    const destino = categorias.find((c) => c.id === destinoId)
+
+    const ok = await conSupabase((s) =>
+      s
+        .from("categories")
+        .update({ parent_id: destinoId, position: hermanas.length })
+        .eq("id", categoria.id),
+    )
+    if (!ok) return
+
+    const cuantos = proyectos.filter(
+      (p) => p.category_id === categoria.id,
+    ).length
+
+    avisar(
+      `${categoria.name} ahora está en ${destino?.name ?? "otra área"}` +
+        (cuantos > 0
+          ? `, y con ella ${cuantos === 1 ? "su proyecto" : `sus ${cuantos} proyectos`}`
+          : ""),
+      antes
+        ? async () => {
+            const vuelta = subcategoriasDe(categorias, antes)
+            await createClient()
+              .from("categories")
+              .update({ parent_id: antes, position: vuelta.length })
+              .eq("id", categoria.id)
+            router.refresh()
+            return "Devuelta a su sitio."
+          }
+        : undefined,
+    )
+  }
+
   async function archivar(categoria: Categoria) {
     await conSupabase((s) =>
       s
@@ -146,7 +203,32 @@ export function GestionCategorias({
           return (
             <li
               key={padre.id}
-              className="rounded-[var(--radio-sm)] bg-surface-2/60 p-1.5"
+              /* El area entera es la zona donde soltar: apuntar a una linea
+                 fina de un pixel con el raton es un castigo. */
+              onDragOver={(e) => {
+                if (!arrastrando) return
+                e.preventDefault()
+                setEncima(padre.id)
+              }}
+              onDragLeave={(e) => {
+                // Solo cuando se sale de verdad, no al pasar por un hijo
+                if (e.currentTarget.contains(e.relatedTarget as Node)) return
+                setEncima((a) => (a === padre.id ? null : a))
+              }}
+              onDrop={(e) => {
+                e.preventDefault()
+                const id = e.dataTransfer.getData("text/plain") || arrastrando
+                const suelta = categorias.find((c) => c.id === id)
+                setEncima(null)
+                setArrastrando(null)
+                if (suelta) void mover(suelta, padre.id)
+              }}
+              className={cn(
+                "rounded-[var(--radio-sm)] bg-surface-2/60 p-1.5 transition",
+                encima === padre.id &&
+                  arrastrando &&
+                  "ring-2 ring-accent ring-offset-1 ring-offset-[color:var(--surface)]",
+              )}
             >
               <Fila
                 categoria={padre}
@@ -160,9 +242,25 @@ export function GestionCategorias({
 
               <ul className="mt-0.5 space-y-0.5 pl-5">
                 {hijas.map((hija) => (
-                  <li key={hija.id} className="flex items-center gap-1">
-                    <ChevronRight
-                      className="h-3 w-3 shrink-0 text-muted"
+                  <li
+                    key={hija.id}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData("text/plain", hija.id)
+                      e.dataTransfer.effectAllowed = "move"
+                      setArrastrando(hija.id)
+                    }}
+                    onDragEnd={() => {
+                      setArrastrando(null)
+                      setEncima(null)
+                    }}
+                    className={cn(
+                      "flex items-center gap-1 rounded-[4px] transition",
+                      arrastrando === hija.id && "opacity-40",
+                    )}
+                  >
+                    <GripVertical
+                      className="h-3.5 w-3.5 shrink-0 cursor-grab text-muted/60 active:cursor-grabbing"
                       aria-hidden
                     />
                     <Fila
@@ -170,9 +268,11 @@ export function GestionCategorias({
                       proyectos={proyectos}
                       segundos={segundosPorRama[hija.id] ?? 0}
                       ocupado={ocupado}
+                      areas={raiz}
                       onRenombrar={(n) => void renombrar(hija, n)}
                       onObjetivo={(t) => void ponerObjetivo(hija, t)}
                       onArchivar={() => void archivar(hija)}
+                      onMover={(destino) => void mover(hija, destino)}
                     />
                   </li>
                 ))}
@@ -239,17 +339,22 @@ function Fila({
   proyectos,
   segundos,
   ocupado,
+  areas,
   onRenombrar,
   onObjetivo,
   onArchivar,
+  onMover,
 }: {
   categoria: Categoria
   proyectos: Proyecto[]
   segundos: number
   ocupado: boolean
+  /** Las areas a las que puede irse, si esta es de las que se mueven. */
+  areas?: Categoria[]
   onRenombrar: (nombre: string) => void
   onObjetivo: (texto: string) => void
   onArchivar: () => void
+  onMover?: (destinoId: string) => void
 }) {
   const cuantos = proyectos.filter((p) => p.category_id === categoria.id).length
 
@@ -308,6 +413,25 @@ function Fila({
         title="Objetivo de horas por persona y semana"
         className="cifra w-16 shrink-0 rounded-[4px] bg-transparent px-1 py-0.5 text-right text-sm outline-none transition hover:bg-surface-3/60 focus:bg-surface"
       />
+
+      {/* Arrastrar es comodo con raton y no existe con el dedo ni con el
+          teclado, asi que la misma mudanza esta tambien aqui. */}
+      {onMover && areas && areas.length > 1 && (
+        <select
+          value={categoria.parent_id ?? ""}
+          onChange={(e) => onMover(e.target.value)}
+          disabled={ocupado}
+          aria-label={`Mover ${categoria.name} a otra área`}
+          title="Mover a otra área"
+          className="w-24 shrink-0 rounded-[4px] border-0 bg-transparent px-1 py-0.5 text-xs text-muted outline-none transition hover:bg-surface-3/60 focus:bg-surface"
+        >
+          {areas.map((area) => (
+            <option key={area.id} value={area.id}>
+              {area.name}
+            </option>
+          ))}
+        </select>
+      )}
 
       <button
         type="button"

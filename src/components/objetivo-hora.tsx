@@ -70,13 +70,12 @@ export function ObjetivoHora({
       </p>
 
       {puedeCambiar ? (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            void guardar()
-          }}
-          className="flex flex-wrap items-end gap-2"
-        >
+        /* Un `div` y no un `form`: esto se pinta dentro del formulario de
+           los ajustes del espacio, y un `<form>` dentro de otro es HTML
+           invalido -el navegador se come el de dentro, y React se queja de
+           que el HTML del servidor no cuadra con el del navegador y rehace
+           el arbol entero-. El Enter sigue guardando, desde el campo. */
+        <div className="flex flex-wrap items-end gap-2">
           <div>
             <label className="label" htmlFor="objetivo-hora">
               Euros por hora
@@ -91,6 +90,11 @@ export function ObjetivoHora({
                   setTexto(e.target.value)
                   setGuardado(false)
                 }}
+                onKeyDown={(e) => {
+                  if (e.key !== "Enter") return
+                  e.preventDefault()
+                  if (!guardando && cambiado && vale) void guardar()
+                }}
                 placeholder="17"
               />
               <span className="text-sm text-muted">€/h</span>
@@ -98,7 +102,8 @@ export function ObjetivoHora({
           </div>
 
           <button
-            type="submit"
+            type="button"
+            onClick={() => void guardar()}
             disabled={guardando || !cambiado || !vale}
             className="btn btn-primary"
           >
@@ -112,7 +117,7 @@ export function ObjetivoHora({
               Guardado
             </span>
           )}
-        </form>
+        </div>
       ) : (
         <p className="cifra text-lg font-semibold">
           {valor != null ? `${valor} €/h` : "Sin poner"}

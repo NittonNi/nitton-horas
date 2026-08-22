@@ -332,17 +332,6 @@
     cursor: not-allowed;
   }
 
-  /* Menos de 16px en un campo hace que iOS Safari haga zoom en toda la
-     pagina al enfocarlo -pasa con cualquier input, select o textarea, no
-     solo con los que llevan la clase .field-. Solo en movil/tablet: en
-     escritorio no hay zoom que evitar y el texto mas pequeño se lee mejor. */
-  @media (max-width: 1023.98px) {
-    input,
-    select,
-    textarea {
-      font-size: 16px;
-    }
-  }
 
   .btn {
     display: inline-flex;
@@ -509,6 +498,33 @@
 }
 .latido {
   animation: latido 2s ease-in-out infinite;
+}
+
+/**
+ * Menos de 16px en un campo hace que iOS Safari haga zoom en toda la pagina al
+ * enfocarlo -pasa con cualquier input, select o textarea, no solo con los que
+ * llevan `.field`-. Solo en movil/tablet: en escritorio no hay zoom que evitar
+ * y el texto mas pequeno se lee mejor.
+ *
+ * **Va fuera de `@layer` a proposito.** Dentro de `@layer components` no valia
+ * de nada: las utilidades de Tailwind son una capa posterior, asi que un
+ * `text-sm` o un `text-xs` en el propio campo la pisaba y el zoom seguia
+ * pasando -que es justo lo que contaba Nicolas el 22-ago-. Sin capa, gana a
+ * todas.
+ */
+@media (max-width: 1023.98px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Mientras el teclado del movil esta abierto, la navegacion de abajo se
+   aparta: sitio para lo que se escribe, y para la barra de las flechas. Lo
+   pone `barra-teclado.tsx` en el <html>. */
+html[data-teclado="si"] .no-teclado {
+  display: none;
 }
 
 /* Aparecer de abajo, cortito. Lo usan los pasos del alta y la portada; con

@@ -21,7 +21,32 @@ todavia: esto es lo que dijo, no lo que se ha comprobado.**
    seleccionar, y si el campo cae por debajo de la barra no ve ni lo que esta
    apuntando.
 
-Por donde mirar cuando se retome:
+**Atacado el 22-ago-2026, a falta de que Nicolas lo pruebe:**
+
+1. **El zoom**: la regla de los 16px existia desde el 20-ago pero **no
+   servia de nada**, y por un motivo que merece la pena recordar: estaba
+   dentro de `@layer components`, y las utilidades de Tailwind son una capa
+   posterior, asi que cualquier `text-sm` o `text-xs` escrito en el propio
+   campo la pisaba -y hay siete-. Sacada de la capa, ahora gana a todas.
+2. **La barra de abajo tapando**: mientras hay un campo con el foco y el
+   teclado abierto, la navegacion inferior se esconde -clase `.no-teclado`,
+   que activa el atributo `data-teclado` del `<html>`-, y el campo enfocado se
+   lleva al centro de la pantalla.
+3. **Saltar de campo**: barra nueva (`barra-teclado.tsx`) flotando encima del
+   teclado, con flecha arriba, flecha abajo, "N de M" y un "Listo". Los
+   botones actuan en `pointerdown` con `preventDefault` para no soltar el
+   foco: si el navegador cierra el teclado, el salto no vale de nada.
+4. `interactiveWidget: "resizes-content"` en el viewport, que en
+   Chrome/Android hace que el contenido se encoja solo con el teclado.
+
+**No verificado con los ojos**: sin teclado virtual no hay nada que ver, y el
+JavaScript que se puede inyectar en estas sesiones corre en un mundo aislado
+-falsear `visualViewport` desde ahi no llega a la pagina-. Lo que si se
+comprobo es que el efecto se monta y que la medida da ~0 cuando no hay
+teclado, que es lo correcto en escritorio. Mientras no haya teclado el
+componente no pinta nada, asi que en el peor caso no aparece.
+
+Por donde mirar si no funciona:
 
 - Que barra es la que tapa -la del cronometro del layout de `(app)`, la
   navegacion inferior, o las dos-, y si esta con `position: fixed`. Con el
@@ -39,35 +64,46 @@ Por donde mirar cuando se retome:
 sesiones no cambia el ancho de verdad ni levanta un teclado virtual, asi que
 esto no se puede ni reproducir ni dar por arreglado desde aqui.
 
-### Mover categorias arrastrando (apuntado el 22-ago-2026)
+### Mover categorias arrastrando (hecho el 22-ago-2026)
 
 Pedido por Nicolas: en **Categorizacion**, poder coger una categoria y
-soltarla en otra area. Hoy, si creas algo dentro de Proyectos y luego lo
-quieres en Backoffice, hay que borrarlo y volver a escribirlo -y con ello se
-pierde lo que colgara de esa categoria-.
+soltarla en otra area. Antes, si creabas algo dentro de Proyectos y luego lo
+querias en Backoffice, habia que borrarlo y volver a escribirlo -y con ello se
+perdia lo que colgara de esa categoria-.
 
-Lo que ya esta puesto para que salga bien:
+**Hecho**: cada categoria lleva un asa a la izquierda y se arrastra al area
+que sea -el area entera es la zona de soltado, con un aro azul mientras esta
+encima: apuntar a una linea de un pixel con el raton es un castigo-. Mover es
+un `update` de `parent_id` y `position`, sin migracion. Los proyectos que
+cuelgan se van con ella y **el aviso lo dice** -"loca ahora esta en
+Conocimiento, y con ella sus 3 proyectos"-, con Deshacer.
 
-- `categories` tiene `parent_id` y `position`, asi que mover es un `update` de
-  esas dos columnas -no hace falta migracion-.
-- `gestion-categorias.tsx` (373 lineas) ya crea, renombra, pone objetivo y
-  archiva pasando por `conSupabase()`, que refresca al terminar. Mover encaja
-  ahi mismo.
-- `crear()` ya calcula la `position` como el numero de hermanas, asi que el
-  orden dentro de un area existe aunque hoy no se pueda cambiar.
+Y como arrastrar no existe con el dedo ni con el teclado, **cada fila lleva
+tambien un selector con el area**, que hace exactamente lo mismo. Esa es la
+via que arregla el problema aunque el arrastre no se use nunca.
 
-Lo que hay que decidir al hacerlo:
+Probado en vivo: mover con el selector, el aviso, Deshacer, y el ciclo
+completo de arrastre (`dragstart` guarda el id, `dragover` resalta el area,
+`drop` mueve). El arrastre con raton de verdad **no se puede disparar desde
+estas sesiones** -el protocolo del navegador no genera eventos de arrastre
+nativos-, asi que ese ultimo tramo lo tiene que ver Nicolas.
 
-- **Que pasa con los proyectos** que cuelgan de esa categoria: se van con
-  ella -es lo que espera cualquiera- pero conviene decirlo en el aviso, que
-  cambia de area lo que salga en los informes.
-- **Reordenar tambien dentro de un area**, ya que se va a arrastrar: es la
-  misma `position` y sale casi gratis.
-- **Sin `alert`**: mover se deshace desde el aviso de abajo, como el resto.
-- **Que funcione con el dedo y con el teclado**: arrastrar a secas deja fuera
-  a quien va por teclado y es incomodo en movil, asi que hace falta ademas un
-  "mover a" en los tres puntos de cada fila -que es, de hecho, lo que arregla
-  el problema aunque el arrastre no llegue nunca-.
+Queda: **reordenar dentro de un area**, que es la misma `position` pero pide
+zonas de soltado entre filas.
+
+### Un `<form>` dentro de otro en Gestion > Ajustes (arreglado el 22-ago-2026)
+
+Salio solo, mirando la consola mientras se probaba otra cosa: `ObjetivoHora`
+pintaba su propio `<form>` **dentro** del formulario de `AjustesEspacio`. Un
+`<form>` anidado es HTML invalido: el navegador se come el de dentro, el HTML
+que llega del servidor no cuadra con el que arma el navegador y React
+**rehacia el arbol entero de esa pagina** en cada carga -tres errores en
+consola, uno de ellos de hidratacion-.
+
+Arreglado: ese bloque es un `div`, el boton guarda con `onClick` y el Enter
+sigue guardando desde el campo. El otro formulario del mismo archivo -el
+objetivo por proyecto- no esta anidado y se queda como estaba. Comprobado en
+vivo: la consola de `/gestion/ajustes` ya no da ningun error.
 
 ### Formularios con el tacto de Revolut (22-ago-2026)
 
@@ -88,8 +124,9 @@ Son dos cosas distintas:
    sin el retardo de 300 ms del navegador ni el destello gris de Android, que
    se pisaba con lo nuestro.
 
-   Queda extenderlo si gusta: las filas de proyecto, las de horas y los chips
-   siguen sin pulsado propio.
+   Extendido el mismo dia a las **filas y tarjetas de proyecto**. Los chips y
+   las filas de horas siguen sin pulsado propio: llevan botones dentro y
+   escalar la fila entera al tocarlos se veria raro.
 
 2. **La barra sobre el teclado, pendiente.** Flotando justo encima del teclado
    cuando se abre, con una flecha arriba y otra abajo para saltar al campo

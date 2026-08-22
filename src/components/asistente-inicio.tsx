@@ -683,7 +683,7 @@ function Opcion({
       onClick={onClick}
       aria-pressed={activa}
       className={cn(
-        "flex w-full items-start gap-3 rounded-[var(--radio-sm)] border p-3 text-left transition",
+        "pulsable flex w-full items-start gap-3 rounded-[var(--radio-sm)] border p-3 text-left",
         activa
           ? "border-accent bg-accent-soft"
           : "border-line hover:bg-surface-2",

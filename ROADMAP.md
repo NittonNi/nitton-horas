@@ -39,6 +39,41 @@ Por donde mirar cuando se retome:
 sesiones no cambia el ancho de verdad ni levanta un teclado virtual, asi que
 esto no se puede ni reproducir ni dar por arreglado desde aqui.
 
+### Formularios con el tacto de Revolut (22-ago-2026)
+
+**De donde sale la idea**: de un video de Instagram de **zanderwhitehurst**,
+que Nicolas tiene guardado. Si se retoma esto, mirarlo antes -el video manda
+sobre lo que este escrito aqui-.
+
+Son dos cosas distintas:
+
+1. **El pulsado, suave.** Al apretar, el elemento crece un pelin y se tine un
+   poco -mas oscuro en claro, mas claro en oscuro-. **Hecho el 22-ago-2026**:
+   token `--pulsado` en los tres temas y `:active` en `.btn`, mas una clase
+   `.pulsable` para lo que se pulsa y no es un boton -las tarjetas de elegir
+   del alta, las filas de espacios de `/bienvenida`-. El tinte va como capa
+   (`box-shadow: inset ... 999px`), no como fondo, para que valga igual sobre
+   el blanco de una tarjeta que sobre el azul de un boton primario. De paso,
+   `touch-action: manipulation` y `-webkit-tap-highlight-color: transparent`:
+   sin el retardo de 300 ms del navegador ni el destello gris de Android, que
+   se pisaba con lo nuestro.
+
+   Queda extenderlo si gusta: las filas de proyecto, las de horas y los chips
+   siguen sin pulsado propio.
+
+2. **La barra sobre el teclado, pendiente.** Flotando justo encima del teclado
+   cuando se abre, con una flecha arriba y otra abajo para saltar al campo
+   anterior o al siguiente. Es lo que arregla de verdad la queja de
+   "Escribir en el movil es incomodo" de aqui arriba: hoy hay que cerrar el
+   teclado para poder moverse por el formulario.
+
+   Por donde va: `env(keyboard-inset-height)` y la `VirtualKeyboard API`
+   -Chrome/Android- para saber donde acaba el teclado; en iOS, `visualViewport`
+   y sus eventos `resize`/`scroll`. La barra se pinta con la lista de campos
+   del formulario y mueve el foco al de al lado, llevandolo a la vista.
+   **Hace falta el telefono de Nicolas**: desde estas sesiones no hay teclado
+   virtual que levantar, asi que no se puede ni probar ni dar por bueno.
+
 ### Revision a fondo del 21-ago-2026
 
 Nicolas pidio repasar la aplicacion entera sin esperar respuesta -codigo,

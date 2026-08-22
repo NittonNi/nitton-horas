@@ -74,7 +74,7 @@ export function Bienvenida({
                 <button
                   type="button"
                   onClick={() => entrar(espacio.id)}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-surface-2"
+                  className="pulsable flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-surface-2"
                 >
                   <Building2 className="h-4 w-4 shrink-0 text-muted" />
                   <span className="min-w-0 flex-1">

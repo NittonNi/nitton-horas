@@ -711,6 +711,9 @@ function AjustesProyecto({
   const [color, setColor] = useState(proyecto.color)
   const [facturable, setFacturable] = useState(proyecto.billable_default)
   const [tipo, setTipo] = useState(proyecto.kind ?? "")
+  const [presupuesto, setPresupuesto] = useState(
+    proyecto.budget_hours != null ? String(proyecto.budget_hours) : "",
+  )
   const [guardando, setGuardando] = useState(false)
   const [guardado, setGuardado] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -720,12 +723,20 @@ function AjustesProyecto({
     categoriaId !== (proyecto.category_id ?? "") ||
     color !== proyecto.color ||
     facturable !== proyecto.billable_default ||
-    tipo !== (proyecto.kind ?? "")
+    tipo !== (proyecto.kind ?? "") ||
+    presupuesto.trim() !==
+      (proyecto.budget_hours != null ? String(proyecto.budget_hours) : "")
 
   async function guardar() {
     const limpio = nombre.trim()
     if (!limpio) {
       setError("El proyecto necesita un nombre.")
+      return
+    }
+    /* La coma tambien vale: aqui se escriben horas, no numeros de programador. */
+    const horas = presupuesto.trim().replace(",", ".")
+    if (horas && (Number.isNaN(Number(horas)) || Number(horas) < 0)) {
+      setError("El presupuesto tiene que ser un número de horas.")
       return
     }
     setGuardando(true)
@@ -738,6 +749,7 @@ function AjustesProyecto({
         color,
         billable_default: facturable,
         kind: (tipo || null) as Proyecto["kind"],
+        budget_hours: horas ? Number(horas) : null,
       })
       .eq("id", proyecto.id)
 
@@ -814,6 +826,27 @@ function AjustesProyecto({
             <p className="mt-1.5 text-xs text-muted">
               Cada tipo se cierra a su ritmo: el evento por edición, lo
               recurrente cada mes.
+            </p>
+          </div>
+
+          <div>
+            <label className="label" htmlFor="ap-presupuesto">
+              Presupuesto de horas
+            </label>
+            <input
+              id="ap-presupuesto"
+              className="field tabular w-32"
+              value={presupuesto}
+              onChange={(e) => {
+                setPresupuesto(e.target.value)
+                setGuardado(false)
+              }}
+              placeholder="sin tope"
+              inputMode="decimal"
+            />
+            <p className="mt-1.5 text-xs text-muted">
+              Cuántas horas se le han puesto. En el listado sale cuánto se lleva
+              gastado.
             </p>
           </div>
 

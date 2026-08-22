@@ -992,10 +992,62 @@ aplicado a "Nueva entrada", que usa el mismo selector y tenia el mismo roce.
 
 ### 3. Proyectos: buscar y ficha mas completa
 
-- Buscar y filtrar en el listado: por nombre, cliente, si esta activo, si le
-  quedan horas de presupuesto.
-- Dentro del proyecto falta informacion: como va mes a mes, quien ha tocado
-  que, cuanto queda por facturar, y las etiquetas que mas aparecen.
+**Hecho el 22-ago-2026.** Lo de "buscar por cliente" se cae solo: no hay
+clientes desde el 19-ago. Buscar por nombre y por categorizacion, y el filtro
+de activos/archivados, ya estaban; lo que faltaba de verdad era ordenar, el
+presupuesto y el dinero que aun no se ha cerrado.
+
+En el listado (`panel-proyectos.tsx`):
+
+- **Orden**: por nombre -como venian del catalogo-, mas horas, mas reciente,
+  presupuesto apurado y, solo para quien ve importes, mas facturado. Los que
+  no tienen horas o presupuesto caen al final, no al principio.
+- **Filtro de presupuesto**: le queda margen / se ha pasado / sin presupuesto.
+  El mando solo aparece si algun proyecto tiene presupuesto puesto: un filtro
+  que no puede cambiar nada es ruido.
+- **Cuanto suma lo que se esta mirando**, en un chip junto al titulo -cuantos
+  proyectos, cuantas horas y cuanto importe-, en azul en cuanto hay filtros
+  puestos, misma convencion que el total de la semana en el calendario.
+- El boton de crear va con `ml-auto`: con los filtros puestos la barra se
+  parte en dos y no puede quedarse suelto debajo del primer desplegable.
+- De paso, un fallo pequeño: `hayFiltros` no contaba el filtro de categoria,
+  asi que filtrando solo por ahi y sin resultados el hueco decia "Aun no hay
+  proyectos" en vez de "Nada encaja con eso".
+
+En la ficha (`resumen-proyecto.tsx`):
+
+- **Cuanto queda por facturar**: las horas que llevan el euro y todavia no
+  cuenta ningun cierre, con la estimacion al objetivo €/h. Sale como una
+  cifra mas en la tarjeta del dinero y, cuando el proyecto no tiene ni un
+  cierre apuntado -que es cuando mas falta hace, porque entonces no hay
+  tarjeta de dinero-, como una fila propia arriba del todo.
+- **Las etiquetas que mas aparecen**: cuarto reparto, con los porcentajes
+  contra las horas etiquetadas y no contra el total -una hora puede llevar
+  varias etiquetas y sumarian mas de 100-, y una linea al pie con lo que
+  queda sin etiquetar. Solo sale si hay alguna hora etiquetada.
+- "Como va mes a mes" y "quien ha tocado que" ya los cubrian la grafica de
+  ritmo -que elige dia/semana/mes segun lo que dure el proyecto- y los
+  repartos por tarea y por persona, de la reconstruccion del 19-ago.
+
+Y una incoherencia que salio al probarlo: **el presupuesto de horas solo se
+podia poner desde Catalogo**, aunque es lo que dibuja la barra del listado y
+ahora tambien el filtro. Añadido a los Ajustes del propio proyecto
+(`detalle-proyecto.tsx`), con la coma valiendo como decimal, igual que en
+Catalogo.
+
+De paso, el criterio de "que horas son de cada cierre" estaba escrito dos
+veces -es justo donde vivia el bug de doble conteo del 21-ago-; ahora hay una
+sola funcion, `esDeEsteCierre`, de la que tiran el resumen de resultados y lo
+que queda por cerrar.
+
+Verificado con `tsc`, `eslint` y `npm run build` limpios, y en vivo en el
+espacio NITTON: los tres ordenes nuevos con las horas reales de cada proyecto,
+los tres estados del filtro de presupuesto -con un presupuesto de 2 h puesto
+a mano en LALCANTARA y quitado despues-, el chip de totales poniendose azul
+al filtrar, el aviso de "01:15:00 sin cerrar - ≈ 12,50 €" en LALCANTARA, y el
+reparto por etiqueta con dos etiquetas de prueba creadas y borradas al
+terminar (el espacio no tenia ninguna). Comprobado por SQL al acabar que no
+queda rastro: 0 etiquetas, 0 horas etiquetadas y ningun presupuesto.
 
 ### 4. Equipo
 

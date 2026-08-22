@@ -57,6 +57,18 @@ function guardarVista(vista: Vista) {
 
 const SIN_RAMA = "sin-rama"
 
+/** Por que se ordena la lista. Por nombre es como venian del catalogo. */
+type Orden = "nombre" | "horas" | "reciente" | "presupuesto" | "importe"
+
+/** Que parte del presupuesto se ha comido, en %, o null si no tiene. */
+function gastadoDe(proyecto: Proyecto, datos: ResumenProyecto | undefined) {
+  const presupuesto = proyecto.budget_hours ?? null
+  if (!presupuesto || presupuesto <= 0) return null
+  // Sin topar: si se pasa del presupuesto tiene que poder decir "120%", no
+  // quedarse en "100%" como si fuera lo mismo que ir justo.
+  return ((datos?.segundos ?? 0) / 3600 / presupuesto) * 100
+}
+
 export function PanelProyectos({
   espacioId,
   proyectos,
@@ -79,6 +91,10 @@ export function PanelProyectos({
   const [estado, setEstado] = useState<"activos" | "archivados" | "todos">(
     "activos",
   )
+  const [presupuesto, setPresupuesto] = useState<
+    "cualquiera" | "margen" | "pasados" | "sin"
+  >("cualquiera")
+  const [orden, setOrden] = useState<Orden>("nombre")
 
   const porProyecto = useMemo(
     () => new Map(resumen.map((fila) => [fila.project_id, fila])),
@@ -152,6 +168,19 @@ export function PanelProyectos({
         }
       }
 
+      /* El presupuesto se mira para saber a cual le queda margen y a cual se
+         le ha ido de las manos. */
+      if (presupuesto !== "cualquiera") {
+        const gastado = gastadoDe(p, porProyecto.get(p.id))
+        if (presupuesto === "sin" && gastado !== null) return false
+        if (presupuesto === "margen" && (gastado === null || gastado >= 100)) {
+          return false
+        }
+        if (presupuesto === "pasados" && (gastado === null || gastado < 100)) {
+          return false
+        }
+      }
+
       if (!texto) return true
       /* Nombre y categorizacion: es como los busca la gente. */
       const donde = [p.name, caminoDe(categorias, p.category_id) ?? ""]
@@ -167,18 +196,80 @@ export function PanelProyectos({
     categoriasElegidas,
     subcategoriasElegidas,
     estado,
+    presupuesto,
+    porProyecto,
   ])
+
+  /* Ordenar es otra forma de preguntar: cuales pesan mas, cuales se han
+     quedado parados, a cual se le acaba el presupuesto. Por nombre es como
+     vienen del catalogo, asi que ahi no hace falta tocar nada. */
+  const ordenados = useMemo(() => {
+    if (orden === "nombre") return filtrados
+    const lista = [...filtrados]
+    const dato = (p: Proyecto) => porProyecto.get(p.id)
+    if (orden === "horas") {
+      lista.sort((a, b) => (dato(b)?.segundos ?? 0) - (dato(a)?.segundos ?? 0))
+    } else if (orden === "importe") {
+      lista.sort(
+        (a, b) => Number(dato(b)?.importe ?? 0) - Number(dato(a)?.importe ?? 0),
+      )
+    } else if (orden === "reciente") {
+      // Los que nunca han tenido horas caen al final, no al principio
+      lista.sort((a, b) =>
+        (dato(b)?.ultima ?? "").localeCompare(dato(a)?.ultima ?? ""),
+      )
+    } else if (orden === "presupuesto") {
+      // Los que no tienen presupuesto no compiten: van los ultimos
+      lista.sort(
+        (a, b) =>
+          (gastadoDe(b, dato(b)) ?? -1) - (gastadoDe(a, dato(a)) ?? -1),
+      )
+    }
+    return lista
+  }, [filtrados, orden, porProyecto])
+
+  /* Lo que suma lo que se esta mirando. Con filtros puestos el numero es otro,
+     y se avisa en azul como en el calendario. */
+  const total = useMemo(() => {
+    let segundos = 0
+    let importe = 0
+    for (const p of filtrados) {
+      const datos = porProyecto.get(p.id)
+      segundos += datos?.segundos ?? 0
+      importe += Number(datos?.importe ?? 0)
+    }
+    return { segundos, importe }
+  }, [filtrados, porProyecto])
 
   const hayFiltros = Boolean(
     busqueda ||
       categoriasElegidas.length > 0 ||
+      subcategoriasElegidas.length > 0 ||
+      presupuesto !== "cualquiera" ||
       estado !== "activos",
+  )
+
+  /* El mando del presupuesto solo aparece si alguno lo tiene puesto: un filtro
+     que no puede cambiar nada es ruido. */
+  const hayPresupuestos = useMemo(
+    () => proyectos.some((p) => (p.budget_hours ?? 0) > 0),
+    [proyectos],
   )
 
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight">Proyectos</h1>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h1 className="text-lg font-semibold tracking-tight">Proyectos</h1>
+          {proyectos.length > 0 && (
+            <span className={cn("chip", hayFiltros && "border-accent text-accent")}>
+              {filtrados.length}
+              {filtrados.length === 1 ? " proyecto" : " proyectos"} ·{" "}
+              {formatDurationShort(total.segundos)}
+              {gestor && total.importe > 0 && ` · ${formatMoney(total.importe)}`}
+            </span>
+          )}
+        </div>
         <p className="mt-0.5 text-sm text-muted">
           {gestor ? "Las horas del equipo en cada uno." : "Tus horas en cada uno."}
         </p>
@@ -233,6 +324,22 @@ export function PanelProyectos({
           />
         )}
 
+        {hayPresupuestos && (
+          <select
+            value={presupuesto}
+            onChange={(e) =>
+              setPresupuesto(e.target.value as typeof presupuesto)
+            }
+            className="field w-auto rounded-[3px] py-1.5"
+            aria-label="Presupuesto"
+          >
+            <option value="cualquiera">Cualquier presupuesto</option>
+            <option value="margen">Le queda margen</option>
+            <option value="pasados">Se ha pasado</option>
+            <option value="sin">Sin presupuesto</option>
+          </select>
+        )}
+
         <div className="relative min-w-[12rem] flex-1">
           <Search
             className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
@@ -248,10 +355,30 @@ export function PanelProyectos({
           />
         </div>
 
+        <select
+          value={orden}
+          onChange={(e) => setOrden(e.target.value as Orden)}
+          className="field w-auto rounded-[3px] py-1.5"
+          aria-label="Ordenar"
+        >
+          <option value="nombre">Por nombre</option>
+          <option value="horas">Más horas</option>
+          <option value="reciente">Más reciente</option>
+          {hayPresupuestos && (
+            <option value="presupuesto">Presupuesto apurado</option>
+          )}
+          {gestor && <option value="importe">Más facturado</option>}
+        </select>
+
         <BotonVista vista={vista} />
 
+        {/* Siempre al final de su fila: con los filtros puestos la barra se
+            parte en dos y el boton de crear no puede quedar suelto a la
+            izquierda, debajo del primer desplegable. */}
         {gestor && (
-          <NuevoProyecto espacioId={espacioId} categorias={categorias} />
+          <div className="ml-auto">
+            <NuevoProyecto espacioId={espacioId} categorias={categorias} />
+          </div>
         )}
       </div>
 
@@ -271,7 +398,7 @@ export function PanelProyectos({
         </div>
       ) : vista === "lista" ? (
         <div className="card divide-y divide-line overflow-hidden">
-          {filtrados.map((proyecto) => (
+          {ordenados.map((proyecto) => (
             <FilaProyecto
               key={proyecto.id}
               proyecto={proyecto}
@@ -284,7 +411,7 @@ export function PanelProyectos({
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {filtrados.map((proyecto) => (
+          {ordenados.map((proyecto) => (
             <TarjetaProyecto
               key={proyecto.id}
               proyecto={proyecto}
@@ -353,10 +480,7 @@ function useDatos({
   ).length
   const horas = datos?.segundos ?? 0
   const presupuesto = proyecto.budget_hours ?? null
-  // Sin topar: si se pasa del presupuesto tiene que poder decir "120%", no
-  // quedarse en "100%" como si fuera lo mismo que ir justo.
-  const consumido =
-    presupuesto && presupuesto > 0 ? (horas / 3600 / presupuesto) * 100 : null
+  const consumido = gastadoDe(proyecto, datos)
   return { suyas, horas, presupuesto, consumido }
 }
 

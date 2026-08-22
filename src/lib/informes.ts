@@ -64,6 +64,49 @@ export function agrupar(
   return [...mapa.values()].sort((a, b) => b.segundos - a.segundos)
 }
 
+/**
+ * Las horas repartidas por etiqueta. Una hora puede llevar varias, así que
+ * cuenta entera en cada una: por eso vuelve también cuántas horas llevan
+ * etiqueta, que es contra lo que hay que sacar los porcentajes -contra el
+ * total sumarían más de 100-.
+ */
+export function agruparPorEtiqueta(entradas: EntradaVista[]) {
+  const mapa = new Map<string, Grupo>()
+  let segundos = 0
+
+  for (const entrada of entradas) {
+    if (entrada.tags.length === 0) continue
+    const duracion = entrada.duration_seconds ?? 0
+    segundos += duracion
+
+    for (const nombre of entrada.tags) {
+      if (!mapa.has(nombre)) {
+        mapa.set(nombre, {
+          clave: nombre,
+          etiqueta: nombre,
+          color: null,
+          segundos: 0,
+          facturables: 0,
+          importe: 0,
+          entradas: 0,
+        })
+      }
+      const grupo = mapa.get(nombre)!
+      grupo.segundos += duracion
+      grupo.entradas += 1
+      if (entrada.billable) {
+        grupo.facturables += duracion
+        grupo.importe += Number(entrada.amount ?? 0)
+      }
+    }
+  }
+
+  return {
+    grupos: [...mapa.values()].sort((a, b) => b.segundos - a.segundos),
+    segundos,
+  }
+}
+
 /** Serie continua para el gráfico: los días sin horas también ocupan sitio. */
 export function porDia(entradas: EntradaVista[], desde: string, hasta: string) {
   const acumulado = new Map<string, { segundos: number; facturables: number }>()

@@ -3,9 +3,13 @@
 import { useMemo } from "react"
 import dynamic from "next/dynamic"
 
-import { agrupar, totales } from "@/lib/informes"
+import { agrupar, agruparPorEtiqueta, totales } from "@/lib/informes"
 import { formatDurationShort, formatMoney } from "@/lib/time"
-import { resumenDeResultados, type Resultado } from "@/components/resultados-proyecto"
+import {
+  horasSinCerrar,
+  resumenDeResultados,
+  type Resultado,
+} from "@/components/resultados-proyecto"
 import type { Edicion, EntradaVista } from "@/lib/tipos"
 import { cn } from "@/lib/utils"
 
@@ -81,7 +85,23 @@ export function ResumenProyecto({
     [entradas],
   )
 
+  const etiquetadas = useMemo(() => agruparPorEtiqueta(entradas), [entradas])
+
   const periodos = useMemo(() => porPeriodo(entradas), [entradas])
+
+  /* Trabajo cobrable del que todavia no se ha apuntado que ha dejado: hasta
+     que se cierre, el €/h de arriba se queda corto. */
+  const sinCerrar = useMemo(
+    () => horasSinCerrar(entradas, resultados),
+    [entradas, resultados],
+  )
+  const pendiente = puedeVerImportes && sinCerrar.segundos > 0
+  /* A lo que aspira el equipo: no es lo que se va a cobrar, es el orden de
+     magnitud de lo que falta por cerrar. */
+  const estimado =
+    objetivoHora && objetivoHora > 0
+      ? (sinCerrar.segundos / 3600) * objetivoHora
+      : null
 
   /* Cuánto se trabaja de media a la semana: dice más del proyecto que el total,
      que solo crece. */
@@ -96,6 +116,9 @@ export function ResumenProyecto({
     )
     return suma.segundos / semanas
   }, [entradas, suma.segundos])
+
+  const repartos =
+    2 + (ediciones.length > 0 ? 1 : 0) + (etiquetadas.grupos.length > 0 ? 1 : 0)
 
   const hayDinero = puedeVerImportes && resultados.length > 0
   const conCuentas = hayDinero && dinero.porHora !== null
@@ -190,9 +213,51 @@ export function ResumenProyecto({
                     <p className="mt-1 text-xs text-muted">cierres apuntados</p>
                   </div>
                 )}
+                {pendiente && (
+                  <div>
+                    <p className="cifra text-2xl font-semibold leading-none text-running">
+                      {formatDurationShort(sinCerrar.segundos)}
+                    </p>
+                    <p className="mt-1 text-xs text-muted">
+                      se cobran y no las cuenta ningún cierre
+                      {estimado !== null && ` · ≈ ${formatMoney(estimado)}`}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
+        </section>
+      )}
+
+      {/* ------------------------------------------------- lo que falta cerrar */}
+      {/* Sin ningun cierre no hay tarjeta de dinero donde meter esto, y es
+          justo cuando mas hace falta decirlo: hay trabajo cobrable hecho y
+          nadie ha apuntado todavia lo que ha dejado. */}
+      {!hayDinero && pendiente && (
+        <section className="card flex flex-wrap items-baseline gap-x-8 gap-y-3 p-5">
+          <div>
+            <p className="cifra text-2xl font-semibold leading-none text-running">
+              {formatDurationShort(sinCerrar.segundos)}
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              horas que se cobran, sin cerrar
+            </p>
+          </div>
+          {estimado !== null && (
+            <div>
+              <p className="cifra text-2xl font-semibold leading-none">
+                ≈ {formatMoney(estimado)}
+              </p>
+              <p className="mt-1 text-xs text-muted">
+                si salieran al objetivo de {objetivoHora} €/h
+              </p>
+            </div>
+          )}
+          <p className="min-w-[14rem] flex-1 text-sm text-muted">
+            Apunta en Ediciones lo que ha dejado este trabajo y aquí saldrá a
+            cuánto está saliendo la hora de verdad.
+          </p>
         </section>
       )}
 
@@ -243,10 +308,16 @@ export function ResumenProyecto({
       </section>
 
       {/* ------------------------------------------------------- el reparto */}
+      {/* Dos repartos fijos y dos que solo salen si hay de que: cada uno pide
+          una columna, y con los cuatro no caben todos de frente. */}
       <div
         className={cn(
           "grid grid-cols-1 gap-5",
-          ediciones.length > 0 ? "lg:grid-cols-3" : "lg:grid-cols-2",
+          repartos === 4
+            ? "md:grid-cols-2 xl:grid-cols-4"
+            : repartos === 3
+              ? "lg:grid-cols-3"
+              : "lg:grid-cols-2",
         )}
       >
         <Reparto
@@ -273,6 +344,25 @@ export function ResumenProyecto({
             total={suma.segundos}
             color={color}
             vacio="Las horas no están repartidas en ediciones."
+          />
+        )}
+        {etiquetadas.grupos.length > 0 && (
+          <Reparto
+            titulo="Cómo se etiqueta"
+            pie="Por etiqueta"
+            grupos={etiquetadas.grupos}
+            /* Contra las horas etiquetadas, no contra el total: una hora puede
+               llevar varias etiquetas y los porcentajes pasarían de 100. */
+            total={etiquetadas.segundos}
+            color={color}
+            vacio=""
+            nota={
+              suma.segundos > etiquetadas.segundos
+                ? `${formatDurationShort(
+                    suma.segundos - etiquetadas.segundos,
+                  )} sin etiquetar`
+                : undefined
+            }
           />
         )}
       </div>
@@ -471,6 +561,7 @@ function Reparto({
   total,
   color,
   vacio,
+  nota,
 }: {
   titulo: string
   pie: string
@@ -478,6 +569,8 @@ function Reparto({
   total: number
   color: string
   vacio: string
+  /** Lo que el reparto deja fuera, si hace falta contarlo. */
+  nota?: string
 }) {
   const visibles = grupos.slice(0, 8)
   const resto = grupos.slice(8)
@@ -527,6 +620,7 @@ function Reparto({
               y {resto.length} más, {formatDurationShort(sobran)}
             </li>
           )}
+          {nota && <li className="pt-1 text-xs text-muted">{nota}</li>}
         </ul>
       )}
     </section>

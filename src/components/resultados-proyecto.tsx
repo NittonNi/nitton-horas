@@ -12,15 +12,44 @@ export type Resultado = {
 }
 
 /**
+ * Si esta hora es de este cierre. Un solo sitio con el criterio: la edicion
+ * manda, y un cierre del proyecto entero solo alcanza a las horas que no son
+ * de ninguna edicion -si no, un cierre reguardado despues de crear ediciones
+ * se estira hasta hoy y cuenta dos veces las horas que ya llevaba cada una-.
+ * Solo cuentan las que llevan el euro: son las que se han hecho para ganar
+ * ese dinero.
+ */
+function esDeEsteCierre(entrada: EntradaVista, cierre: Resultado) {
+  if (!entrada.end_at || !entrada.billable) return false
+  return cierre.edition_id
+    ? entrada.edition_id === cierre.edition_id
+    : !entrada.edition_id &&
+        entrada.local_date >= cierre.starts_on &&
+        entrada.local_date <= cierre.ends_on
+}
+
+/**
+ * Las horas que se cobran y todavia no cuenta ningun cierre: trabajo hecho del
+ * que aun no se ha apuntado que ha dejado. Es lo que le falta al €/h del
+ * proyecto para ser el de verdad.
+ */
+export function horasSinCerrar(
+  entradas: EntradaVista[],
+  resultados: Resultado[],
+) {
+  const sueltas = entradas.filter(
+    (e) => e.end_at && e.billable && !resultados.some((r) => esDeEsteCierre(e, r)),
+  )
+  return {
+    segundos: sueltas.reduce((s, e) => s + (e.duration_seconds ?? 0), 0),
+    entradas: sueltas.length,
+  }
+}
+
+/**
  * Lo que ha dejado un trabajo y lo que ha costado en horas: ingresos, gastos y
- * la facturacion por hora.
- *
- * Las horas de un cierre son las de su edicion si la lleva, y si no las del
- * proyecto dentro de su periodo -pero solo las que no son ya de otra edicion:
- * si no, un cierre del proyecto entero que se reguarda despues de crear
- * ediciones se estira hasta hoy y cuenta dos veces las horas que ya llevaba
- * cada edicion-. Solo cuentan las que llevan el euro: son las que se han
- * hecho para ganar ese dinero.
+ * la facturacion por hora. Que horas son de cada cierre lo decide
+ * `esDeEsteCierre`.
  */
 export function resumenDeResultados(
   entradas: EntradaVista[],
@@ -28,11 +57,7 @@ export function resumenDeResultados(
 ) {
   const horasDe = (r: Resultado) =>
     entradas
-      .filter((e) => {
-        if (!e.end_at || !e.billable) return false
-        if (r.edition_id) return e.edition_id === r.edition_id
-        return !e.edition_id && e.local_date >= r.starts_on && e.local_date <= r.ends_on
-      })
+      .filter((e) => esDeEsteCierre(e, r))
       .reduce((s, e) => s + (e.duration_seconds ?? 0), 0)
 
   const ingresos = resultados.reduce((s, r) => s + Number(r.income), 0)
